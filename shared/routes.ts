@@ -50,6 +50,15 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    register: {
+      method: 'POST' as const,
+      path: '/api/register',
+      input: registerUserSchema,
+      responses: {
+        201: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
   },
 };
 

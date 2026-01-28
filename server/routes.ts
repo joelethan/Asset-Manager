@@ -48,6 +48,31 @@ export async function registerRoutes(
     res.json(user);
   });
 
+  app.post(api.users.register.path, async (req, res) => {
+    try {
+      const input = api.users.register.input.parse(req.body);
+      // Map registration data to user schema
+      const user = await storage.createUser({
+        username: input.email,
+        email: input.email,
+        password: input.password,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+        role: "school_admin",
+      });
+      res.status(201).json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Seed data endpoint (optional, for demo)
   app.post('/api/seed', async (_req, res) => {
     const existingSchools = await storage.getSchools();
