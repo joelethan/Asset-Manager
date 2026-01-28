@@ -38,3 +38,11 @@ export const registerUserSchema = z.object({
 });
 
 export type RegisterUserRequest = z.infer<typeof registerUserSchema>;
+
+// Login-specific schema
+export const loginUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export type LoginUserRequest = z.infer<typeof loginUserSchema>;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertSchoolSchema, insertUserSchema, registerUserSchema, schools, users } from './schema';
+import { insertSchoolSchema, insertUserSchema, registerUserSchema, loginUserSchema, schools, users } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -57,6 +57,16 @@ export const api = {
       responses: {
         201: z.custom<typeof users.$inferSelect>(),
         400: errorSchemas.validation,
+      },
+    },
+    login: {
+      method: 'POST' as const,
+      path: '/api/login',
+      input: loginUserSchema,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: z.object({ message: z.string() }),
       },
     },
   },

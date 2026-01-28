@@ -53,6 +53,7 @@ const user = {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Login", href: "/login", icon: UserIcon },
   { name: "Register", href: "/register", icon: UserPlus },
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Students", href: "/students", icon: GraduationCap },
