@@ -21,7 +21,8 @@ import {
   Settings, 
   ChevronsUpDown,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  UserPlus
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -52,6 +53,7 @@ const user = {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Register", href: "/register", icon: UserPlus },
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Students", href: "/students", icon: GraduationCap },
   { name: "Teachers", href: "/teachers", icon: Users },

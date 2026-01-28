@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
+import Register from "@/pages/Register";
 import Schools from "@/pages/Schools";
 import Students from "@/pages/Students";
 import Teachers from "@/pages/Teachers";
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <Route path="/" component={() => <Redirect to="/dashboard" />} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/register" component={Register} />
       <Route path="/schools" component={Schools} />
       <Route path="/students" component={Students} />
       <Route path="/teachers" component={Teachers} />
