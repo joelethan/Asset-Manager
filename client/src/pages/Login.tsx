@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const res = await authApi.login(values.email, values.password);
       const data = await res.json();
-      
+
       if (!res.ok) {
         toast({
           title: "Login failed",
@@ -44,7 +44,7 @@ export default function Login() {
       if (data.access_token) {
         try {
           localStorage.setItem("access_token", data.access_token);
-        } catch {}
+        } catch { }
       }
 
       // Fetch profile and store in context
@@ -55,9 +55,9 @@ export default function Login() {
           try {
             setProfile(profile);
             setIsAuthenticated(true);
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
 
       toast({ title: "Success", description: "You have been logged in successfully." });
 
@@ -75,9 +75,9 @@ export default function Login() {
   }
 
   return (
-    <AppLayout 
-      title="Login" 
-      description="Sign in to your account."
+    <AppLayout
+      title="Login"
+      description="Sign In to your account."
       breadcrumbs={[{ label: "Login" }]}
     >
       <div className="max-w-md mx-auto">

@@ -2,25 +2,25 @@ import { ReactNode } from "react";
 import { useLocation, Link } from "wouter";
 import { useTenant } from "@/context/TenantContext";
 import { useProfile } from "@/context/ProfileContext";
-import { 
-  SidebarProvider, 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader, 
-  SidebarMenu, 
-  SidebarMenuItem, 
-  SidebarMenuButton, 
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
   SidebarTrigger,
   SidebarRail,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { 
-  LayoutDashboard, 
-  Building2, 
-  GraduationCap, 
-  Users, 
-  BookOpen, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Building2,
+  GraduationCap,
+  Users,
+  BookOpen,
+  Settings,
   ChevronsUpDown,
   LogOut,
   User as UserIcon,
@@ -97,18 +97,18 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
               {navigation.map((item) => {
                 // Show Login/Register only when not authenticated
                 if ((item.name === "Login" || item.name === "Register") && isAuthenticated) return null;
-                
+
                 // Show other items only when authenticated
                 if (item.name !== "Login" && item.name !== "Register" && !isAuthenticated) return null;
-                
+
                 // Check role visibility
                 if (item.roles && !item.roles.includes(user.role)) return null;
-                
+
                 const isActive = location === item.href;
                 return (
                   <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton 
-                      asChild 
+                    <SidebarMenuButton
+                      asChild
                       isActive={isActive}
                       tooltip={item.name}
                       className={isActive ? "bg-primary/10 text-primary font-medium" : "text-slate-600 hover:text-slate-900"}
@@ -123,9 +123,9 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
               })}
             </SidebarMenu>
           </SidebarContent>
-          
-          <SidebarFooter>
-             <SidebarMenu>
+
+          {isAuthenticated && <SidebarFooter>
+            <SidebarMenu>
               <SidebarMenuItem>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -144,10 +144,11 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
                     </SidebarMenuButton>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
-                    className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                    side="bottom"
+                    className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg z-50"
+                    side="top"
                     align="end"
-                    sideOffset={4}
+                    sideOffset={8}
+                    collisionPadding={16}
                   >
                     <DropdownMenuLabel className="p-0 font-normal">
                       <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
@@ -173,7 +174,7 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
                 </DropdownMenu>
               </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarFooter>
+          </SidebarFooter>}
           <SidebarRail />
         </Sidebar>
 
@@ -182,7 +183,7 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/80 px-4 backdrop-blur transition-all">
             <SidebarTrigger className="-ml-1 text-slate-500 hover:text-slate-900" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            
+
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
@@ -202,7 +203,7 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
-            
+
             <div className="ml-auto flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
@@ -225,14 +226,13 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
 
           {/* Main Content Area */}
           <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-             <div className="mx-auto max-w-6xl space-y-8 animate-in">
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-display font-bold text-slate-900">{title}</h1>
-                  {description && <p className="text-slate-500 text-lg">{description}</p>}
-                </div>
-                
-                {children}
-             </div>
+            <div className="mx-auto max-w-6xl space-y-8 animate-in">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-display font-bold text-slate-900">{title}</h1>
+                {description && <p className="text-slate-500 text-lg">{description}</p>}
+              </div>
+              {children}
+            </div>
           </main>
         </div>
       </div>
