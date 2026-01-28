@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 import { useLocation, Link } from "wouter";
+import { tenants } from "@/mock-data";
+import { useTenant } from "@/context/TenantContext";
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -22,7 +24,8 @@ import {
   ChevronsUpDown,
   LogOut,
   User as UserIcon,
-  UserPlus
+  UserPlus,
+  Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,17 +58,12 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Login", href: "/login", icon: UserIcon },
   { name: "Register", href: "/register", icon: UserPlus },
+  { name: "Academic Structure", href: "/academic-structure", icon: Calendar },
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Students", href: "/students", icon: GraduationCap },
   { name: "Teachers", href: "/teachers", icon: Users },
   { name: "Classes", href: "/classes", icon: BookOpen },
   { name: "Settings", href: "/settings", icon: Settings },
-];
-
-const tenants = [
-  { name: "Lincoln High School", id: "lincoln" },
-  { name: "Washington Academy", id: "washington" },
-  { name: "Jefferson Elementary", id: "jefferson" },
 ];
 
 interface AppLayoutProps {
@@ -77,6 +75,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, description, breadcrumbs }: AppLayoutProps) {
   const [location] = useLocation();
+  const { selectedTenant, setSelectedTenant } = useTenant();
 
   return (
     <SidebarProvider>
@@ -196,14 +195,14 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
                   <Building2 className="size-4 text-primary" />
-                  <span className="hidden sm:inline">Lincoln High School</span>
+                  <span className="hidden sm:inline">{selectedTenant?.name || "Select School"}</span>
                   <ChevronsUpDown className="size-3 text-slate-400" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Switch Tenant</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {tenants.map(t => (
-                    <DropdownMenuItem key={t.id} className="cursor-pointer">
+                    <DropdownMenuItem key={t.id} className="cursor-pointer" onClick={() => setSelectedTenant(t)}>
                       <span>{t.name}</span>
                     </DropdownMenuItem>
                   ))}
