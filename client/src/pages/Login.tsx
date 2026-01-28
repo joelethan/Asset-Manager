@@ -7,9 +7,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginUserSchema, type LoginUserRequest } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { authApi } from "@/lib/api";
+import { useProfile } from "@/context/ProfileContext";
+import { useState } from "react";
+import { useLocation } from "wouter";
 
 export default function Login() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const { setProfile } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
     defaultValues: {
@@ -18,12 +25,52 @@ export default function Login() {
     },
   });
 
-  function onSubmit(values: LoginUserRequest) {
-    console.log(values);
-    toast({
-      title: "Login submitted",
-      description: "In a real app, this would authenticate with the server.",
-    });
+  async function onSubmit(values: LoginUserRequest) {
+    setIsLoading(true);
+    try {
+      const res = await authApi.login(values.email, values.password);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        toast({
+          title: "Login failed",
+          description: data.message || "Invalid email or password.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save access token
+      if (data.access_token) {
+        try {
+          localStorage.setItem("access_token", data.access_token);
+        } catch {}
+      }
+
+      // Fetch profile and store in context
+      try {
+        const profileRes = await authApi.profile();
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          try {
+            setProfile(profile);
+          } catch {}
+        }
+      } catch {}
+
+      toast({ title: "Success", description: "You have been logged in successfully." });
+
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -70,11 +117,11 @@ export default function Login() {
                 />
 
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()}>
+                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading}>
                     Clear
                   </Button>
-                  <Button type="submit">
-                    Sign In
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </div>
               </form>

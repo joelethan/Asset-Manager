@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useProfile } from "@/context/ProfileContext";
 
 interface Tenant {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -14,30 +15,23 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
+  const { profile } = useProfile();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
+  // Derive tenants from profile memberships
   useEffect(() => {
-    let mounted = true;
-    (async function fetchSchools() {
-      try {
-        const res = await fetch("/api/schools", { credentials: "include" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!mounted) return;
-        // Expecting array of { id, name }
-        setTenants(data || []);
-        if (data && data.length > 0) {
-          setSelectedTenant(data[0]);
-        }
-      } catch (e) {
-        // ignore fetch errors for now
+    if (profile?.memberships && profile.memberships.length > 0) {
+      const derivedTenants: Tenant[] = profile.memberships.map((m) => ({
+        id: m.schoolId,
+        name: m.schoolName,
+      }));
+      setTenants(derivedTenants);
+      if (derivedTenants.length > 0 && !selectedTenant) {
+        setSelectedTenant(derivedTenants[0]);
       }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    }
+  }, [profile, selectedTenant]);
 
   return (
     <TenantContext.Provider value={{ selectedTenant, setSelectedTenant, tenants }}>

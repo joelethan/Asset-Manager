@@ -8,9 +8,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { registerUserSchema, type RegisterUserRequest } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { authApi } from "@/lib/api";
+import { useState } from "react";
+import { useLocation } from "wouter";
 
 export default function Register() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<RegisterUserRequest>({
     resolver: zodResolver(registerUserSchema),
     defaultValues: {
@@ -22,12 +27,37 @@ export default function Register() {
     },
   });
 
-  function onSubmit(values: RegisterUserRequest) {
-    console.log(values);
-    toast({
-      title: "Registration submitted",
-      description: "In a real app, this would send data to the server.",
-    });
+  async function onSubmit(values: RegisterUserRequest) {
+    setIsLoading(true);
+    try {
+      const res = await authApi.register(values);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        toast({
+          title: "Registration failed",
+          description: data.message || "Please check your information and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Your account has been created successfully. Please verify your email.",
+      });
+      
+      // Redirect to login
+      navigate("/login");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -117,11 +147,11 @@ export default function Register() {
                 />
 
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()}>
+                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading}>
                     Reset
                   </Button>
-                  <Button type="submit">
-                    Register User
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Registering..." : "Register User"}
                   </Button>
                 </div>
               </form>
