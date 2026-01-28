@@ -60,7 +60,7 @@ export default function AcademicStructure() {
 
   const [termTemplateDialogOpen, setTermTemplateDialogOpen] = useState(false);
   const [academicYearDialogOpen, setAcademicYearDialogOpen] = useState(false);
-  const schoolId = 1; // Use a fixed ID for now or derive from tenant
+  const schoolId = selectedTenant.id;
 
   return (
     <AppLayout
@@ -90,7 +90,7 @@ function TermTemplatesSection({ schoolId }: { schoolId: number }) {
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { register, handleSubmit, reset, watch } = useForm({
+  const { register, handleSubmit, reset, watch } = useForm<Record<string, any>>({
     defaultValues: {
       name: "",
       term1: "Term 1",
