@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, MapPin, Users, Calendar } from "lucide-react";
+import { Plus, Search, MapPin, Users, Calendar, Building2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { insertSchoolSchema } from "@shared/schema";
