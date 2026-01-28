@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertSchool } from "@shared/routes";
-import { z } from "zod";
+import { api, buildUrl } from "@shared/routes";
+import { insertSchoolSchema } from "@shared/schema";
+import type { z } from "zod";
+
+type InsertSchool = z.infer<typeof insertSchoolSchema>;
 
 export function useSchools() {
   return useQuery({

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, json, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -20,13 +20,52 @@ export const users = pgTable("users", {
   phone: text("phone").notNull(),
 });
 
+export const termTemplates = pgTable("term_templates", {
+  id: serial("id").primaryKey(),
+  schoolId: integer("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  structure: json("structure").notNull(), // Array of { ordinal: number, name: string }
+  isLocked: boolean("is_locked").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const academicYears = pgTable("academic_years", {
+  id: serial("id").primaryKey(),
+  schoolId: integer("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("planned"), // 'planned', 'active', 'archived'
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  termTemplateId: integer("term_template_id").notNull().references(() => termTemplates.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const terms = pgTable("terms", {
+  id: serial("id").primaryKey(),
+  academicYearId: integer("academic_year_id").notNull().references(() => academicYears.id),
+  ordinal: integer("ordinal").notNull(),
+  name: text("name").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertSchoolSchema = createInsertSchema(schools).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertTermTemplateSchema = createInsertSchema(termTemplates).omit({ id: true, createdAt: true });
+export const insertAcademicYearSchema = createInsertSchema(academicYears).omit({ id: true, createdAt: true });
+export const insertTermSchema = createInsertSchema(terms).omit({ id: true, createdAt: true });
 
 export type School = typeof schools.$inferSelect;
 export type InsertSchool = z.infer<typeof insertSchoolSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type TermTemplate = typeof termTemplates.$inferSelect;
+export type InsertTermTemplate = z.infer<typeof insertTermTemplateSchema>;
+export type AcademicYear = typeof academicYears.$inferSelect;
+export type InsertAcademicYear = z.infer<typeof insertAcademicYearSchema>;
+export type Term = typeof terms.$inferSelect;
+export type InsertTerm = z.infer<typeof insertTermSchema>;
 
 // Registration-specific schema based on user request
 export const registerUserSchema = z.object({
