@@ -1,0 +1,121 @@
+Build the App Shell (layout foundation) for a modern multi-tenant School Management System using React, Tailwind CSS, React Router, and React Query.
+
+⚠️ This step is ONLY for layout, navigation, and global structure. Do NOT build feature pages like students or teachers yet. Use simple placeholder content.
+
+🧱 Core Tech
+
+React (functional components)
+
+Tailwind CSS
+
+React Router v6+
+
+React Query (set up provider only, no real queries yet)
+
+🖥️ App Layout Structure
+
+Create a responsive dashboard layout with:
+
+Sidebar (Left)
+
+Logo / App name at top
+
+Navigation links (icons optional):
+
+Dashboard
+
+Schools (Platform Admin only)
+
+Students
+
+Teachers
+
+Classes
+
+Settings
+
+Sidebar should be collapsible on desktop and hidden behind a menu button on mobile
+
+Top Navbar
+
+Left: Sidebar toggle button (mobile)
+
+Center: Page title (dynamic based on route)
+
+Right:
+
+Tenant/School switcher dropdown (mock, no real data)
+
+User avatar with dropdown (Profile, Logout — mock actions)
+
+Main Content Area
+
+Displays routed page content
+
+Use padding and a light gray background
+
+🧭 Routing (Pages Are Just Placeholders)
+
+Set up routes with simple placeholder components that only show a title:
+
+/dashboard
+
+/schools
+
+/students
+
+/teachers
+
+/classes
+
+/settings
+
+Each page should have:
+
+Page title
+
+Short description text
+
+🧠 Role-Based Navigation (Frontend Only)
+
+Simulate a logged-in user with a hardcoded role:
+
+const user = { name: "Admin User", role: "platform_admin" };
+
+
+Show sidebar links conditionally:
+
+"Schools" visible ONLY if role = platform_admin
+
+Other links visible to all roles
+
+🧩 Reusable Layout Components
+
+Organize layout into reusable components:
+
+AppLayout
+
+Sidebar
+
+Navbar
+
+SidebarLink
+
+🎨 Styling
+
+Use Tailwind only
+
+Clean SaaS dashboard style
+
+Soft shadows, rounded cards, good spacing
+
+Fully responsive
+
+📁 Suggested Folder Structure
+/components/layout
+/pages
+/routes
+/context (empty for now, placeholder)
+
+
+The goal is to produce a scalable dashboard shell that future features (students, teachers, etc.) can plug into easily.
