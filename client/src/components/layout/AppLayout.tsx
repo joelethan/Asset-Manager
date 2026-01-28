@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { useLocation, Link } from "wouter";
 import { useTenant } from "@/context/TenantContext";
+import { useProfile } from "@/context/ProfileContext";
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -45,14 +46,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-// Mock User State
-const user = { 
-  name: "Admin User", 
-  role: "platform_admin", // Try 'school_admin' to test hiding logic
-  avatar: "AU",
-  email: "admin@platform.edu"
-};
-
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Login", href: "/login", icon: UserIcon },
@@ -75,6 +68,20 @@ interface AppLayoutProps {
 export function AppLayout({ children, title, description, breadcrumbs }: AppLayoutProps) {
   const [location] = useLocation();
   const { tenants, selectedTenant, setSelectedTenant } = useTenant();
+  const { isAuthenticated, profile } = useProfile();
+
+  // Derive user object from profile
+  const user = profile ? {
+    name: `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || "User",
+    role: profile.role || "user",
+    avatar: `${(profile.firstName?.[0] || "").toUpperCase()}${(profile.lastName?.[0] || "").toUpperCase()}`,
+    email: profile.email || "",
+  } : {
+    name: "User",
+    role: "user",
+    avatar: "U",
+    email: "",
+  };
 
   return (
     <SidebarProvider>
@@ -88,6 +95,12 @@ export function AppLayout({ children, title, description, breadcrumbs }: AppLayo
           <SidebarContent>
             <SidebarMenu>
               {navigation.map((item) => {
+                // Show Login/Register only when not authenticated
+                if ((item.name === "Login" || item.name === "Register") && isAuthenticated) return null;
+                
+                // Show other items only when authenticated
+                if (item.name !== "Login" && item.name !== "Register" && !isAuthenticated) return null;
+                
                 // Check role visibility
                 if (item.roles && !item.roles.includes(user.role)) return null;
                 

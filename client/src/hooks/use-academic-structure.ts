@@ -8,7 +8,7 @@ type AcademicYearInput = z.infer<typeof import("@shared/routes").academicYearInp
 type AcademicYearStatusInput = z.infer<typeof import("@shared/routes").academicYearStatusInputSchema>;
 
 // Term Templates
-export function useTermTemplates(schoolId?: number) {
+export function useTermTemplates(schoolId?: string) {
   return useQuery({
     queryKey: ["term-templates", schoolId],
     queryFn: async () => {
@@ -48,7 +48,7 @@ export function useCreateTermTemplate() {
 }
 
 // Academic Years
-export function useAcademicYears(schoolId?: number) {
+export function useAcademicYears(schoolId?: string) {
   return useQuery({
     queryKey: ["academic-years", schoolId],
     queryFn: async () => {

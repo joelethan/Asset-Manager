@@ -16,7 +16,7 @@ export default function Login() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const { setProfile } = useProfile();
+  const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
     defaultValues: {
@@ -54,6 +54,7 @@ export default function Login() {
           const profile = await profileRes.json();
           try {
             setProfile(profile);
+            setIsAuthenticated(true);
           } catch {}
         }
       } catch {}

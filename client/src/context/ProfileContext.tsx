@@ -17,36 +17,57 @@ interface Profile {
 interface ProfileContextType {
   profile: Profile | null;
   setProfile: (p: Profile | null) => void;
+  isAuthenticated: boolean;
+  setIsAuthenticated: (val: boolean) => void;
+  logout: () => void;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Auto-fetch profile on mount if token exists
   useEffect(() => {
     let mounted = true;
     (async function fetchProfileIfTokenExists() {
       const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-      if (!token) return;
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
 
       try {
         const res = await authApi.profile();
-        if (!res.ok) return;
+        if (!res.ok) {
+          setIsAuthenticated(false);
+          return;
+        }
         const data = await res.json();
         if (mounted) {
           setProfile(data);
+          setIsAuthenticated(true);
         }
-      } catch {}
+      } catch {
+        setIsAuthenticated(false);
+      }
     })();
     return () => {
       mounted = false;
     };
   }, []);
 
+  const logout = () => {
+    setProfile(null);
+    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem("access_token");
+    } catch {}
+  };
+
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
+    <ProfileContext.Provider value={{ profile, setProfile, isAuthenticated, setIsAuthenticated, logout }}>
       {children}
     </ProfileContext.Provider>
   );
