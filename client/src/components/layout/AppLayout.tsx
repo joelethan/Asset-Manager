@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { useLocation, Link } from "wouter";
-import { tenants } from "@/mock-data";
 import { useTenant } from "@/context/TenantContext";
 import { 
   SidebarProvider, 
@@ -75,7 +74,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, description, breadcrumbs }: AppLayoutProps) {
   const [location] = useLocation();
-  const { selectedTenant, setSelectedTenant } = useTenant();
+  const { tenants, selectedTenant, setSelectedTenant } = useTenant();
 
   return (
     <SidebarProvider>

@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState } from "react";
-import { tenants } from "@/mock-data";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useProfile } from "@/context/ProfileContext";
 
 interface Tenant {
-  name: string;
   id: string;
+  name: string;
 }
 
 interface TenantContextType {
@@ -15,14 +15,26 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(
-    tenants[0] || null
-  );
+  const { profile } = useProfile();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+
+  // Derive tenants from profile memberships
+  useEffect(() => {
+    if (profile?.memberships && profile.memberships.length > 0) {
+      const derivedTenants: Tenant[] = profile.memberships.map((m) => ({
+        id: m.schoolId,
+        name: m.schoolName,
+      }));
+      setTenants(derivedTenants);
+      if (derivedTenants.length > 0 && !selectedTenant) {
+        setSelectedTenant(derivedTenants[0]);
+      }
+    }
+  }, [profile, selectedTenant]);
 
   return (
-    <TenantContext.Provider
-      value={{ selectedTenant, setSelectedTenant, tenants }}
-    >
+    <TenantContext.Provider value={{ selectedTenant, setSelectedTenant, tenants }}>
       {children}
     </TenantContext.Provider>
   );
