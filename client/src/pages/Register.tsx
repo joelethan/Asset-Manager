@@ -65,6 +65,7 @@ export default function Register() {
       title="Register User" 
       description="Create a new user account in the system."
       breadcrumbs={[{ label: "Register" }]}
+      centered
     >
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-sm border-slate-200">
@@ -146,11 +147,11 @@ export default function Register() {
                   )}
                 />
 
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading}>
+                <div className="flex gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading} className="flex-1">
                     Reset
                   </Button>
-                  <Button type="submit" disabled={isLoading}>
+                  <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? "Registering..." : "Register User"}
                   </Button>
                 </div>
