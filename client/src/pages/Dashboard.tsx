@@ -1,12 +1,12 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, GraduationCap, Building2, TrendingUp, AlertCircle } from "lucide-react";
-import { 
-  Area, 
-  AreaChart, 
-  ResponsiveContainer, 
-  Tooltip, 
-  XAxis, 
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
   YAxis,
   CartesianGrid
 } from "recharts";
@@ -23,37 +23,37 @@ const data = [
 
 export default function Dashboard() {
   return (
-    <AppLayout 
-      title="Dashboard" 
+    <AppLayout
+      title="Dashboard"
       description="Welcome back, here's what's happening today."
       breadcrumbs={[{ label: "Dashboard" }]}
     >
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard 
-          title="Total Students" 
-          value="2,853" 
-          change="+12% from last month" 
+        <StatsCard
+          title="Total Students"
+          value="2,853"
+          change="+12% from last month"
           icon={GraduationCap}
           trend="up"
         />
-        <StatsCard 
-          title="Active Teachers" 
-          value="142" 
-          change="+4 new this week" 
+        <StatsCard
+          title="Active Teachers"
+          value="142"
+          change="+4 new this week"
           icon={Users}
           trend="up"
         />
-        <StatsCard 
-          title="Schools Managed" 
-          value="12" 
-          change="No change" 
+        <StatsCard
+          title="Schools Managed"
+          value="12"
+          change="No change"
           icon={Building2}
           trend="neutral"
         />
-        <StatsCard 
-          title="Attendance Rate" 
-          value="94.2%" 
-          change="-0.5% from yesterday" 
+        <StatsCard
+          title="Attendance Rate"
+          value="94.2%"
+          change="-0.5% from yesterday"
           icon={TrendingUp}
           trend="down"
         />
@@ -71,42 +71,42 @@ export default function Dashboard() {
                 <AreaChart data={data}>
                   <defs>
                     <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    tickLine={false} 
+                  <XAxis
+                    dataKey="name"
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    tickLine={false} 
+                  <YAxis
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
                     axisLine={false}
                     tickFormatter={(value) => `${value}`}
                   />
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="students" 
-                    stroke="hsl(var(--primary))" 
+                  <Area
+                    type="monotone"
+                    dataKey="students"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorStudents)" 
+                    fillOpacity={1}
+                    fill="url(#colorStudents)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="col-span-3 shadow-sm border-slate-200">
           <CardHeader>
             <CardTitle>Recent Alerts</CardTitle>

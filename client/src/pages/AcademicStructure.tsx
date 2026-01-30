@@ -85,7 +85,7 @@ export default function AcademicStructure() {
   );
 }
 
-function TermTemplatesSection({ schoolId }: { schoolId: number }) {
+function TermTemplatesSection({ schoolId }: { schoolId: string }) {
   const { data: templates, isLoading } = useTermTemplates(schoolId);
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
@@ -111,27 +111,27 @@ function TermTemplatesSection({ schoolId }: { schoolId: number }) {
       });
     }
 
-    createTemplate(
-      {
-        schoolId,
-        name: data.name,
-        structure,
-      },
-      {
-        onSuccess: () => {
-          toast({ title: "Success", description: "Term template created" });
-          setIsDialogOpen(false);
-          reset();
-        },
-        onError: (error: any) => {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        },
-      }
-    );
+    // createTemplate(
+    //   {
+    //     schoolId,
+    //     name: data.name,
+    //     structure,
+    //   },
+    //   {
+    //     onSuccess: () => {
+    //       toast({ title: "Success", description: "Term template created" });
+    //       setIsDialogOpen(false);
+    //       reset();
+    //     },
+    //     onError: (error: any) => {
+    //       toast({
+    //         title: "Error",
+    //         description: error.message,
+    //         variant: "destructive",
+    //       });
+    //     },
+    //   }
+    // );
   };
 
   return (
@@ -266,7 +266,7 @@ function AcademicYearsSection({
   academicYearDialogOpen,
   setAcademicYearDialogOpen,
 }: {
-  schoolId: number;
+  schoolId: string;
   termTemplateDialogOpen: boolean;
   setTermTemplateDialogOpen: (open: boolean) => void;
   academicYearDialogOpen: boolean;
@@ -298,32 +298,32 @@ function AcademicYearsSection({
       return;
     }
 
-    createYear(
-      {
-        schoolId,
-        name: data.name,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        termTemplateId: parseInt(data.termTemplateId),
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Success",
-            description: "Academic year created",
-          });
-          setAcademicYearDialogOpen(false);
-          reset();
-        },
-        onError: (error: any) => {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        },
-      }
-    );
+    // createYear(
+    //   {
+    //     schoolId,
+    //     name: data.name,
+    //     startDate: new Date(data.startDate),
+    //     endDate: new Date(data.endDate),
+    //     termTemplateId: parseInt(data.termTemplateId),
+    //   },
+    //   {
+    //     onSuccess: () => {
+    //       toast({
+    //         title: "Success",
+    //         description: "Academic year created",
+    //       });
+    //       setAcademicYearDialogOpen(false);
+    //       reset();
+    //     },
+    //     onError: (error: any) => {
+    //       toast({
+    //         title: "Error",
+    //         description: error.message,
+    //         variant: "destructive",
+    //       });
+    //     },
+    //   }
+    // );
   };
 
   const handleActivateYear = (yearId: number) => {
@@ -481,7 +481,7 @@ function AcademicYearCard({
   year: any;
   onActivate: () => void;
   isUpdatingStatus: boolean;
-  schoolId: number;
+  schoolId: string;
 }) {
   const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 

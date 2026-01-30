@@ -16,7 +16,7 @@ export default function Login() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const { setProfile } = useProfile();
+  const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
     defaultValues: {
@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const res = await authApi.login(values.email, values.password);
       const data = await res.json();
-      
+
       if (!res.ok) {
         toast({
           title: "Login failed",
@@ -44,7 +44,7 @@ export default function Login() {
       if (data.access_token) {
         try {
           localStorage.setItem("access_token", data.access_token);
-        } catch {}
+        } catch { }
       }
 
       // Fetch profile and store in context
@@ -54,9 +54,10 @@ export default function Login() {
           const profile = await profileRes.json();
           try {
             setProfile(profile);
-          } catch {}
+            setIsAuthenticated(true);
+          } catch { }
         }
-      } catch {}
+      } catch { }
 
       toast({ title: "Success", description: "You have been logged in successfully." });
 
@@ -74,10 +75,11 @@ export default function Login() {
   }
 
   return (
-    <AppLayout 
-      title="Login" 
-      description="Sign in to your account."
+    <AppLayout
+      title="Login"
+      description="Sign In to your account."
       breadcrumbs={[{ label: "Login" }]}
+      centered
     >
       <div className="max-w-md mx-auto">
         <Card className="shadow-sm border-slate-200">
@@ -116,11 +118,11 @@ export default function Login() {
                   )}
                 />
 
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading}>
+                <div className="flex gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading} className="flex-1">
                     Clear
                   </Button>
-                  <Button type="submit" disabled={isLoading}>
+                  <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </div>

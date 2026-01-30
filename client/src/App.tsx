@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TenantProvider } from "@/context/TenantContext";
 import { ProfileProvider } from "@/context/ProfileContext";
+import { useProfile } from "@/context/ProfileContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
@@ -16,22 +17,66 @@ import Teachers from "@/pages/Teachers";
 import Classes from "@/pages/Classes";
 import Settings from "@/pages/Settings";
 
+function ProtectedRoute({ component: Component }: { component: any }) {
+  const { isAuthenticated } = useProfile();
+  
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+  
+  return <Component />;
+}
+
+function RootRedirect() {
+  const { isAuthenticated } = useProfile();
+  return <Redirect to={isAuthenticated ? "/dashboard" : "/login"} />;
+}
+
+function PublicRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated } = useProfile();
+  
+  if (isAuthenticated) {
+    return <Redirect to="/dashboard" />;
+  }
+  
+  return <Component />;
+}
+
+function CatchAllRedirect() {
+  const { isAuthenticated } = useProfile();
+  return <Redirect to={isAuthenticated ? "/dashboard" : "/login"} />;
+}
+
 function Router() {
+  const { isAuthenticated } = useProfile();
+  
   return (
     <Switch>
-      <Route path="/" component={() => <Redirect to="/dashboard" />} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/academic-structure" component={AcademicStructure} />
-      <Route path="/schools" component={Schools} />
-      <Route path="/students" component={Students} />
-      <Route path="/teachers" component={Teachers} />
-      <Route path="/classes" component={Classes} />
-      <Route path="/settings" component={Settings} />
+      <Route path="/" component={RootRedirect} />
       
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      {/* Public routes - redirect to dashboard if already authenticated */}
+      <Route path="/login">
+        <PublicRoute component={Login} />
+      </Route>
+      <Route path="/register">
+        <PublicRoute component={Register} />
+      </Route>
+      
+      {/* Protected routes - only when authenticated */}
+      {isAuthenticated && (
+        <>
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/academic-structure" component={AcademicStructure} />
+          <Route path="/schools" component={Schools} />
+          <Route path="/students" component={Students} />
+          <Route path="/teachers" component={Teachers} />
+          <Route path="/classes" component={Classes} />
+          <Route path="/settings" component={Settings} />
+        </>
+      )}
+      
+      {/* Catch-all for unrecognized routes */}
+      <Route component={CatchAllRedirect} />
     </Switch>
   );
 }
