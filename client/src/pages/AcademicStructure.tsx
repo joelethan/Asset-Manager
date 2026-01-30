@@ -5,7 +5,7 @@ import {
   useAcademicYears,
   useCreateAcademicYear,
   useUpdateAcademicYearStatus,
-  useTerms,
+  // useTerms,
 } from "@/hooks/use-academic-structure";
 import { useTenant } from "@/context/TenantContext";
 import { Button } from "@/components/ui/button";
@@ -336,9 +336,6 @@ function AcademicYearsSection({
   });
 
   const onSubmit = (data: any) => {
-    console.log("Academic Year Form Data:", data);
-    console.log("Form State Valid:", isValid);
-    
     if (!data.name.trim()) {
       toast({
         title: "Error",
@@ -547,9 +544,7 @@ function AcademicYearCard({
   isUpdatingStatus: boolean;
   schoolId: string;
 }) {
-  const { data: terms, isLoading: termsLoading } = useTerms(year.id);
-
-  console.log("Rendering AcademicYearCard for year:", year);
+  // const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 
   return (
     <div className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
@@ -585,7 +580,7 @@ function AcademicYearCard({
         </div>
       </div>
 
-      {termsLoading ? (
+      {/* {termsLoading ? (
         <div className="space-y-1">
           <Skeleton className="h-6 w-32" />
         </div>
@@ -597,7 +592,7 @@ function AcademicYearCard({
             </Badge>
           ))}
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }
