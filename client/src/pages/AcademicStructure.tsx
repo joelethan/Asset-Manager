@@ -174,26 +174,26 @@ function TermTemplatesSection({
       return;
     }
 
-    // createTemplate(
-    //   {
-    //     schoolId,
-    //     name: data.name,
-    //     structure,
-    //   },
-    //   {
-    //     onSuccess: () => {
-    //       toast({ title: "Success", description: "Term template created" });
-    //       reset();
-    //     },
-    //     onError: (error: any) => {
-    //       toast({
-    //         title: "Error",
-    //         description: error.message,
-    //         variant: "destructive",
-    //       });
-    //     },
-    //   }
-    // );
+    createTemplate(
+      {
+        schoolId,
+        name: data.name,
+        structure,
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Success", description: "Term template created" });
+          reset();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   return (
