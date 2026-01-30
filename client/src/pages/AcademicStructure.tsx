@@ -524,14 +524,16 @@ function AcademicYearCard({
 }) {
   const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 
+  console.log("Rendering AcademicYearCard for year:", year);
+
   return (
     <div className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h4 className="font-semibold text-slate-900">Academic Year {year.name}</h4>
           <p className="text-sm text-slate-500">
-            {new Date(year.startDate).toLocaleDateString()} -{" "}
-            {new Date(year.endDate).toLocaleDateString()}
+            {new Date(year.start_date).toLocaleDateString()} -{" "}
+            {new Date(year.end_date).toLocaleDateString()}
           </p>
         </div>
         <div className="flex items-center gap-2">
