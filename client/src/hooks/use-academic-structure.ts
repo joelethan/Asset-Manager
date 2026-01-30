@@ -26,7 +26,7 @@ export function useCreateTermTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: TermTemplateInput) => {
-      const res = await fetch("/api/term-templates", {
+      const res = await fetch(`/api/schools/${data.schoolId}/term-templates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
