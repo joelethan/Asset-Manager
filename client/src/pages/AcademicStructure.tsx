@@ -60,8 +60,6 @@ export default function AcademicStructure() {
     );
   }
 
-  const [termTemplateDialogOpen, setTermTemplateDialogOpen] = useState(false);
-  const [academicYearDialogOpen, setAcademicYearDialogOpen] = useState(false);
   const [prefetchedTemplates, setPrefetchedTemplates] = useState<any[] | null>(null);
   const schoolId = selectedTenant.id;
 
@@ -103,10 +101,6 @@ export default function AcademicStructure() {
         <TabsContent value="years">
           <AcademicYearsSection
             schoolId={schoolId}
-            termTemplateDialogOpen={termTemplateDialogOpen}
-            setTermTemplateDialogOpen={setTermTemplateDialogOpen}
-            academicYearDialogOpen={academicYearDialogOpen}
-            setAcademicYearDialogOpen={setAcademicYearDialogOpen}
             initialTemplates={prefetchedTemplates}
           />
         </TabsContent>
@@ -313,17 +307,9 @@ function TermTemplatesSection({
 
 function AcademicYearsSection({
   schoolId,
-  termTemplateDialogOpen,
-  setTermTemplateDialogOpen,
-  academicYearDialogOpen,
-  setAcademicYearDialogOpen,
   initialTemplates,
 }: {
   schoolId: string;
-  termTemplateDialogOpen: boolean;
-  setTermTemplateDialogOpen: (open: boolean) => void;
-  academicYearDialogOpen: boolean;
-  setAcademicYearDialogOpen: (open: boolean) => void;
   initialTemplates?: any[] | null;
 }) {
   const { data: years, isLoading: yearsLoading } = useAcademicYears(schoolId);
@@ -337,13 +323,31 @@ function AcademicYearsSection({
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       name: new Date().getFullYear().toString(),
-      startDate: "2025-02-01",
-      endDate: "2025-11-30",
+      startDate: "",
+      endDate: "",
       termTemplateId: "",
     },
   });
 
   const onSubmit = (data: any) => {
+    if (!data.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a year name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.startDate || !data.endDate) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!data.termTemplateId) {
       toast({
         title: "Error",
@@ -353,32 +357,31 @@ function AcademicYearsSection({
       return;
     }
 
-    // createYear(
-    //   {
-    //     schoolId,
-    //     name: data.name,
-    //     startDate: new Date(data.startDate),
-    //     endDate: new Date(data.endDate),
-    //     termTemplateId: parseInt(data.termTemplateId),
-    //   },
-    //   {
-    //     onSuccess: () => {
-    //       toast({
-    //         title: "Success",
-    //         description: "Academic year created",
-    //       });
-    //       setAcademicYearDialogOpen(false);
-    //       reset();
-    //     },
-    //     onError: (error: any) => {
-    //       toast({
-    //         title: "Error",
-    //         description: error.message,
-    //         variant: "destructive",
-    //       });
-    //     },
-    //   }
-    // );
+    createYear(
+      {
+        schoolId,
+        name: data.name,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        termTemplateId: data.termTemplateId,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Academic year created",
+          });
+          reset();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   const handleActivateYear = (yearId: number) => {
@@ -404,32 +407,46 @@ function AcademicYearsSection({
 
   return (
     <Card className="border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Academic Years
-          </CardTitle>
-          <CardDescription>
-            Create and manage academic years with terms
-          </CardDescription>
-        </div>
-        <Dialog
-          open={academicYearDialogOpen}
-          onOpenChange={setAcademicYearDialogOpen}
-        >
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" /> New Year
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Academic Year</DialogTitle>
-              <DialogDescription>
-                Create a new academic year with terms from a template
-              </DialogDescription>
-            </DialogHeader>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5" />
+          Academic Years
+        </CardTitle>
+        <CardDescription>
+          Create and manage academic years with terms
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Existing Years */}
+          <div>
+            {yearsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : years && years.length > 0 ? (
+              <div className="space-y-3">
+                {years.map((year: any) => (
+                  <AcademicYearCard
+                    key={year.id}
+                    year={year}
+                    onActivate={() => handleActivateYear(year.id)}
+                    isUpdatingStatus={isUpdatingStatus}
+                    schoolId={schoolId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-slate-500 py-8">
+                No academic years yet. Create one to get started.
+              </p>
+            )}
+          </div>
+
+          {/* Right: Create Form */}
+          <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+            <h3 className="font-semibold text-slate-900 mb-4">Create New Year</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="year-name">Year Name</Label>
@@ -483,45 +500,12 @@ function AcademicYearsSection({
                 />
               </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAcademicYearDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isCreatingYear}>
-                  {isCreatingYear ? "Creating..." : "Create Year"}
-                </Button>
-              </DialogFooter>
+              <Button type="submit" disabled={isCreatingYear} className="w-full">
+                {isCreatingYear ? "Creating..." : "Create Year"}
+              </Button>
             </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {yearsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
           </div>
-        ) : years && years.length > 0 ? (
-          <div className="space-y-3">
-            {years.map((year: any) => (
-              <AcademicYearCard
-                key={year.id}
-                year={year}
-                onActivate={() => handleActivateYear(year.id)}
-                isUpdatingStatus={isUpdatingStatus}
-                schoolId={schoolId}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-slate-500 py-8">
-            No academic years yet. Create one to get started.
-          </p>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
