@@ -21,17 +21,17 @@ export const termStructureSchema = z.object({
 });
 
 export const termTemplateInputSchema = z.object({
-  schoolId: z.number(),
+  schoolId: z.string(),
   name: z.string(),
   structure: z.array(termStructureSchema),
 });
 
 export const academicYearInputSchema = z.object({
-  schoolId: z.number(),
+  schoolId: z.string(),
   name: z.string(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  termTemplateId: z.number(),
+  termTemplateId: z.string(),
 });
 
 export const academicYearStatusInputSchema = z.object({

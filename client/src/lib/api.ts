@@ -68,7 +68,8 @@ export const schoolsApi = {
 export const termTemplatesApi = {
   list: (schoolId: string) =>
     apiClient.get(`/schools/${schoolId}/term-templates`),
-  create: (data: unknown) => apiClient.post("/term-templates", data),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/term-templates`, data),
 };
 
 // Academic Years endpoints
