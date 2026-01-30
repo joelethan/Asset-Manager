@@ -52,10 +52,10 @@ const navigation = [
   { name: "Login", href: "/login", icon: UserIcon },
   { name: "Register", href: "/register", icon: UserPlus },
   { name: "Academic Structure", href: "/academic-structure", icon: Calendar },
+  { name: "Classes", href: "/classes", icon: BookOpen },
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Students", href: "/students", icon: GraduationCap },
   { name: "Teachers", href: "/teachers", icon: Users },
-  { name: "Classes", href: "/classes", icon: BookOpen },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

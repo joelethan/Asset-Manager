@@ -80,9 +80,9 @@ export const academicYearsApi = {
     apiClient.get(`/schools/${schoolId}/years`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/years`, data),
-  updateStatus: (yearId: number, data: unknown) =>
-    apiClient.patch(`/years/${yearId}/status`, data),
-};
+  updateStatus: (yearId: number, status: unknown) =>
+    apiClient.patch(`/years/${yearId}/status`, { status }),
+};  
 
 // Terms endpoints
 export const termsApi = {
