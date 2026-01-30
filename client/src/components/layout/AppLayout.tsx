@@ -227,22 +227,29 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
             <div className="ml-auto flex items-center gap-4">
               {isAuthenticated ? (
                 <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  {tenants && tenants.length > 1 ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                        <Building2 className="size-4 text-primary" />
+                        <span className="hidden sm:inline">{selectedTenant?.name || "Select School"}</span>
+                        <ChevronsUpDown className="size-3 text-slate-400" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Switch Tenant</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {tenants.map(t => (
+                          <DropdownMenuItem key={t.id} className="cursor-pointer" onClick={() => setSelectedTenant(t)}>
+                            <span>{t.name}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
                       <Building2 className="size-4 text-primary" />
-                      <span className="hidden sm:inline">{selectedTenant?.name || "Select School"}</span>
-                      <ChevronsUpDown className="size-3 text-slate-400" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Switch Tenant</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {tenants.map(t => (
-                        <DropdownMenuItem key={t.id} className="cursor-pointer" onClick={() => setSelectedTenant(t)}>
-                          <span>{t.name}</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      <span className="hidden sm:inline ml-2">{selectedTenant?.name || (tenants && tenants.length === 1 ? tenants[0].name : "Select School")}</span>
+                    </div>
+                  )}
 
                   {/* Header user dropdown (same as footer) */}
                   <DropdownMenu>
