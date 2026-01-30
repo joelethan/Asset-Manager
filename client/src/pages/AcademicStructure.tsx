@@ -35,7 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Calendar, Zap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { termTemplatesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,7 +61,27 @@ export default function AcademicStructure() {
 
   const [termTemplateDialogOpen, setTermTemplateDialogOpen] = useState(false);
   const [academicYearDialogOpen, setAcademicYearDialogOpen] = useState(false);
+  const [prefetchedTemplates, setPrefetchedTemplates] = useState<any[] | null>(null);
   const schoolId = selectedTenant.id;
+
+  useEffect(() => {
+    let mounted = true;
+    termTemplatesApi
+      .list(schoolId)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!mounted) return;
+        setPrefetchedTemplates(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPrefetchedTemplates([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [schoolId]);
 
   return (
     <AppLayout
@@ -70,7 +91,7 @@ export default function AcademicStructure() {
     >
       <div className="space-y-6">
         {/* Term Templates Section */}
-        <TermTemplatesSection schoolId={schoolId} />
+        <TermTemplatesSection schoolId={schoolId} initialTemplates={prefetchedTemplates} />
 
         {/* Academic Years Section */}
         <AcademicYearsSection
@@ -79,14 +100,22 @@ export default function AcademicStructure() {
           setTermTemplateDialogOpen={setTermTemplateDialogOpen}
           academicYearDialogOpen={academicYearDialogOpen}
           setAcademicYearDialogOpen={setAcademicYearDialogOpen}
+          initialTemplates={prefetchedTemplates}
         />
       </div>
     </AppLayout>
   );
 }
 
-function TermTemplatesSection({ schoolId }: { schoolId: string }) {
+function TermTemplatesSection({
+  schoolId,
+  initialTemplates,
+}: {
+  schoolId: string;
+  initialTemplates?: any[] | null;
+}) {
   const { data: templates, isLoading } = useTermTemplates(schoolId);
+  const templatesToShow = templates ?? initialTemplates ?? [];
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -224,9 +253,9 @@ function TermTemplatesSection({ schoolId }: { schoolId: string }) {
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
-        ) : templates && templates.length > 0 ? (
+        ) : templatesToShow.length > 0 ? (
           <div className="space-y-2">
-            {templates.map((template: any) => (
+            {templatesToShow.map((template: any) => (
               <div
                 key={template.id}
                 className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
@@ -265,15 +294,18 @@ function AcademicYearsSection({
   setTermTemplateDialogOpen,
   academicYearDialogOpen,
   setAcademicYearDialogOpen,
+  initialTemplates,
 }: {
   schoolId: string;
   termTemplateDialogOpen: boolean;
   setTermTemplateDialogOpen: (open: boolean) => void;
   academicYearDialogOpen: boolean;
   setAcademicYearDialogOpen: (open: boolean) => void;
+  initialTemplates?: any[] | null;
 }) {
   const { data: years, isLoading: yearsLoading } = useAcademicYears(schoolId);
   const { data: templates } = useTermTemplates(schoolId);
+  const templatesToUse = templates ?? initialTemplates ?? [];
   const { mutate: createYear, isPending: isCreatingYear } =
     useCreateAcademicYear();
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
@@ -387,7 +419,7 @@ function AcademicYearsSection({
 
               <div>
                 <Label htmlFor="term-template">Term Template</Label>
-                {!templates || templates.length === 0 ? (
+                {!templatesToUse || templatesToUse.length === 0 ? (
                   <p className="text-sm text-slate-500">
                     Create a term template first
                   </p>
@@ -397,7 +429,7 @@ function AcademicYearsSection({
                       <SelectValue placeholder="Select a template..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {templates.map((template: any) => (
+                      {templatesToUse.map((template: any) => (
                         <SelectItem
                           key={template.id}
                           value={template.id.toString()}
