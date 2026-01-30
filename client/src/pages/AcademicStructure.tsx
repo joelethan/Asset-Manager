@@ -39,7 +39,7 @@ import { Plus, Calendar, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { termTemplatesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -120,7 +120,7 @@ function TermTemplatesSection({
   const templatesToShow = templates ?? initialTemplates ?? [];
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
-  const { register, handleSubmit, reset, watch, formState: { errors, isValid } } = useForm<Record<string, any>>({
+  const { register, handleSubmit, reset, watch, formState: { errors, isValid }, control } = useForm<Record<string, any>>({
     defaultValues: {
       name: "",
       structure: [{ ordinal: 1, name: "" }, { ordinal: 2, name: "" }],
@@ -325,9 +325,9 @@ function AcademicYearsSection({
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
     useUpdateAcademicYearStatus();
   const { toast } = useToast();
-  const { register, handleSubmit, reset, formState: { errors, isValid } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors, isValid }, control } = useForm({
     defaultValues: {
-      name: new Date().getFullYear().toString(),
+      name: "",
       startDate: "",
       endDate: "",
       termTemplateId: "",
@@ -478,21 +478,28 @@ function AcademicYearsSection({
                   </p>
                 ) : (
                   <>
-                    <Select {...register("termTemplateId", { required: "Please select a template" })}>
-                      <SelectTrigger id="term-template">
-                        <SelectValue placeholder="Select a template..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templatesToUse.map((template: any) => (
-                          <SelectItem
-                            key={template.id}
-                            value={template.id.toString()}
-                          >
-                            {template.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="termTemplateId"
+                      control={control}
+                      rules={{ required: "Please select a template" }}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="term-template">
+                            <SelectValue placeholder="Select a template..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {templatesToUse.map((template: any) => (
+                              <SelectItem
+                                key={template.id}
+                                value={template.id.toString()}
+                              >
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                     {errors.termTemplateId && <p className="text-xs text-red-500 mt-1">{String(errors.termTemplateId.message)}</p>}
                   </>
                 )}
