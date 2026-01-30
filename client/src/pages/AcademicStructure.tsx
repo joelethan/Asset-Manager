@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { termTemplatesApi } from "@/lib/api";
@@ -89,20 +90,27 @@ export default function AcademicStructure() {
       description="Configure terms, academic years, and school calendar."
       breadcrumbs={[{ label: "Academic Structure" }]}
     >
-      <div className="space-y-6">
-        {/* Term Templates Section */}
-        <TermTemplatesSection schoolId={schoolId} initialTemplates={prefetchedTemplates} />
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="templates">Term Templates</TabsTrigger>
+          <TabsTrigger value="years">Academic Years</TabsTrigger>
+        </TabsList>
 
-        {/* Academic Years Section */}
-        <AcademicYearsSection
-          schoolId={schoolId}
-          termTemplateDialogOpen={termTemplateDialogOpen}
-          setTermTemplateDialogOpen={setTermTemplateDialogOpen}
-          academicYearDialogOpen={academicYearDialogOpen}
-          setAcademicYearDialogOpen={setAcademicYearDialogOpen}
-          initialTemplates={prefetchedTemplates}
-        />
-      </div>
+        <TabsContent value="templates">
+          <TermTemplatesSection schoolId={schoolId} initialTemplates={prefetchedTemplates} />
+        </TabsContent>
+
+        <TabsContent value="years">
+          <AcademicYearsSection
+            schoolId={schoolId}
+            termTemplateDialogOpen={termTemplateDialogOpen}
+            setTermTemplateDialogOpen={setTermTemplateDialogOpen}
+            academicYearDialogOpen={academicYearDialogOpen}
+            setAcademicYearDialogOpen={setAcademicYearDialogOpen}
+            initialTemplates={prefetchedTemplates}
+          />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }
