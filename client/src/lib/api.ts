@@ -54,6 +54,7 @@ export const authApi = {
     apiClient.post("/auth/login", { email, password }),
   register: (data: unknown) => apiClient.post("/auth/register", data),
   profile: () => apiClient.get("/auth/profile"),
+  logout: () => apiClient.post("/auth/logout"),
 };
 
 // Schools endpoints
@@ -66,7 +67,7 @@ export const schoolsApi = {
 // Term Templates endpoints
 export const termTemplatesApi = {
   list: (schoolId: string) =>
-    apiClient.get(`/term-templates?schoolId=${encodeURIComponent(schoolId)}`),
+    apiClient.get(`/schools/${schoolId}/term-templates`),
   create: (data: unknown) => apiClient.post("/term-templates", data),
 };
 

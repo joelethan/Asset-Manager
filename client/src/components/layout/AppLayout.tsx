@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useTenant } from "@/context/TenantContext";
 import { useProfile } from "@/context/ProfileContext";
+import { authApi } from "@/lib/api";
 import {
   SidebarProvider,
   Sidebar,
@@ -69,7 +70,21 @@ interface AppLayoutProps {
 export function AppLayout({ children, title, description, breadcrumbs, centered }: AppLayoutProps) {
   const [location] = useLocation();
   const { tenants, selectedTenant, setSelectedTenant } = useTenant();
-  const { isAuthenticated, profile } = useProfile();
+  const { isAuthenticated, profile, logout } = useProfile();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // localStorage.removeItem("access_token");
+      logout();
+      setIsLoggingOut(false);
+    }
+  };
 
   // Derive user object from profile
   const user = profile ? {
@@ -126,7 +141,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
               </SidebarMenu>
             </SidebarContent>
 
-            {isAuthenticated && <SidebarFooter>
+            {isAuthenticated && <SidebarFooter className="overflow-visible">
               <SidebarMenu>
                 <SidebarMenuItem>
                   <DropdownMenu>
@@ -146,7 +161,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                       </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
-                      className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg z-50"
+                      className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg z-50"
                       side="top"
                       align="end"
                       sideOffset={8}
@@ -168,9 +183,9 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                         <UserIcon className="mr-2 h-4 w-4" />
                         Profile
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        Log out
+                        {isLoggingOut ? "Logging out..." : "Log out"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -211,22 +226,57 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
 
             <div className="ml-auto flex items-center gap-4">
               {isAuthenticated ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <Building2 className="size-4 text-primary" />
-                    <span className="hidden sm:inline">{selectedTenant?.name || "Select School"}</span>
-                    <ChevronsUpDown className="size-3 text-slate-400" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Switch Tenant</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {tenants.map(t => (
-                      <DropdownMenuItem key={t.id} className="cursor-pointer" onClick={() => setSelectedTenant(t)}>
-                        <span>{t.name}</span>
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      <Building2 className="size-4 text-primary" />
+                      <span className="hidden sm:inline">{selectedTenant?.name || "Select School"}</span>
+                      <ChevronsUpDown className="size-3 text-slate-400" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Switch Tenant</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {tenants.map(t => (
+                        <DropdownMenuItem key={t.id} className="cursor-pointer" onClick={() => setSelectedTenant(t)}>
+                          <span>{t.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Header user dropdown (same as footer) */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold">{user.avatar}</AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:inline">{user.name}</span>
+                      <ChevronsUpDown className="size-3 text-slate-400" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg z-50" side="bottom" sideOffset={8}>
+                      <DropdownMenuLabel className="p-0 font-normal">
+                        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                          <Avatar className="h-8 w-8 rounded-lg">
+                            <AvatarFallback className="rounded-lg">{user.avatar}</AvatarFallback>
+                          </Avatar>
+                          <div className="grid flex-1 text-left text-sm leading-tight">
+                            <span className="truncate font-semibold">{user.name}</span>
+                            <span className="truncate text-xs">{user.email}</span>
+                          </div>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        Profile
                       </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        {isLoggingOut ? "Logging out..." : "Log out"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/login">
