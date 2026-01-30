@@ -555,6 +555,9 @@ function AcademicYearCard({
             {new Date(year.start_date).toLocaleDateString()} -{" "}
             {new Date(year.end_date).toLocaleDateString()}
           </p>
+          {year.term_template?.name && (
+            <p className="text-sm text-slate-500 mt-1">Term Template: {year.term_template.name}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Badge
