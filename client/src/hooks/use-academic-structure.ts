@@ -55,7 +55,13 @@ export function useCreateAcademicYear() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: AcademicYearInput) => {
-      const res = await academicYearsApi.create(data);
+      const dataToSend = {
+        name: data.name,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        termTemplateId: data.termTemplateId,
+      }; // Remove schoolId from body as it's in the URL
+      const res = await academicYearsApi.create(data.schoolId, dataToSend);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create academic year");

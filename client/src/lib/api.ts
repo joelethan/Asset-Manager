@@ -1,3 +1,5 @@
+import { schools } from "@/mock-data";
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
 export const apiClient = {
@@ -75,11 +77,12 @@ export const termTemplatesApi = {
 // Academic Years endpoints
 export const academicYearsApi = {
   list: (schoolId: string) =>
-    apiClient.get(`/academic-years?schoolId=${encodeURIComponent(schoolId)}`),
-  create: (data: unknown) => apiClient.post("/academic-years", data),
-  updateStatus: (id: number, status: string) =>
-    apiClient.patch(`/academic-years/${id}/status`, { status }),
-};
+    apiClient.get(`/schools/${schoolId}/years`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/years`, data),
+  updateStatus: (yearId: number, status: unknown) =>
+    apiClient.patch(`/years/${yearId}/status`, { status }),
+};  
 
 // Terms endpoints
 export const termsApi = {

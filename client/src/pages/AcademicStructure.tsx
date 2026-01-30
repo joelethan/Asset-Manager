@@ -5,7 +5,7 @@ import {
   useAcademicYears,
   useCreateAcademicYear,
   useUpdateAcademicYearStatus,
-  useTerms,
+  // useTerms,
 } from "@/hooks/use-academic-structure";
 import { useTenant } from "@/context/TenantContext";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ import { Plus, Calendar, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { termTemplatesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -60,8 +60,6 @@ export default function AcademicStructure() {
     );
   }
 
-  const [termTemplateDialogOpen, setTermTemplateDialogOpen] = useState(false);
-  const [academicYearDialogOpen, setAcademicYearDialogOpen] = useState(false);
   const [prefetchedTemplates, setPrefetchedTemplates] = useState<any[] | null>(null);
   const schoolId = selectedTenant.id;
 
@@ -103,10 +101,6 @@ export default function AcademicStructure() {
         <TabsContent value="years">
           <AcademicYearsSection
             schoolId={schoolId}
-            termTemplateDialogOpen={termTemplateDialogOpen}
-            setTermTemplateDialogOpen={setTermTemplateDialogOpen}
-            academicYearDialogOpen={academicYearDialogOpen}
-            setAcademicYearDialogOpen={setAcademicYearDialogOpen}
             initialTemplates={prefetchedTemplates}
           />
         </TabsContent>
@@ -126,16 +120,17 @@ function TermTemplatesSection({
   const templatesToShow = templates ?? initialTemplates ?? [];
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
-  const { register, handleSubmit, reset, watch, control } = useForm<Record<string, any>>({
+  const { register, handleSubmit, reset, watch, formState: { errors, isValid }, control } = useForm<Record<string, any>>({
     defaultValues: {
       name: "",
       structure: [{ ordinal: 1, name: "" }, { ordinal: 2, name: "" }],
     },
+    mode: "onChange",
   });
 
-  const { fields, append, remove } = watch("structure") ? 
-    { 
-      fields: watch("structure"), 
+  const { fields, append, remove } = watch("structure") ?
+    {
+      fields: watch("structure"),
       append: (item: any) => {
         const current = watch("structure");
         reset({ name: watch("name"), structure: [...current, { ordinal: current.length + 1, name: "" }] });
@@ -145,8 +140,8 @@ function TermTemplatesSection({
         const updated = current.filter((_: any, i: number) => i !== idx).map((item: any, i: number) => ({ ...item, ordinal: i + 1 }));
         reset({ name: watch("name"), structure: updated });
       }
-    } 
-    : { fields: [], append: () => {}, remove: () => {} };
+    }
+    : { fields: [], append: () => { }, remove: () => { } };
 
   const onSubmit = (data: any) => {
     if (!data.name.trim()) {
@@ -257,8 +252,12 @@ function TermTemplatesSection({
                 <Input
                   id="template-name"
                   placeholder="e.g., Standard 3-Term Template"
-                  {...register("name", { required: true })}
+                  {...register("name", { 
+                    required: "Template name is required",
+                    minLength: { value: 1, message: "Name cannot be empty" }
+                  })}
                 />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
               </div>
 
               <div>
@@ -300,7 +299,7 @@ function TermTemplatesSection({
                 </div>
               </div>
 
-              <Button type="submit" disabled={isPending} className="w-full">
+              <Button type="submit" disabled={isPending || watch("structure").every((s: any) => !s.name.trim())} className="w-full">
                 {isPending ? "Creating..." : "Create Template"}
               </Button>
             </form>
@@ -313,17 +312,9 @@ function TermTemplatesSection({
 
 function AcademicYearsSection({
   schoolId,
-  termTemplateDialogOpen,
-  setTermTemplateDialogOpen,
-  academicYearDialogOpen,
-  setAcademicYearDialogOpen,
   initialTemplates,
 }: {
   schoolId: string;
-  termTemplateDialogOpen: boolean;
-  setTermTemplateDialogOpen: (open: boolean) => void;
-  academicYearDialogOpen: boolean;
-  setAcademicYearDialogOpen: (open: boolean) => void;
   initialTemplates?: any[] | null;
 }) {
   const { data: years, isLoading: yearsLoading } = useAcademicYears(schoolId);
@@ -334,16 +325,35 @@ function AcademicYearsSection({
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
     useUpdateAcademicYearStatus();
   const { toast } = useToast();
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, formState: { errors, isValid }, control } = useForm({
     defaultValues: {
-      name: new Date().getFullYear().toString(),
-      startDate: "2025-02-01",
-      endDate: "2025-11-30",
+      name: "",
+      startDate: "",
+      endDate: "",
       termTemplateId: "",
     },
+    mode: "onChange",
   });
 
   const onSubmit = (data: any) => {
+    if (!data.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a year name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.startDate || !data.endDate) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!data.termTemplateId) {
       toast({
         title: "Error",
@@ -353,32 +363,31 @@ function AcademicYearsSection({
       return;
     }
 
-    // createYear(
-    //   {
-    //     schoolId,
-    //     name: data.name,
-    //     startDate: new Date(data.startDate),
-    //     endDate: new Date(data.endDate),
-    //     termTemplateId: parseInt(data.termTemplateId),
-    //   },
-    //   {
-    //     onSuccess: () => {
-    //       toast({
-    //         title: "Success",
-    //         description: "Academic year created",
-    //       });
-    //       setAcademicYearDialogOpen(false);
-    //       reset();
-    //     },
-    //     onError: (error: any) => {
-    //       toast({
-    //         title: "Error",
-    //         description: error.message,
-    //         variant: "destructive",
-    //       });
-    //     },
-    //   }
-    // );
+    createYear(
+      {
+        schoolId,
+        name: data.name,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        termTemplateId: data.termTemplateId,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Academic year created",
+          });
+          reset();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   const handleActivateYear = (yearId: number) => {
@@ -404,40 +413,58 @@ function AcademicYearsSection({
 
   return (
     <Card className="border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Academic Years
-          </CardTitle>
-          <CardDescription>
-            Create and manage academic years with terms
-          </CardDescription>
-        </div>
-        <Dialog
-          open={academicYearDialogOpen}
-          onOpenChange={setAcademicYearDialogOpen}
-        >
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" /> New Year
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Academic Year</DialogTitle>
-              <DialogDescription>
-                Create a new academic year with terms from a template
-              </DialogDescription>
-            </DialogHeader>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5" />
+          Academic Years
+        </CardTitle>
+        <CardDescription>
+          Create and manage academic years with terms
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Existing Years */}
+          <div>
+            {yearsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : years && years.length > 0 ? (
+              <div className="space-y-3">
+                {[...years].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map((year: any) => (
+                  <AcademicYearCard
+                    key={year.id}
+                    year={year}
+                    onActivate={() => handleActivateYear(year.id)}
+                    isUpdatingStatus={isUpdatingStatus}
+                    schoolId={schoolId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-slate-500 py-8">
+                No academic years yet. Create one to get started.
+              </p>
+            )}
+          </div>
+
+          {/* Right: Create Form */}
+          <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+            <h3 className="font-semibold text-slate-900 mb-4">Create New Year</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="year-name">Year Name</Label>
                 <Input
                   id="year-name"
                   placeholder="e.g., 2025"
-                  {...register("name", { required: true })}
+                  {...register("name", { 
+                    required: "Year name is required",
+                    minLength: { value: 1, message: "Name cannot be empty" }
+                  })}
                 />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
               </div>
 
               <div>
@@ -447,21 +474,31 @@ function AcademicYearsSection({
                     Create a term template first
                   </p>
                 ) : (
-                  <Select {...register("termTemplateId", { required: true })}>
-                    <SelectTrigger id="term-template">
-                      <SelectValue placeholder="Select a template..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templatesToUse.map((template: any) => (
-                        <SelectItem
-                          key={template.id}
-                          value={template.id.toString()}
-                        >
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <Controller
+                      name="termTemplateId"
+                      control={control}
+                      rules={{ required: "Please select a template" }}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="term-template">
+                            <SelectValue placeholder="Select a template..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {templatesToUse.map((template: any) => (
+                              <SelectItem
+                                key={template.id}
+                                value={template.id.toString()}
+                              >
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.termTemplateId && <p className="text-xs text-red-500 mt-1">{String(errors.termTemplateId.message)}</p>}
+                  </>
                 )}
               </div>
 
@@ -470,8 +507,9 @@ function AcademicYearsSection({
                 <Input
                   id="start-date"
                   type="date"
-                  {...register("startDate", { required: true })}
+                  {...register("startDate", { required: "Start date is required" })}
                 />
+                {errors.startDate && <p className="text-xs text-red-500 mt-1">{String(errors.startDate.message)}</p>}
               </div>
 
               <div>
@@ -479,49 +517,17 @@ function AcademicYearsSection({
                 <Input
                   id="end-date"
                   type="date"
-                  {...register("endDate", { required: true })}
+                  {...register("endDate", { required: "End date is required" })}
                 />
+                {errors.endDate && <p className="text-xs text-red-500 mt-1">{String(errors.endDate.message)}</p>}
               </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAcademicYearDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isCreatingYear}>
-                  {isCreatingYear ? "Creating..." : "Create Year"}
-                </Button>
-              </DialogFooter>
+              <Button type="submit" disabled={isCreatingYear || !isValid} className="w-full">
+                {isCreatingYear ? "Creating..." : "Create Year"}
+              </Button>
             </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {yearsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
           </div>
-        ) : years && years.length > 0 ? (
-          <div className="space-y-3">
-            {years.map((year: any) => (
-              <AcademicYearCard
-                key={year.id}
-                year={year}
-                onActivate={() => handleActivateYear(year.id)}
-                isUpdatingStatus={isUpdatingStatus}
-                schoolId={schoolId}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-slate-500 py-8">
-            No academic years yet. Create one to get started.
-          </p>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -538,7 +544,7 @@ function AcademicYearCard({
   isUpdatingStatus: boolean;
   schoolId: string;
 }) {
-  const { data: terms, isLoading: termsLoading } = useTerms(year.id);
+  // const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 
   return (
     <div className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
@@ -546,9 +552,12 @@ function AcademicYearCard({
         <div>
           <h4 className="font-semibold text-slate-900">Academic Year {year.name}</h4>
           <p className="text-sm text-slate-500">
-            {new Date(year.startDate).toLocaleDateString()} -{" "}
-            {new Date(year.endDate).toLocaleDateString()}
+            {new Date(year.start_date).toLocaleDateString()} -{" "}
+            {new Date(year.end_date).toLocaleDateString()}
           </p>
+          {year.term_template?.name && (
+            <p className="text-sm text-slate-500 mt-1">Term Template: {year.term_template.name}</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Badge
@@ -574,7 +583,7 @@ function AcademicYearCard({
         </div>
       </div>
 
-      {termsLoading ? (
+      {/* {termsLoading ? (
         <div className="space-y-1">
           <Skeleton className="h-6 w-32" />
         </div>
@@ -586,7 +595,7 @@ function AcademicYearCard({
             </Badge>
           ))}
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }
