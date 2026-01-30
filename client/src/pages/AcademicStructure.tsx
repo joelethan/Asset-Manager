@@ -120,16 +120,17 @@ function TermTemplatesSection({
   const templatesToShow = templates ?? initialTemplates ?? [];
   const { mutate: createTemplate, isPending } = useCreateTermTemplate();
   const { toast } = useToast();
-  const { register, handleSubmit, reset, watch, control } = useForm<Record<string, any>>({
+  const { register, handleSubmit, reset, watch, formState: { errors, isValid } } = useForm<Record<string, any>>({
     defaultValues: {
       name: "",
       structure: [{ ordinal: 1, name: "" }, { ordinal: 2, name: "" }],
     },
+    mode: "onChange",
   });
 
-  const { fields, append, remove } = watch("structure") ? 
-    { 
-      fields: watch("structure"), 
+  const { fields, append, remove } = watch("structure") ?
+    {
+      fields: watch("structure"),
       append: (item: any) => {
         const current = watch("structure");
         reset({ name: watch("name"), structure: [...current, { ordinal: current.length + 1, name: "" }] });
@@ -139,8 +140,8 @@ function TermTemplatesSection({
         const updated = current.filter((_: any, i: number) => i !== idx).map((item: any, i: number) => ({ ...item, ordinal: i + 1 }));
         reset({ name: watch("name"), structure: updated });
       }
-    } 
-    : { fields: [], append: () => {}, remove: () => {} };
+    }
+    : { fields: [], append: () => { }, remove: () => { } };
 
   const onSubmit = (data: any) => {
     if (!data.name.trim()) {
@@ -251,8 +252,12 @@ function TermTemplatesSection({
                 <Input
                   id="template-name"
                   placeholder="e.g., Standard 3-Term Template"
-                  {...register("name", { required: true })}
+                  {...register("name", { 
+                    required: "Template name is required",
+                    minLength: { value: 1, message: "Name cannot be empty" }
+                  })}
                 />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
               </div>
 
               <div>
@@ -294,7 +299,7 @@ function TermTemplatesSection({
                 </div>
               </div>
 
-              <Button type="submit" disabled={isPending} className="w-full">
+              <Button type="submit" disabled={isPending || watch("structure").every((s: any) => !s.name.trim())} className="w-full">
                 {isPending ? "Creating..." : "Create Template"}
               </Button>
             </form>
@@ -320,16 +325,20 @@ function AcademicYearsSection({
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
     useUpdateAcademicYearStatus();
   const { toast } = useToast();
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, formState: { errors, isValid } } = useForm({
     defaultValues: {
       name: new Date().getFullYear().toString(),
       startDate: "",
       endDate: "",
       termTemplateId: "",
     },
+    mode: "onChange",
   });
 
   const onSubmit = (data: any) => {
+    console.log("Academic Year Form Data:", data);
+    console.log("Form State Valid:", isValid);
+    
     if (!data.name.trim()) {
       toast({
         title: "Error",
@@ -453,8 +462,12 @@ function AcademicYearsSection({
                 <Input
                   id="year-name"
                   placeholder="e.g., 2025"
-                  {...register("name", { required: true })}
+                  {...register("name", { 
+                    required: "Year name is required",
+                    minLength: { value: 1, message: "Name cannot be empty" }
+                  })}
                 />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
               </div>
 
               <div>
@@ -464,21 +477,24 @@ function AcademicYearsSection({
                     Create a term template first
                   </p>
                 ) : (
-                  <Select {...register("termTemplateId", { required: true })}>
-                    <SelectTrigger id="term-template">
-                      <SelectValue placeholder="Select a template..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templatesToUse.map((template: any) => (
-                        <SelectItem
-                          key={template.id}
-                          value={template.id.toString()}
-                        >
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <Select {...register("termTemplateId", { required: "Please select a template" })}>
+                      <SelectTrigger id="term-template">
+                        <SelectValue placeholder="Select a template..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templatesToUse.map((template: any) => (
+                          <SelectItem
+                            key={template.id}
+                            value={template.id.toString()}
+                          >
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.termTemplateId && <p className="text-xs text-red-500 mt-1">{String(errors.termTemplateId.message)}</p>}
+                  </>
                 )}
               </div>
 
@@ -487,8 +503,9 @@ function AcademicYearsSection({
                 <Input
                   id="start-date"
                   type="date"
-                  {...register("startDate", { required: true })}
+                  {...register("startDate", { required: "Start date is required" })}
                 />
+                {errors.startDate && <p className="text-xs text-red-500 mt-1">{String(errors.startDate.message)}</p>}
               </div>
 
               <div>
@@ -496,11 +513,12 @@ function AcademicYearsSection({
                 <Input
                   id="end-date"
                   type="date"
-                  {...register("endDate", { required: true })}
+                  {...register("endDate", { required: "End date is required" })}
                 />
+                {errors.endDate && <p className="text-xs text-red-500 mt-1">{String(errors.endDate.message)}</p>}
               </div>
 
-              <Button type="submit" disabled={isCreatingYear} className="w-full">
+              <Button type="submit" disabled={isCreatingYear || !isValid} className="w-full">
                 {isCreatingYear ? "Creating..." : "Create Year"}
               </Button>
             </form>
