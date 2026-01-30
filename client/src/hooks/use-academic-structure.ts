@@ -1,12 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
 import { termTemplatesApi, academicYearsApi, termsApi } from "@/lib/api";
-import type { termTemplateInputSchema, academicYearInputSchema, academicYearStatusInputSchema } from "@shared/routes";
 import type { z } from "zod";
 
 type TermTemplateInput = z.infer<typeof import("@shared/routes").termTemplateInputSchema>;
 type AcademicYearInput = z.infer<typeof import("@shared/routes").academicYearInputSchema>;
-type AcademicYearStatusInput = z.infer<typeof import("@shared/routes").academicYearStatusInputSchema>;
 
 // Term Templates
 export function useTermTemplates(schoolId?: string) {
@@ -25,7 +22,8 @@ export function useCreateTermTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: TermTemplateInput) => {
-      const res = await termTemplatesApi.create(data.schoolId, data);
+      const dataToSend = { name: data.name, structure: data.structure }; // Remove schoolId from body as it's in the URL
+      const res = await termTemplatesApi.create(data.schoolId, dataToSend);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to create term template");
@@ -91,25 +89,6 @@ export function useUpdateAcademicYearStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic-years"] });
-    },
-  });
-}
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update academic year status");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["academic-years"],
-      });
     },
   });
 }
