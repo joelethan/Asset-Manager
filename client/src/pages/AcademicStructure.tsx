@@ -427,7 +427,7 @@ function AcademicYearsSection({
               </div>
             ) : years && years.length > 0 ? (
               <div className="space-y-3">
-                {years.map((year: any) => (
+                {[...years].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map((year: any) => (
                   <AcademicYearCard
                     key={year.id}
                     year={year}
