@@ -26,7 +26,11 @@ import {
   LogOut,
   User as UserIcon,
   UserPlus,
-  Calendar
+  Calendar,
+  CheckSquare,
+  BarChart3,
+  ClipboardList,
+  FileText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -56,6 +60,10 @@ const navigation = [
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Students", href: "/students", icon: GraduationCap },
   { name: "Teachers", href: "/teachers", icon: Users },
+  { name: "Subjects", href: "/subjects", icon: BookOpen },
+  { name: "Assessments", href: "/assessments", icon: CheckSquare },
+  { name: "Grades", href: "/grades", icon: BarChart3 },
+  { name: "Report Cards", href: "/report-cards", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
