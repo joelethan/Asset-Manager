@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
+import { studentsApi, enrollmentsApi } from "@/lib/api";
 
 interface Student {
   id: string;
@@ -85,53 +86,28 @@ export default function Students() {
   // Fetch students and offerings on mount
   useEffect(() => {
     if (schoolId) {
-      fetchStudents();
-      fetchOfferings();
+      loadData();
     }
   }, [schoolId]);
 
-  const fetchStudents = async () => {
+  const loadData = async () => {
     try {
-      const response = await fetch(`/api/students?schoolId=${schoolId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
-      if (!response.ok) throw new Error("Failed to fetch students");
-      const data = await response.json();
-      setStudents(Array.isArray(data) ? data : data.data || []);
+      // Fetch students using the API
+      const studentsRes = await studentsApi.list(schoolId);
+      if (!studentsRes.ok) throw new Error("Failed to fetch students");
+      const studentsData = await studentsRes.json();
+      setStudents(Array.isArray(studentsData) ? studentsData : studentsData.data || []);
     } catch (error) {
       toast({ title: "Error", description: "Failed to fetch students", variant: "destructive" });
     }
   };
 
-  const fetchOfferings = async () => {
-    try {
-      // Note: You may need to adjust this endpoint based on your API structure
-      const response = await fetch(`/api/schools/${schoolId}/classroom-offerings`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setOfferings(Array.isArray(data) ? data : data.data || []);
-      }
-    } catch (error) {
-      console.warn("Could not fetch classroom offerings");
-    }
-  };
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: FormEvent) => {
     e.preventDefault();
     setFormState({ ...formState, isLoading: true });
 
     try {
-      const response = await fetch(`/api/students?schoolId=${schoolId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-        body: JSON.stringify(studentForm),
-      });
-
+      const response = await studentsApi.create(schoolId, studentForm);
       if (!response.ok) throw new Error("Failed to create student");
 
       const newStudent = await response.json();
@@ -146,7 +122,7 @@ export default function Students() {
     }
   };
 
-  const handleEnrollStudent = async (e: React.FormEvent) => {
+  const handleEnrollStudent = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedStudentForEnrollment || !enrollmentForm.classroomOfferingId) {
       toast({ title: "Error", description: "Please select a student and classroom offering", variant: "destructive" });
@@ -156,18 +132,12 @@ export default function Students() {
     setFormState({ ...formState, isLoading: true });
 
     try {
-      const response = await fetch(
-        `/api/classroom-offerings/${enrollmentForm.classroomOfferingId}/enrollments?schoolId=${schoolId}`,
+      const response = await enrollmentsApi.create(
+        enrollmentForm.classroomOfferingId,
+        schoolId,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-          body: JSON.stringify({
-            studentId: selectedStudentForEnrollment,
-            startDate: new Date(enrollmentForm.startDate).toISOString(),
-          }),
+          studentId: selectedStudentForEnrollment,
+          startDate: new Date(enrollmentForm.startDate).toISOString(),
         }
       );
 
