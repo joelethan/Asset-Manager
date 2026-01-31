@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -147,7 +146,8 @@ export default function Classes() {
     setClassroomForm({ isOpen: true, isLoading: false, editingId: classroom.id });
   };
 
-  const handleSaveClassroom = async () => {
+  const handleSaveClassroom = async (e: any) => {
+    e?.preventDefault?.();
     if (!classroomData.name.trim() || !classroomData.level.trim()) {
       toast({
         title: "Validation Error",
@@ -175,6 +175,7 @@ export default function Classes() {
         description: `Classroom ${method === "create" ? "created" : "updated"} successfully`,
       });
 
+      setClassroomData({ name: "", level: "" });
       setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
       loadData();
     } catch (err) {
@@ -226,7 +227,8 @@ export default function Classes() {
     setOfferingForm({ isOpen: true, isLoading: false, editingId: offering.id });
   };
 
-  const handleSaveOffering = async () => {
+  const handleSaveOffering = async (e: any) => {
+    e?.preventDefault?.();
     if (!offeringData.classroomDefinitionId || !offeringData.displayName.trim()) {
       toast({
         title: "Validation Error",
@@ -259,6 +261,7 @@ export default function Classes() {
         description: `Classroom offering ${method === "create" ? "created" : "updated"} successfully`,
       });
 
+      setOfferingData({ classroomDefinitionId: "", displayName: "" });
       setOfferingForm({ isOpen: false, isLoading: false, editingId: null });
       loadOfferings(selectedYear);
     } catch (err) {
@@ -331,178 +334,98 @@ export default function Classes() {
             </Alert>
           )}
 
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold">Classroom Definitions</h3>
-              <p className="text-sm text-slate-500">Create and manage classroom levels for your school (e.g., Primary 7, Form 4A)</p>
-            </div>
-            <Dialog open={classroomForm.isOpen} onOpenChange={(open) => setClassroomForm({ ...classroomForm, isOpen: open })}>
-              <DialogTrigger asChild>
-                <Button onClick={handleAddClassroom} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Classroom
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {classroomForm.editingId ? "Edit Classroom" : "Create Classroom"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Define a new classroom level or edit an existing one
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="class-name">Classroom Name *</Label>
-                    <Input
-                      id="class-name"
-                      placeholder="e.g., Primary 7"
-                      value={classroomData.name}
-                      onChange={(e) => setClassroomData({ ...classroomData, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="class-level">Level *</Label>
-                    <Input
-                      id="class-level"
-                      placeholder="e.g., Primary"
-                      value={classroomData.level}
-                      onChange={(e) => setClassroomData({ ...classroomData, level: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setClassroomForm({ ...classroomForm, isOpen: false })}
-                      disabled={classroomForm.isLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveClassroom} disabled={classroomForm.isLoading} className="gap-2">
-                      {classroomForm.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {classroomForm.editingId ? "Update" : "Create"}
-                    </Button>
-                  </div>
+          <Card className="border-slate-200">
+            <CardHeader>
+              <CardTitle>Classroom Definitions</CardTitle>
+              <CardDescription>Create and manage classroom levels for your school</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left: List */}
+                <div>
+                  {classrooms.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+                      <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
+                      <p className="text-slate-500">No classroom definitions yet.</p>
+                      <p className="text-sm text-slate-400 mt-1">Create one to get started</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {classrooms.map((classroom) => (
+                        <div key={classroom.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-slate-900">{classroom.name}</h4>
+                            <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{classroom.level}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleEditClassroom(classroom)} className="h-8">
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => handleDeleteClassroom(classroom.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              {classrooms.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[200px] text-center">
-                  <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
-                  <p className="text-slate-500">No classroom definitions yet.</p>
-                  <p className="text-sm text-slate-400 mt-1">Create one to get started</p>
+                {/* Right: Form */}
+                <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+                  <h3 className="font-semibold text-slate-900 mb-4">
+                    {classroomForm.editingId ? "Edit Classroom" : "Create New Classroom"}
+                  </h3>
+                  <form onSubmit={handleSaveClassroom} className="space-y-4">
+                    <div>
+                      <Label htmlFor="class-name">Classroom Name *</Label>
+                      <Input
+                        id="class-name"
+                        placeholder="e.g., Primary 7"
+                        value={classroomData.name}
+                        onChange={(e) => setClassroomData({ ...classroomData, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="class-level">Level *</Label>
+                      <Input
+                        id="class-level"
+                        placeholder="e.g., Primary"
+                        value={classroomData.level}
+                        onChange={(e) => setClassroomData({ ...classroomData, level: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        disabled={classroomForm.isLoading}
+                        className="flex-1 gap-2"
+                      >
+                        {classroomForm.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {classroomForm.editingId ? "Update" : "Create"}
+                      </Button>
+                      {classroomForm.editingId && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setClassroomData({ name: "", level: "" });
+                            setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </form>
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {classrooms.map((classroom) => (
-                      <TableRow key={classroom.id}>
-                        <TableCell className="font-medium">{classroom.name}</TableCell>
-                        <TableCell>{classroom.level}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditClassroom(classroom)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteClassroom(classroom.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Classroom Offerings Tab */}
         <TabsContent value="offerings" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold">Classroom Offerings</h3>
-              <p className="text-sm text-slate-500">Create classroom offerings for the selected academic year</p>
-            </div>
-            <Dialog open={offeringForm.isOpen} onOpenChange={(open) => setOfferingForm({ ...offeringForm, isOpen: open })}>
-              <DialogTrigger asChild>
-                <Button onClick={handleAddOffering} className="gap-2" disabled={!selectedYear}>
-                  <Plus className="h-4 w-4" />
-                  Add Offering
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {offeringForm.editingId ? "Edit Offering" : "Create Offering"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Create a new classroom offering for this academic year
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="classroom-select">Classroom Definition *</Label>
-                    <Select value={offeringData.classroomDefinitionId} onValueChange={(value) => setOfferingData({ ...offeringData, classroomDefinitionId: value })}>
-                      <SelectTrigger id="classroom-select">
-                        <SelectValue placeholder="Select a classroom" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classrooms.map((classroom) => (
-                          <SelectItem key={classroom.id} value={classroom.id}>
-                            {classroom.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="display-name">Display Name *</Label>
-                    <Input
-                      id="display-name"
-                      placeholder="e.g., Primary 7 A"
-                      value={offeringData.displayName}
-                      onChange={(e) => setOfferingData({ ...offeringData, displayName: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setOfferingForm({ ...offeringForm, isOpen: false })}
-                      disabled={offeringForm.isLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveOffering} disabled={offeringForm.isLoading} className="gap-2">
-                      {offeringForm.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {offeringForm.editingId ? "Update" : "Create"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
           {academicYears.length > 0 && (
             <Card>
               <CardHeader>
@@ -525,58 +448,112 @@ export default function Classes() {
             </Card>
           )}
 
-          <Card>
-            <CardContent className="pt-6">
-              {academicYears.length === 0 ? (
+          {academicYears.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[200px] text-center">
                   <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
                   <p className="text-slate-500">No academic years found.</p>
                   <p className="text-sm text-slate-400 mt-1">Create an academic year first</p>
                 </div>
-              ) : offerings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[200px] text-center">
-                  <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
-                  <p className="text-slate-500">No classroom offerings for this year.</p>
-                  <p className="text-sm text-slate-400 mt-1">Create one to get started</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle>Classroom Offerings</CardTitle>
+                <CardDescription>Create classroom offerings for the selected academic year</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left: List */}
+                  <div>
+                    {offerings.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+                        <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
+                        <p className="text-slate-500">No classroom offerings for this year.</p>
+                        <p className="text-sm text-slate-400 mt-1">Create one to get started</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {offerings.map((offering) => (
+                          <div key={offering.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold text-slate-900">{offering.display_name}</h4>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-3">{getClassroomName(offering.classroom_definition_id)}</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleEditOffering(offering)} className="h-8">
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => handleDeleteOffering(offering.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: Form */}
+                  <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+                    <h3 className="font-semibold text-slate-900 mb-4">
+                      {offeringForm.editingId ? "Edit Offering" : "Create New Offering"}
+                    </h3>
+                    <form onSubmit={handleSaveOffering} className="space-y-4">
+                      <div>
+                        <Label htmlFor="classroom-select">Classroom Definition *</Label>
+                        <Select value={offeringData.classroomDefinitionId} onValueChange={(value) => setOfferingData({ ...offeringData, classroomDefinitionId: value })}>
+                          <SelectTrigger id="classroom-select">
+                            <SelectValue placeholder="Select a classroom" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classrooms.map((classroom) => (
+                              <SelectItem key={classroom.id} value={classroom.id}>
+                                {classroom.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="display-name">Display Name *</Label>
+                        <Input
+                          id="display-name"
+                          placeholder="e.g., Primary 7 A"
+                          value={offeringData.displayName}
+                          onChange={(e) => setOfferingData({ ...offeringData, displayName: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          disabled={offeringForm.isLoading}
+                          className="flex-1 gap-2"
+                        >
+                          {offeringForm.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                          {offeringForm.editingId ? "Update" : "Create"}
+                        </Button>
+                        {offeringForm.editingId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setOfferingData({ classroomDefinitionId: "", displayName: "" });
+                              setOfferingForm({ isOpen: false, isLoading: false, editingId: null });
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Display Name</TableHead>
-                      <TableHead>Classroom Definition</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {offerings.map((offering) => (
-                      <TableRow key={offering.id}>
-                        <TableCell className="font-medium">{offering.display_name}</TableCell>
-                        <TableCell>{getClassroomName(offering.classroom_definition_id)}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditOffering(offering)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteOffering(offering.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </AppLayout>
