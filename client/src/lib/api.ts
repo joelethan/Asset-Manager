@@ -88,3 +88,43 @@ export const academicYearsApi = {
 export const termsApi = {
   list: (yearId: number) => apiClient.get(`/academic-years/${yearId}/terms`),
 };
+
+// Classroom Definitions endpoints
+export const classroomDefinitionsApi = {
+  list: (schoolId: string) =>
+    apiClient.get(`/schools/${schoolId}/classroom-definitions`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/classroom-definitions`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/classroom-definitions/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/classroom-definitions/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/classroom-definitions/${id}`),
+};
+
+// Classroom Offerings endpoints
+export const classroomOfferingsApi = {
+  list: (yearId: string) =>
+    apiClient.get(`/years/${yearId}/classroom-offerings`),
+  create: (yearId: string, data: unknown) =>
+    apiClient.post(`/years/${yearId}/classroom-offerings`, data),
+  get: (yearId: string, id: string) =>
+    apiClient.get(`/years/${yearId}/classroom-offerings/${id}`),
+  update: (yearId: string, id: string, data: unknown) =>
+    apiClient.patch(`/years/${yearId}/classroom-offerings/${id}`, data),
+  delete: (yearId: string, id: string) =>
+    apiClient.delete(`/years/${yearId}/classroom-offerings/${id}`),
+};
+
+// Enrollments endpoints
+export const enrollmentsApi = {
+  list: (offeringId: string, schoolId: string) =>
+    apiClient.get(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`),
+  create: (offeringId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`, data),
+  bulkCreate: (offeringId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-offerings/${offeringId}/enrollments/bulk?schoolId=${schoolId}`, data),
+  delete: (enrollmentId: string) =>
+    apiClient.delete(`/enrollments/${enrollmentId}`),
+};
