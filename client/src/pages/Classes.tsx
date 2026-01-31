@@ -357,7 +357,7 @@ export default function Classes() {
                             <h4 className="font-semibold text-slate-900">{classroom.name}</h4>
                             <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{classroom.level}</span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => handleEditClassroom(classroom)} className="h-8">
                               <Edit2 className="h-3.5 w-3.5" />
                             </Button>
@@ -482,7 +482,7 @@ export default function Classes() {
                               <h4 className="font-semibold text-slate-900">{offering.display_name}</h4>
                             </div>
                             <p className="text-sm text-slate-600 mb-3">{getClassroomName(offering.classroom_definition_id)}</p>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 justify-end">
                               <Button size="sm" variant="ghost" onClick={() => handleEditOffering(offering)} className="h-8">
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
