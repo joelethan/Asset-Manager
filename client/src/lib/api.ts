@@ -82,7 +82,7 @@ export const academicYearsApi = {
     apiClient.post(`/schools/${schoolId}/years`, data),
   updateStatus: (yearId: number, status: unknown) =>
     apiClient.patch(`/years/${yearId}/status`, { status }),
-};  
+};
 
 // Terms endpoints
 export const termsApi = {
@@ -127,4 +127,11 @@ export const enrollmentsApi = {
     apiClient.post(`/classroom-offerings/${offeringId}/enrollments/bulk?schoolId=${schoolId}`, data),
   delete: (enrollmentId: string) =>
     apiClient.delete(`/enrollments/${enrollmentId}`),
+};
+
+export const studentsApi = {
+  list: (schoolId: string) =>
+    apiClient.get(`/students?schoolId=${schoolId}`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/students?schoolId=${schoolId}`, data),
 };
