@@ -352,12 +352,12 @@ export default function Classes() {
                   ) : (
                     <div className="space-y-2">
                       {classrooms.map((classroom) => (
-                        <div key={classroom.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
-                          <div className="flex items-center justify-between mb-2">
+                        <div key={classroom.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-slate-900">{classroom.name}</h4>
                             <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{classroom.level}</span>
                           </div>
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex gap-2">
                             <Button size="sm" variant="ghost" onClick={() => handleEditClassroom(classroom)} className="h-8">
                               <Edit2 className="h-3.5 w-3.5" />
                             </Button>
@@ -477,12 +477,12 @@ export default function Classes() {
                     ) : (
                       <div className="space-y-2">
                         {offerings.map((offering) => (
-                          <div key={offering.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-semibold text-slate-900">{offering.display_name}</h4>
+                          <div key={offering.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-slate-900 mb-1">{offering.display_name}</h4>
+                              <p className="text-sm text-slate-600">{getClassroomName(offering.classroom_definition_id)}</p>
                             </div>
-                            <p className="text-sm text-slate-600 mb-3">{getClassroomName(offering.classroom_definition_id)}</p>
-                            <div className="flex gap-2 justify-end">
+                            <div className="flex gap-2 flex-shrink-0">
                               <Button size="sm" variant="ghost" onClick={() => handleEditOffering(offering)} className="h-8">
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
