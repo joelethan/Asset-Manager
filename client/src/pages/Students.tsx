@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import StudentsTable from "@/components/StudentsTable";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { studentsApi, enrollmentsApi } from "@/lib/api";
@@ -180,38 +181,7 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>All Students</CardTitle>
-                <CardDescription>Total: {students.length} students</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student No</TableHead>
-                        <TableHead>Reg No</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.student_no}</TableCell>
-                          <TableCell>{student.reg_no}</TableCell>
-                          <TableCell>{`${student.first_name} ${student.last_name}`}</TableCell>
-                          <TableCell>{student.email || "-"}</TableCell>
-                          <TableCell>{student.phone || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+            <StudentsTable students={students} onRefresh={loadData} />
           )}
         </TabsContent>
 
