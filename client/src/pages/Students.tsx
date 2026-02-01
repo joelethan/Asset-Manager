@@ -1,4 +1,5 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from "react";
+import { useState, useEffect, ChangeEvent, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,30 @@ export default function Students() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
+  // Form setup with react-hook-form
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<StudentFormData>({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      gender: "",
+      dateOfBirth: "",
+      address: "",
+      avatarUrl: "",
+    },
+  });
+
+  const firstNameValue = watch("firstName");
+  const lastNameValue = watch("lastName");
+
   // Student states
   const [students, setStudents] = useState<Student[]>([]);
   const [offerings, setOfferings] = useState<ClassroomOffering[]>([]);
@@ -69,17 +94,6 @@ export default function Students() {
     editingId: null,
   });
 
-  // Form data
-  const [studentForm, setStudentForm] = useState<StudentFormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    gender: "",
-    dateOfBirth: "",
-    address: "",
-    avatarUrl: "",
-  });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -133,13 +147,10 @@ export default function Students() {
     }
   };
 
-  const handleCreateStudent = async (e: FormEvent) => {
-    e.preventDefault();
-    setFormState({ ...formState, isLoading: true });
-
+  const handleCreateStudent = async (data: StudentFormData) => {
     try {
       // If a file was provided, convert to data URL and include in payload
-      const payload: any = { ...studentForm };
+      const payload: any = { ...data };
       if (avatarFile) {
         const toDataUrl = (file: File) =>
           new Promise<string>((resolve, reject) => {
@@ -157,15 +168,13 @@ export default function Students() {
 
       const newStudent = await response.json();
       setStudents([...students, newStudent]);
-      setStudentForm({ firstName: "", lastName: "", email: "", phone: "", gender: "", dateOfBirth: "", address: "", avatarUrl: "" });
+      reset();
       setAvatarFile(null);
       setAvatarPreview("");
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to create student", variant: "destructive" });
-    } finally {
-      setFormState({ ...formState, isLoading: false });
     }
   };
 
@@ -239,7 +248,7 @@ export default function Students() {
               <CardDescription>Add a new student to the system</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateStudent} className="space-y-4">
+              <form onSubmit={handleSubmit(handleCreateStudent)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="avatar">Avatar</Label>
@@ -248,7 +257,7 @@ export default function Students() {
                         {avatarPreview ? (
                           <AvatarImage src={avatarPreview} alt="Avatar preview" />
                         ) : (
-                          <AvatarFallback>{(studentForm.firstName?.[0] || "") + (studentForm.lastName?.[0] || "")}</AvatarFallback>
+                          <AvatarFallback>{(firstNameValue?.[0] || "") + (lastNameValue?.[0] || "")}</AvatarFallback>
                         )}
                       </Avatar>
                       <div>
@@ -262,10 +271,12 @@ export default function Students() {
                     <Input
                       id="firstName"
                       placeholder="John"
-                      value={studentForm.firstName}
-                      onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
-                      required
+                      {...register("firstName", {
+                        required: "First name is required",
+                        minLength: { value: 2, message: "First name must be at least 2 characters" },
+                      })}
                     />
+                    {errors.firstName && <p className="text-sm text-red-500">{errors.firstName.message}</p>}
                   </div>
                 </div>
 
@@ -275,10 +286,12 @@ export default function Students() {
                     <Input
                       id="lastName"
                       placeholder="Doe"
-                      value={studentForm.lastName}
-                      onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
-                      required
+                      {...register("lastName", {
+                        required: "Last name is required",
+                        minLength: { value: 2, message: "Last name must be at least 2 characters" },
+                      })}
                     />
+                    {errors.lastName && <p className="text-sm text-red-500">{errors.lastName.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -286,9 +299,14 @@ export default function Students() {
                       id="email"
                       type="email"
                       placeholder="john@student.test"
-                      value={studentForm.email}
-                      onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+                      {...register("email", {
+                        pattern: {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: "Please enter a valid email address",
+                        },
+                      })}
                     />
+                    {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                   </div>
                 </div>
 
@@ -298,22 +316,27 @@ export default function Students() {
                     <Input
                       id="phone"
                       placeholder="0700000002"
-                      value={studentForm.phone}
-                      onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+                      {...register("phone")}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender">Gender</Label>
-                    <Select value={studentForm.gender} onValueChange={(value) => setStudentForm({ ...studentForm, gender: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="gender"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 </div>
 
@@ -323,8 +346,7 @@ export default function Students() {
                     <Input
                       id="dateOfBirth"
                       type="date"
-                      value={studentForm.dateOfBirth}
-                      onChange={(e) => setStudentForm({ ...studentForm, dateOfBirth: e.target.value })}
+                      {...register("dateOfBirth")}
                     />
                   </div>
                   <div className="space-y-2">
@@ -332,8 +354,7 @@ export default function Students() {
                     <Input
                       id="address"
                       placeholder="123 Main Street, City"
-                      value={studentForm.address}
-                      onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
+                      {...register("address")}
                     />
                   </div>
                 </div>
@@ -345,8 +366,8 @@ export default function Students() {
                   </AlertDescription>
                 </Alert>
 
-                <Button type="submit" disabled={formState.isLoading} className="w-full">
-                  {formState.isLoading ? (
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...
