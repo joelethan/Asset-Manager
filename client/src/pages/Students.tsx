@@ -346,8 +346,11 @@ export default function Students() {
                     <Input
                       id="dateOfBirth"
                       type="date"
-                      {...register("dateOfBirth")}
+                      {...register("dateOfBirth", {
+                        required: "Date of birth is required",
+                      })}
                     />
+                    {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>

@@ -102,9 +102,10 @@ export default function Classes() {
       const years = Array.isArray(yearsData) ? yearsData : [];
       setAcademicYears(years);
 
-      // Set first year as default
+      // Set first year as default, or active year if available
       if (years.length > 0) {
-        setSelectedYear(years[0].id);
+        const activeYear = years.find(year => year.status.toLowerCase() === "active");
+        setSelectedYear(activeYear?.id || years[0].id);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
