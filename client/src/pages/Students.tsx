@@ -1,8 +1,9 @@
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -79,6 +80,30 @@ export default function Students() {
     address: "",
     avatarUrl: "",
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const ACCEPTED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+  const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
+
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
+      toast({ title: "Invalid file", description: "Avatar must be PNG, JPG or WEBP", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast({ title: "File too large", description: "Avatar must be under 2MB", variant: "destructive" });
+      return;
+    }
+    setAvatarFile(file);
+    try {
+      const url = URL.createObjectURL(file);
+      setAvatarPreview(url);
+    } catch {
+      setAvatarPreview("");
+    }
+  };
 
   const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
     studentId: "",
@@ -112,12 +137,28 @@ export default function Students() {
     setFormState({ ...formState, isLoading: true });
 
     try {
-      const response = await studentsApi.create(schoolId, studentForm);
+      // If a file was provided, convert to data URL and include in payload
+      const payload: any = { ...studentForm };
+      if (avatarFile) {
+        const toDataUrl = (file: File) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+        payload.avatarUrl = await toDataUrl(avatarFile);
+      }
+
+      const response = await studentsApi.create(schoolId, payload);
       if (!response.ok) throw new Error("Failed to create student");
 
       const newStudent = await response.json();
       setStudents([...students, newStudent]);
       setStudentForm({ firstName: "", lastName: "", email: "", phone: "", gender: "", dateOfBirth: "", address: "", avatarUrl: "" });
+      setAvatarFile(null);
+      setAvatarPreview("");
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
     } catch (error) {
@@ -200,6 +241,22 @@ export default function Students() {
               <form onSubmit={handleCreateStudent} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="avatar">Avatar</Label>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-16 w-16">
+                        {avatarPreview ? (
+                          <AvatarImage src={avatarPreview} alt="Avatar preview" />
+                        ) : (
+                          <AvatarFallback>{(studentForm.firstName?.[0] || "") + (studentForm.lastName?.[0] || "")}</AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div>
+                        <Input id="avatar" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarChange} />
+                        <p className="text-sm text-slate-500 mt-1">PNG/JPG/WEBP — max 2MB</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <Input
                       id="firstName"
@@ -209,6 +266,9 @@ export default function Students() {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input
@@ -219,9 +279,6 @@ export default function Students() {
                       required
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -232,6 +289,9 @@ export default function Students() {
                       onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
                     <Input
@@ -241,9 +301,6 @@ export default function Students() {
                       onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="gender">Gender</Label>
                     <Select value={studentForm.gender} onValueChange={(value) => setStudentForm({ ...studentForm, gender: value })}>
@@ -257,6 +314,9 @@ export default function Students() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
                     <Input
@@ -266,27 +326,15 @@ export default function Students() {
                       onChange={(e) => setStudentForm({ ...studentForm, dateOfBirth: e.target.value })}
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    placeholder="123 Main Street, City"
-                    value={studentForm.address}
-                    onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="avatarUrl">Avatar URL</Label>
-                  <Input
-                    id="avatarUrl"
-                    type="url"
-                    placeholder="https://example.com/avatar.jpg"
-                    value={studentForm.avatarUrl}
-                    onChange={(e) => setStudentForm({ ...studentForm, avatarUrl: e.target.value })}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="123 Main Street, City"
+                      value={studentForm.address}
+                      onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <Alert>
