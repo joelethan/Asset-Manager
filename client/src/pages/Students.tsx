@@ -38,12 +38,14 @@ interface FormState {
 }
 
 interface StudentFormData {
-  studentNo: string;
-  regNo: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  gender: string;
+  dateOfBirth: string;
+  address: string;
+  avatarUrl: string;
 }
 
 interface EnrollmentData {
@@ -68,12 +70,14 @@ export default function Students() {
 
   // Form data
   const [studentForm, setStudentForm] = useState<StudentFormData>({
-    studentNo: "",
-    regNo: "",
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    gender: "",
+    dateOfBirth: "",
+    address: "",
+    avatarUrl: "",
   });
 
   const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
@@ -113,7 +117,7 @@ export default function Students() {
 
       const newStudent = await response.json();
       setStudents([...students, newStudent]);
-      setStudentForm({ studentNo: "", regNo: "", firstName: "", lastName: "", email: "", phone: "" });
+      setStudentForm({ firstName: "", lastName: "", email: "", phone: "", gender: "", dateOfBirth: "", address: "", avatarUrl: "" });
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
     } catch (error) {
@@ -190,33 +194,10 @@ export default function Students() {
           <Card>
             <CardHeader>
               <CardTitle>Create New Student</CardTitle>
-              <CardDescription>Add a new student to the system (5.3)</CardDescription>
+              <CardDescription>Add a new student to the system</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateStudent} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="studentNo">Student No</Label>
-                    <Input
-                      id="studentNo"
-                      placeholder="STU001"
-                      value={studentForm.studentNo}
-                      onChange={(e) => setStudentForm({ ...studentForm, studentNo: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="regNo">Registration No</Label>
-                    <Input
-                      id="regNo"
-                      placeholder="REG001"
-                      value={studentForm.regNo}
-                      onChange={(e) => setStudentForm({ ...studentForm, regNo: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -262,6 +243,52 @@ export default function Students() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={studentForm.gender} onValueChange={(value) => setStudentForm({ ...studentForm, gender: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={studentForm.dateOfBirth}
+                      onChange={(e) => setStudentForm({ ...studentForm, dateOfBirth: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    placeholder="123 Main Street, City"
+                    value={studentForm.address}
+                    onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="avatarUrl">Avatar URL</Label>
+                  <Input
+                    id="avatarUrl"
+                    type="url"
+                    placeholder="https://example.com/avatar.jpg"
+                    value={studentForm.avatarUrl}
+                    onChange={(e) => setStudentForm({ ...studentForm, avatarUrl: e.target.value })}
+                  />
+                </div>
+
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -292,7 +319,7 @@ export default function Students() {
           <Card>
             <CardHeader>
               <CardTitle>Enroll Student in Class</CardTitle>
-              <CardDescription>Enroll a student into a classroom offering (5.4)</CardDescription>
+              <CardDescription>Enroll a student into a classroom offering</CardDescription>
             </CardHeader>
             <CardContent>
               {offerings.length === 0 ? (
