@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +82,7 @@ export default function Students() {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const ACCEPTED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
   const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
 
@@ -243,7 +244,7 @@ export default function Students() {
                   <div className="space-y-2">
                     <Label htmlFor="avatar">Avatar</Label>
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-16 w-16">
+                      <Avatar className="h-16 w-16 cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
                         {avatarPreview ? (
                           <AvatarImage src={avatarPreview} alt="Avatar preview" />
                         ) : (
@@ -251,7 +252,7 @@ export default function Students() {
                         )}
                       </Avatar>
                       <div>
-                        <Input id="avatar" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarChange} />
+                        <Input id="avatar" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarChange} ref={avatarInputRef} />
                         <p className="text-sm text-slate-500 mt-1">PNG/JPG/WEBP — max 2MB</p>
                       </div>
                     </div>
