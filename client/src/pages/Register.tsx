@@ -9,6 +9,7 @@ import { registerUserSchema, type RegisterUserRequest } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
+import { useProfile } from "@/context/ProfileContext";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
@@ -16,6 +17,7 @@ export default function Register() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<RegisterUserRequest>({
     resolver: zodResolver(registerUserSchema),
     defaultValues: {
@@ -42,13 +44,32 @@ export default function Register() {
         return;
       }
 
+      // Save access token
+      if (data.access_token) {
+        try {
+          localStorage.setItem("access_token", data.access_token);
+        } catch { }
+      }
+
+      // Fetch profile and store in context
+      try {
+        const profileRes = await authApi.profile();
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          try {
+            setProfile(profile);
+            setIsAuthenticated(true);
+          } catch { }
+        }
+      } catch { }
+
       toast({
         title: "Success",
-        description: "Your account has been created successfully. Please verify your email.",
+        description: "Your account has been created successfully. Welcome!",
       });
       
-      // Redirect to login
-      navigate("/login");
+      // Redirect to dashboard
+      navigate("/dashboard");
     } catch (error) {
       toast({
         title: "Error",
