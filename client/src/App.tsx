@@ -1,5 +1,4 @@
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
-import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,40 +17,37 @@ import Classes from "@/pages/Classes";
 import Settings from "@/pages/Settings";
 
 function ProtectedRoute({ component: Component }: { component: any }) {
-  const { isAuthenticated } = useProfile();
-  
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
-  
+  const { isAuthenticated, initialized } = useProfile();
+
+  if (!initialized) return null;
+  if (!isAuthenticated) return <Redirect to="/login" />;
+
   return <Component />;
 }
 
 function RootRedirect() {
-  const { isAuthenticated } = useProfile();
+  const { isAuthenticated, initialized } = useProfile();
+  if (!initialized) return null;
   return <Redirect to={isAuthenticated ? "/dashboard" : "/login"} />;
 }
 
 function PublicRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated } = useProfile();
-  
-  if (isAuthenticated) {
-    return <Redirect to="/dashboard" />;
-  }
-  
+  const { isAuthenticated, initialized } = useProfile();
+  if (!initialized) return null;
+  if (isAuthenticated) return <Redirect to="/dashboard" />;
   return <Component />;
 }
 
 function CatchAllRedirect() {
-  const { isAuthenticated } = useProfile();
+  const { isAuthenticated, initialized } = useProfile();
+  if (!initialized) return null;
   return <Redirect to={isAuthenticated ? "/dashboard" : "/login"} />;
 }
 
 function AppRouter() {
   const { isAuthenticated } = useProfile();
-
   return (
-    <WouterRouter hook={useHashLocation}>
+    <WouterRouter>
       <Switch>
         <Route path="/" component={RootRedirect} />
 
