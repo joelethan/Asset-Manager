@@ -58,6 +58,7 @@ const navigation = [
   { name: "Academic Structure", href: "/academic-structure", icon: Calendar },
   { name: "Classes", href: "/classes", icon: BookOpen },
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
+  { name: "Create School", href: "/schools-create", icon: Building2 },
   { name: "Students", href: "/students", icon: GraduationCap },
   { name: "Teachers", href: "/teachers", icon: Users },
   { name: "Subjects", href: "/subjects", icon: BookOpen },
@@ -79,6 +80,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
   const [location] = useLocation();
   const { tenants, selectedTenant, setSelectedTenant } = useTenant();
   const { isAuthenticated, profile, logout } = useProfile();
+  const hasMemberships = !!profile?.memberships?.length;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -126,8 +128,16 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                   // Show other items only when authenticated
                   if (item.name !== "Login" && item.name !== "Register" && !isAuthenticated) return null;
 
+                  // If authenticated but has no school memberships, only show Create School and Settings
+                  if (isAuthenticated && !hasMemberships) {
+                    if (item.href !== "/schools-create" && item.href !== "/settings") return null;
+                  }
+
                   // Check role visibility
                   if (item.roles && !item.roles.includes(user.role)) return null;
+
+                  // Hide "Create School" link when user already has memberships
+                  if (item.href === "/schools-create" && hasMemberships) return null;
 
                   const isActive = location === item.href;
                   return (

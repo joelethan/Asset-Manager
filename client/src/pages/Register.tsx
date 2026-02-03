@@ -68,8 +68,8 @@ export default function Register() {
         description: "Your account has been created successfully. Welcome!",
       });
       
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Redirect to create school if the user has no memberships yet
+      navigate("/schools-create");
     } catch (error) {
       toast({
         title: "Error",
