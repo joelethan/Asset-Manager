@@ -13,6 +13,7 @@ import { useProfile } from "@/context/ProfileContext";
 import { useTenant } from "@/context/TenantContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { schoolsApi, authApi } from "@/lib/api";
+import { useState } from "react";
 
 const createSchoolFormSchema = z.object({
   code: z.string().min(1),
@@ -44,8 +45,27 @@ export default function CreateSchool() {
     },
   });
   const [, navigate] = useLocation();
-  const { setProfile } = useProfile();
+  const { setProfile, profile } = useProfile();
   const { setSelectedTenant } = useTenant();
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResend = async () => {
+    if (isResending) return;
+    setIsResending(true);
+    try {
+      const res = await authApi.resendVerification();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to resend verification email" }));
+        toast({ variant: "destructive", title: "Error", description: err.message || "Failed to resend verification email" });
+        return;
+      }
+      toast({ title: "Verification sent", description: "A verification email has been sent. Check your inbox." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message || "Unexpected error" });
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const onSubmit = async (data: FormSchema) => {
     try {
@@ -96,6 +116,27 @@ export default function CreateSchool() {
             <CardDescription>You'll be assigned as the School Admin for this school.</CardDescription>
           </CardHeader>
           <CardContent>
+          {profile?.emailVerified === false && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Email not verified</AlertTitle>
+              <AlertDescription>
+                <div className="flex items-center justify-between gap-4">
+                  <div>Please verify your email by clicking the link we sent to your email address before creating a school.</div>
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResend}
+                      disabled={isResending || profile?.emailVerified === true}
+                    >
+                      {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend verification"}
+                    </Button>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
             <Alert className="mb-4">
               <AlertTitle>Note</AlertTitle>
               <AlertDescription>
@@ -156,10 +197,13 @@ export default function CreateSchool() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={form.formState.isSubmitting} className="w-full gap-2">
+              <Button type="submit" disabled={form.formState.isSubmitting || profile?.emailVerified === false} className="w-full gap-2">
                 {form.formState.isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {form.formState.isSubmitting ? "Creating..." : "Create School"}
               </Button>
+              {profile?.emailVerified === false && (
+                <p className="text-sm text-red-500 text-center mt-2">Please verify your email by clicking the verification link we sent to your email before creating a school.</p>
+              )}
             </form>
           </CardContent>
         </Card>

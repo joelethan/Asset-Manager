@@ -57,6 +57,8 @@ export const authApi = {
   register: (data: unknown) => apiClient.post("/auth/register", data),
   profile: () => apiClient.get("/auth/profile"),
   logout: () => apiClient.post("/auth/logout"),
+  // Request the server to resend the email verification link for the current user
+  resendVerification: () => apiClient.post("/auth/resend-verification"),
 };
 
 // Schools endpoints
