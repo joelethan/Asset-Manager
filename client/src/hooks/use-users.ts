@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { apiClient } from "@/lib/api";
 
 export function useUser(id: number) {
   return useQuery({
-    queryKey: [api.users.get.path, id],
+    queryKey: ["user", id],
     queryFn: async () => {
-      const url = buildUrl(api.users.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await apiClient.get(`/users/${id}`);
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch user");
-      return api.users.get.responses[200].parse(await res.json());
+      return res.json();
     },
     enabled: !!id,
   });

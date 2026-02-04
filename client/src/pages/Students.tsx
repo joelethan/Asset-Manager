@@ -228,7 +228,7 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <StudentsTable students={students} onRefresh={loadData} />
+            <StudentsTable students={students} onRefresh={refetchStudents} />
           )}
         </TabsContent>
 

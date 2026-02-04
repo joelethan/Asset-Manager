@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { termTemplatesApi, academicYearsApi, termsApi } from "@/lib/api";
-import type { z } from "zod";
-
-type TermTemplateInput = z.infer<typeof import("@shared/routes").termTemplateInputSchema>;
-type AcademicYearInput = z.infer<typeof import("@shared/routes").academicYearInputSchema>;
+import type { TermTemplateInput, AcademicYearInput } from "@/lib/schemas";
 
 // Term Templates
 export function useTermTemplates(schoolId?: string) {

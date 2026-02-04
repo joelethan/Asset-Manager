@@ -23,3 +23,24 @@ export const insertSchoolSchema = z.object({
 });
 
 export type InsertSchool = z.infer<typeof insertSchoolSchema>;
+
+export const termStructureSchema = z.object({
+  ordinal: z.number(),
+  name: z.string(),
+});
+
+export const termTemplateInputSchema = z.object({
+  schoolId: z.string(),
+  name: z.string(),
+  structure: z.array(termStructureSchema),
+});
+export type TermTemplateInput = z.infer<typeof termTemplateInputSchema>;
+
+export const academicYearInputSchema = z.object({
+  schoolId: z.string(),
+  name: z.string(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  termTemplateId: z.string(),
+});
+export type AcademicYearInput = z.infer<typeof academicYearInputSchema>;
