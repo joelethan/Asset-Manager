@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Search, MapPin, Users, Calendar, Building2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { insertSchoolSchema } from "@shared/schema";
+import { insertSchoolSchema } from "@/lib/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";

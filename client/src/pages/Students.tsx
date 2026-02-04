@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, useRef } from "react";
+import { useState, ChangeEvent, useRef, FormEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { studentsApi, enrollmentsApi, academicYearsApi, classroomOfferingsApi } from "@/lib/api";
+import { useStudents, useCreateStudent } from "@/hooks/use-students";
+import { useEnrollStudent } from "@/hooks/use-enrollments";
+import { useAcademicYears, useClassroomOfferings } from "@/hooks/use-academic-structure";
 
 interface Student {
   id: string;
@@ -85,9 +87,11 @@ export default function Students() {
   const firstNameValue = watch("firstName");
   const lastNameValue = watch("lastName");
 
-  // Student states
-  const [students, setStudents] = useState<Student[]>([]);
-  const [offerings, setOfferings] = useState<ClassroomOffering[]>([]);
+  // Student states and queries
+  const { data: studentsData, refetch: refetchStudents } = useStudents(schoolId);
+  const createStudent = useCreateStudent();
+  const enrollStudent = useEnrollStudent();
+
   const [formState, setFormState] = useState<FormState>({
     isOpen: false,
     isLoading: false,
@@ -128,44 +132,15 @@ export default function Students() {
 
   const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] = useState<string>("");
 
-  // Fetch students, academic years and offerings on mount
-  useEffect(() => {
-    if (schoolId) {
-      loadData();
-    }
-  }, [schoolId]);
+  // Academic years and classroom offerings (via hooks)
+  const { data: years } = useAcademicYears(schoolId);
+  const yearList = Array.isArray(years) ? years : [];
+  const activeYear = yearList.find((y: any) => String(y.status).toLowerCase() === "active");
+  const yearId = activeYear ? activeYear.id : (yearList[0]?.id ?? null);
+  const { data: offeringsData } = useClassroomOfferings(yearId ? String(yearId) : undefined);
+  const offerings = Array.isArray(offeringsData) ? offeringsData : [];
 
-  const loadData = async () => {
-    try {
-      // Fetch students using the API
-      const studentsRes = await studentsApi.list(schoolId);
-      if (!studentsRes.ok) throw new Error("Failed to fetch students");
-      const studentsData = await studentsRes.json();
-      setStudents(Array.isArray(studentsData) ? studentsData : studentsData.data || []);
-
-      // Fetch academic years and offerings
-      const yearsRes = await academicYearsApi.list(schoolId);
-      if (!yearsRes.ok) throw new Error("Failed to fetch academic years");
-      const years = await yearsRes.json();
-      const yearList = Array.isArray(years) ? years : [];
-
-      // Prefer active year
-      const activeYear = yearList.find((y: any) => String(y.status).toLowerCase() === "active");
-      const yearId = activeYear ? activeYear.id : (yearList[0]?.id ?? null);
-
-      if (yearId) {
-        const offeringsRes = await classroomOfferingsApi.list(String(yearId));
-        if (!offeringsRes.ok) throw new Error("Failed to fetch offerings");
-        const offeringsData = await offeringsRes.json();
-        setOfferings(Array.isArray(offeringsData) ? offeringsData : []);
-      } else {
-        setOfferings([]);
-      }
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Failed to fetch data", variant: "destructive" });
-    }
-  };
+  const students = Array.isArray(studentsData) ? studentsData : studentsData?.data ?? [];
 
   const handleCreateStudent = async (data: StudentFormData) => {
     try {
@@ -183,18 +158,16 @@ export default function Students() {
         payload.avatarUrl = await toDataUrl(avatarFile);
       }
 
-      const response = await studentsApi.create(schoolId, payload);
-      if (!response.ok) throw new Error("Failed to create student");
+      await createStudent.mutateAsync({ schoolId: schoolId!, data: payload });
 
-      const newStudent = await response.json();
-      setStudents([...students, newStudent]);
       reset();
       setAvatarFile(null);
       setAvatarPreview("");
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to create student", variant: "destructive" });
+      refetchStudents();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to create student", variant: "destructive" });
     }
   };
 
@@ -208,23 +181,22 @@ export default function Students() {
     setFormState({ ...formState, isLoading: true });
 
     try {
-      const response = await enrollmentsApi.create(
-        enrollmentForm.classroomOfferingId,
-        schoolId,
-        {
+      await enrollStudent.mutateAsync({
+        offeringId: enrollmentForm.classroomOfferingId,
+        schoolId: schoolId!,
+        payload: {
           studentId: selectedStudentForEnrollment,
           startDate: new Date(enrollmentForm.startDate).toISOString(),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to enroll student");
+        },
+      });
 
       setSelectedStudentForEnrollment("");
       setEnrollmentForm({ studentId: "", classroomOfferingId: "", startDate: new Date().toISOString().split("T")[0] });
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student enrolled successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to enroll student", variant: "destructive" });
+      refetchStudents();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to enroll student", variant: "destructive" });
     } finally {
       setFormState({ ...formState, isLoading: false });
     }
