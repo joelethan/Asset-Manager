@@ -40,6 +40,21 @@ export const academicYears = pgTable("academic_years", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Classroom definitions and offerings
+export const classroomDefinitions = pgTable("classroom_definitions", {
+  id: serial("id").primaryKey(),
+  schoolId: integer("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  level: text("level").notNull(),
+});
+
+export const classroomOfferings = pgTable("classroom_offerings", {
+  id: serial("id").primaryKey(),
+  academicYearId: integer("academic_year_id").notNull().references(() => academicYears.id),
+  classroomDefinitionId: integer("classroom_definition_id").notNull().references(() => classroomDefinitions.id),
+  displayName: text("display_name").notNull(),
+});
+
 export const terms = pgTable("terms", {
   id: serial("id").primaryKey(),
   academicYearId: integer("academic_year_id").notNull().references(() => academicYears.id),
@@ -55,6 +70,8 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertTermTemplateSchema = createInsertSchema(termTemplates).omit({ id: true, createdAt: true });
 export const insertAcademicYearSchema = createInsertSchema(academicYears).omit({ id: true, createdAt: true });
 export const insertTermSchema = createInsertSchema(terms).omit({ id: true, createdAt: true });
+export const insertClassroomDefinitionSchema = createInsertSchema(classroomDefinitions).omit({ id: true });
+export const insertClassroomOfferingSchema = createInsertSchema(classroomOfferings).omit({ id: true });
 
 export type School = typeof schools.$inferSelect;
 export type InsertSchool = z.infer<typeof insertSchoolSchema>;
@@ -66,7 +83,10 @@ export type AcademicYear = typeof academicYears.$inferSelect;
 export type InsertAcademicYear = z.infer<typeof insertAcademicYearSchema>;
 export type Term = typeof terms.$inferSelect;
 export type InsertTerm = z.infer<typeof insertTermSchema>;
-
+export type ClassroomDefinition = typeof classroomDefinitions.$inferSelect;
+export type InsertClassroomDefinition = z.infer<typeof insertClassroomDefinitionSchema>;
+export type ClassroomOffering = typeof classroomOfferings.$inferSelect;
+export type InsertClassroomOffering = z.infer<typeof insertClassroomOfferingSchema>;
 // Registration-specific schema based on user request
 export const registerUserSchema = z.object({
   email: z.string().email(),

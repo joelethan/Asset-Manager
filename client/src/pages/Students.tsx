@@ -14,7 +14,7 @@ import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { studentsApi, enrollmentsApi } from "@/lib/api";
+import { studentsApi, enrollmentsApi, academicYearsApi, classroomOfferingsApi } from "@/lib/api";
 
 interface Student {
   id: string;
@@ -128,7 +128,7 @@ export default function Students() {
 
   const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] = useState<string>("");
 
-  // Fetch students and offerings on mount
+  // Fetch students, academic years and offerings on mount
   useEffect(() => {
     if (schoolId) {
       loadData();
@@ -142,8 +142,28 @@ export default function Students() {
       if (!studentsRes.ok) throw new Error("Failed to fetch students");
       const studentsData = await studentsRes.json();
       setStudents(Array.isArray(studentsData) ? studentsData : studentsData.data || []);
+
+      // Fetch academic years and offerings
+      const yearsRes = await academicYearsApi.list(schoolId);
+      if (!yearsRes.ok) throw new Error("Failed to fetch academic years");
+      const years = await yearsRes.json();
+      const yearList = Array.isArray(years) ? years : [];
+
+      // Prefer active year
+      const activeYear = yearList.find((y: any) => String(y.status).toLowerCase() === "active");
+      const yearId = activeYear ? activeYear.id : (yearList[0]?.id ?? null);
+
+      if (yearId) {
+        const offeringsRes = await classroomOfferingsApi.list(String(yearId));
+        if (!offeringsRes.ok) throw new Error("Failed to fetch offerings");
+        const offeringsData = await offeringsRes.json();
+        setOfferings(Array.isArray(offeringsData) ? offeringsData : []);
+      } else {
+        setOfferings([]);
+      }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to fetch students", variant: "destructive" });
+      console.error(error);
+      toast({ title: "Error", description: "Failed to fetch data", variant: "destructive" });
     }
   };
 

@@ -118,6 +118,94 @@ export const api = {
       },
     },
   },
+  classroomDefinitions: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/schools/:schoolId/classroom-definitions',
+      responses: {
+        200: z.array(z.custom<typeof classroomDefinitions.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/schools/:schoolId/classroom-definitions',
+      input: insertClassroomDefinitionSchema,
+      responses: {
+        201: z.custom<typeof classroomDefinitions.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/schools/:schoolId/classroom-definitions/:id',
+      responses: {
+        200: z.custom<typeof classroomDefinitions.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/schools/:schoolId/classroom-definitions/:id',
+      input: insertClassroomDefinitionSchema,
+      responses: {
+        200: z.custom<typeof classroomDefinitions.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/schools/:schoolId/classroom-definitions/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  classroomOfferings: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/years/:yearId/classroom-offerings',
+      responses: {
+        200: z.array(z.custom<typeof classroomOfferings.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/years/:yearId/classroom-offerings',
+      input: insertClassroomOfferingSchema,
+      responses: {
+        201: z.custom<typeof classroomOfferings.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/years/:yearId/classroom-offerings/:id',
+      responses: {
+        200: z.custom<typeof classroomOfferings.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/years/:yearId/classroom-offerings/:id',
+      input: insertClassroomOfferingSchema,
+      responses: {
+        200: z.custom<typeof classroomOfferings.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/years/:yearId/classroom-offerings/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   users: {
     get: {
       method: 'GET' as const,
