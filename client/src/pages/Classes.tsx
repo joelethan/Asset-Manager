@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,9 @@ import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2, Loader2 } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { classroomDefinitionsApi, classroomOfferingsApi, academicYearsApi } from "@/lib/api";
+import { useStudents } from "@/hooks/use-students";
+import { useEnrollStudent, useEnrollments } from "@/hooks/use-enrollments";
+import { useAcademicYears, useClassroomOfferings } from "@/hooks/use-academic-structure";
 
 interface ClassroomDefinition {
   id: string;
@@ -31,6 +34,12 @@ interface ClassroomOffering {
   academic_year_id: string;
   classroom_definition_id: string;
   display_name: string;
+}
+
+interface EnrollmentData {
+  studentId: string;
+  classroomOfferingId: string;
+  startDate: string;
 }
 
 interface FormState {
@@ -67,8 +76,44 @@ export default function Classes() {
   const [classroomData, setClassroomData] = useState({ name: "", level: "" });
   const [offeringData, setOfferingData] = useState({ classroomDefinitionId: "", displayName: "" });
 
+  // Enrollment state
+  const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
+    studentId: "",
+    classroomOfferingId: "",
+    startDate: new Date().toISOString().split("T")[0],
+  });
+
+  const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] = useState<string>("");
+  const [enrollmentFormState, setEnrollmentFormState] = useState<FormState>({
+    isOpen: false,
+    isLoading: false,
+    editingId: null,
+  });
+
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Student and enrollment hooks
+  const { data: studentsData } = useStudents(schoolId);
+  const enrollStudent = useEnrollStudent();
+
+  // Academic years and classroom offerings (via hooks)
+  const { data: years } = useAcademicYears(schoolId);
+  const yearList = Array.isArray(years) ? years : [];
+  const activeYear = yearList.find((y: any) => String(y.status).toLowerCase() === "active");
+  const yearId = activeYear ? activeYear.id : (yearList[0]?.id ?? null);
+  const { data: offeringsData } = useClassroomOfferings(yearId ? String(yearId) : undefined);
+  const classroomOfferingsForEnroll = Array.isArray(offeringsData) ? offeringsData : [];
+
+  const { data: enrollmentsData, refetch: refetchEnrollments } = useEnrollments(yearId ? String(yearId) : undefined, schoolId);
+  const enrollments = Array.isArray(enrollmentsData) ? enrollmentsData : [];
+
+  const students = Array.isArray(studentsData) ? studentsData : studentsData?.data ?? [];
+
+  // When offerings load, default to the first available offering (helps quick enroll)
+  if (classroomOfferingsForEnroll.length > 0 && !enrollmentForm.classroomOfferingId) {
+    setEnrollmentForm((f: any) => ({ ...f, classroomOfferingId: classroomOfferingsForEnroll[0].id }));
+  }
 
   // Load data on mount and when tenant changes
   useEffect(() => {
@@ -158,7 +203,7 @@ export default function Classes() {
       return;
     }
 
-    setClassroomForm(prev => ({ ...prev, isLoading: true }));
+    setClassroomForm((prev: any) => ({ ...prev, isLoading: true }));
     try {
       const method = classroomForm.editingId ? "update" : "create";
       let res;
@@ -187,7 +232,7 @@ export default function Classes() {
         variant: "destructive",
       });
     } finally {
-      setClassroomForm(prev => ({ ...prev, isLoading: false }));
+      setClassroomForm((prev: any) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -239,7 +284,7 @@ export default function Classes() {
       return;
     }
 
-    setOfferingForm(prev => ({ ...prev, isLoading: true }));
+    setOfferingForm((prev: any) => ({ ...prev, isLoading: true }));
     try {
       const method = offeringForm.editingId ? "update" : "create";
       let res;
@@ -273,7 +318,7 @@ export default function Classes() {
         variant: "destructive",
       });
     } finally {
-      setOfferingForm(prev => ({ ...prev, isLoading: false }));
+      setOfferingForm((prev: any) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -300,6 +345,38 @@ export default function Classes() {
     }
   };
 
+  const handleEnrollStudent = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudentForEnrollment || !enrollmentForm.classroomOfferingId) {
+      toast({ title: "Error", description: "Please select a student and classroom offering", variant: "destructive" });
+      return;
+    }
+
+    setEnrollmentFormState({ ...enrollmentFormState, isLoading: true });
+
+    try {
+      await enrollStudent.mutateAsync({
+        offeringId: enrollmentForm.classroomOfferingId,
+        schoolId: schoolId!,
+        payload: {
+          studentId: selectedStudentForEnrollment,
+          startDate: new Date(enrollmentForm.startDate).toISOString(),
+        },
+      });
+
+      setSelectedStudentForEnrollment("");
+      setEnrollmentForm({ studentId: "", classroomOfferingId: "", startDate: new Date().toISOString().split("T")[0] });
+      setEnrollmentFormState({ isOpen: false, isLoading: false, editingId: null });
+      toast({ title: "Success", description: "Student enrolled successfully" });
+      // Refresh enrollments list
+      refetchEnrollments();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to enroll student", variant: "destructive" });
+    } finally {
+      setEnrollmentFormState({ ...enrollmentFormState, isLoading: false });
+    }
+  }
+
   if (isLoadingData) {
     return (
       <AppLayout title="Classes" description="Manage classroom definitions and offerings">
@@ -311,7 +388,7 @@ export default function Classes() {
   }
 
   const getClassroomName = (id: string) => {
-    return classrooms.find(c => c.id === id)?.name || "Unknown";
+    return classrooms.find((c: any) => c.id === id)?.name || "Unknown";
   };
 
   return (
@@ -321,9 +398,10 @@ export default function Classes() {
       breadcrumbs={[{ label: "Classes" }]}
     >
       <Tabs defaultValue="definitions" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="definitions">Classroom Definitions</TabsTrigger>
           <TabsTrigger value="offerings">Classroom Offerings</TabsTrigger>
+          <TabsTrigger value="enrollments">Enroll in Class</TabsTrigger>
         </TabsList>
 
         {/* Classroom Definitions Tab */}
@@ -438,7 +516,7 @@ export default function Classes() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicYears.map((year) => (
+                    {academicYears.map((year: any) => (
                       <SelectItem key={year.id} value={year.id}>
                         {year.name} {year.status && `(${year.status})`}
                       </SelectItem>
@@ -477,7 +555,7 @@ export default function Classes() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {offerings.map((offering) => (
+                        {offerings.map((offering: any) => (
                           <div key={offering.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <h4 className="font-semibold text-slate-900 mb-1">{offering.display_name}</h4>
@@ -510,7 +588,7 @@ export default function Classes() {
                             <SelectValue placeholder="Select a classroom" />
                           </SelectTrigger>
                           <SelectContent>
-                            {classrooms.map((classroom) => (
+                            {classrooms.map((classroom: any) => (
                               <SelectItem key={classroom.id} value={classroom.id}>
                                 {classroom.name}
                               </SelectItem>
@@ -555,6 +633,114 @@ export default function Classes() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Enroll in Class Tab */}
+        <TabsContent value="enrollments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Enroll Student in Class</CardTitle>
+              <CardDescription>Enroll a student into a classroom offering</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {classroomOfferingsForEnroll.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No classroom offerings available. Please create a classroom offering first.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  {/* Current enrollments overview */}
+                  {enrollments.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Current Enrollments</h4>
+                      <div className="grid gap-2">
+                        {enrollments.map((e: any, idx: number) => (
+                          <div key={e.id ?? e.offeringId ?? idx} className="p-2 border rounded flex items-center justify-between">
+                            <div className="text-sm">{e.display_name || e.offeringDisplayName || e.name || (e.offering && e.offering.display_name) || "Offering"}</div>
+                            <div className="text-xs text-slate-500">{Array.isArray(e.students) ? `${e.students.length} students` : e.count ? `${e.count} students` : ""}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 text-right">
+                        <Button variant="ghost" onClick={() => refetchEnrollments()}>
+                          Refresh Enrollments
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleEnrollStudent} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="student">Select Student</Label>
+                      <Select value={selectedStudentForEnrollment} onValueChange={setSelectedStudentForEnrollment}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a student" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {students.map((student: any) => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.student_no} - {student.first_name} {student.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="offering">Select Classroom Offering</Label>
+                      <Select value={enrollmentForm.classroomOfferingId} onValueChange={(value) => setEnrollmentForm({ ...enrollmentForm, classroomOfferingId: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a classroom offering" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classroomOfferingsForEnroll.map((offering: any) => (
+                            <SelectItem key={offering.id} value={offering.id}>
+                              {offering.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">Start Date</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={enrollmentForm.startDate}
+                        onChange={(e) => setEnrollmentForm({ ...enrollmentForm, startDate: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Endpoint: POST /classroom-offerings/{"{offeringId}"}/enrollments?schoolId={schoolId}
+                      </AlertDescription>
+                    </Alert>
+
+                    <Button type="submit" disabled={enrollmentFormState.isLoading} className="w-full">
+                      {enrollmentFormState.isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enrolling...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Enroll Student
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </AppLayout>

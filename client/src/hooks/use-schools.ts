@@ -1,30 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
-import { insertSchoolSchema } from "@shared/schema";
-import type { z } from "zod";
-
-type InsertSchool = z.infer<typeof insertSchoolSchema>;
+import { schoolsApi } from "@/lib/api";
+import { insertSchoolSchema, type InsertSchool } from "@/lib/schemas";
 
 export function useSchools() {
   return useQuery({
-    queryKey: [api.schools.list.path],
+    queryKey: ["schools"],
     queryFn: async () => {
-      const res = await fetch(api.schools.list.path, { credentials: "include" });
+      const res = await schoolsApi.list();
       if (!res.ok) throw new Error("Failed to fetch schools");
-      return api.schools.list.responses[200].parse(await res.json());
+      return res.json();
     },
   });
 }
 
 export function useSchool(id: number) {
   return useQuery({
-    queryKey: [api.schools.get.path, id],
+    queryKey: ["schools", id],
     queryFn: async () => {
-      const url = buildUrl(api.schools.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await schoolsApi.get(id);
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch school");
-      return api.schools.get.responses[200].parse(await res.json());
+      return res.json();
     },
     enabled: !!id,
   });
@@ -34,25 +30,19 @@ export function useCreateSchool() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: InsertSchool) => {
-      const validated = api.schools.create.input.parse(data);
-      const res = await fetch(api.schools.create.path, {
-        method: api.schools.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-      
+      const validated = insertSchoolSchema.parse(data);
+      const res = await schoolsApi.create(validated);
       if (!res.ok) {
         if (res.status === 400) {
-          const error = api.schools.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
+          const error = await res.json().catch(() => ({ message: "Bad Request" }));
+          throw new Error(error.message || "Failed to create school");
         }
         throw new Error("Failed to create school");
       }
-      return api.schools.create.responses[201].parse(await res.json());
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.schools.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
     },
   });
 }

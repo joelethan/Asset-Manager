@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { termTemplatesApi, academicYearsApi, termsApi } from "@/lib/api";
-import type { z } from "zod";
-
-type TermTemplateInput = z.infer<typeof import("@shared/routes").termTemplateInputSchema>;
-type AcademicYearInput = z.infer<typeof import("@shared/routes").academicYearInputSchema>;
+import type { TermTemplateInput, AcademicYearInput } from "@/lib/schemas";
 
 // Term Templates
 export function useTermTemplates(schoolId?: string) {
@@ -106,6 +103,19 @@ export function useTerms(yearId?: number) {
     queryFn: async () => {
       const res = await termsApi.list(yearId!);
       if (!res.ok) throw new Error("Failed to fetch terms");
+      return res.json();
+    },
+    enabled: !!yearId,
+  });
+}
+
+// Classroom Offerings
+export function useClassroomOfferings(yearId?: string) {
+  return useQuery({
+    queryKey: ["classroom-offerings", yearId],
+    queryFn: async () => {
+      const res = await import("@/lib/api").then((m) => m.classroomOfferingsApi.list(yearId!));
+      if (!res.ok) throw new Error("Failed to fetch classroom offerings");
       return res.json();
     },
     enabled: !!yearId,

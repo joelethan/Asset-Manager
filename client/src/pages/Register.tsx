@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,13 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerUserSchema, type RegisterUserRequest } from "@shared/schema";
+import { registerUserSchema, type RegisterUserRequest } from "@/lib/schemas";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
 import { useProfile } from "@/context/ProfileContext";
-import { useState } from "react";
-import { useLocation } from "wouter";
 
 export default function Register() {
   const { toast } = useToast();

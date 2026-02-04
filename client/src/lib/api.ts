@@ -121,8 +121,8 @@ export const classroomOfferingsApi = {
 
 // Enrollments endpoints
 export const enrollmentsApi = {
-  list: (offeringId: string, schoolId: string) =>
-    apiClient.get(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`),
+  list: (yearId: string, schoolId: string) =>
+    apiClient.get(`/students/enrolled/by-classroom?schoolId=${schoolId}&academicYearId=${yearId}`),
   create: (offeringId: string, schoolId: string, data: unknown) =>
     apiClient.post(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`, data),
   bulkCreate: (offeringId: string, schoolId: string, data: unknown) =>

@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, useRef } from "react";
+import { useState, ChangeEvent, useRef, FormEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { studentsApi, enrollmentsApi } from "@/lib/api";
+import { useStudents, useCreateStudent } from "@/hooks/use-students";
 
 interface Student {
   id: string;
@@ -50,12 +50,6 @@ interface StudentFormData {
   avatarUrl: string;
 }
 
-interface EnrollmentData {
-  studentId: string;
-  classroomOfferingId: string;
-  startDate: string;
-}
-
 export default function Students() {
   const { toast } = useToast();
   const { selectedTenant } = useTenant();
@@ -85,9 +79,10 @@ export default function Students() {
   const firstNameValue = watch("firstName");
   const lastNameValue = watch("lastName");
 
-  // Student states
-  const [students, setStudents] = useState<Student[]>([]);
-  const [offerings, setOfferings] = useState<ClassroomOffering[]>([]);
+  // Student states and queries
+  const { data: studentsData, refetch: refetchStudents } = useStudents(schoolId);
+  const createStudent = useCreateStudent();
+
   const [formState, setFormState] = useState<FormState>({
     isOpen: false,
     isLoading: false,
@@ -120,32 +115,7 @@ export default function Students() {
     }
   };
 
-  const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
-    studentId: "",
-    classroomOfferingId: "",
-    startDate: new Date().toISOString().split("T")[0],
-  });
-
-  const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] = useState<string>("");
-
-  // Fetch students and offerings on mount
-  useEffect(() => {
-    if (schoolId) {
-      loadData();
-    }
-  }, [schoolId]);
-
-  const loadData = async () => {
-    try {
-      // Fetch students using the API
-      const studentsRes = await studentsApi.list(schoolId);
-      if (!studentsRes.ok) throw new Error("Failed to fetch students");
-      const studentsData = await studentsRes.json();
-      setStudents(Array.isArray(studentsData) ? studentsData : studentsData.data || []);
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to fetch students", variant: "destructive" });
-    }
-  };
+  const students = Array.isArray(studentsData) ? studentsData : studentsData?.data ?? [];
 
   const handleCreateStudent = async (data: StudentFormData) => {
     try {
@@ -163,50 +133,16 @@ export default function Students() {
         payload.avatarUrl = await toDataUrl(avatarFile);
       }
 
-      const response = await studentsApi.create(schoolId, payload);
-      if (!response.ok) throw new Error("Failed to create student");
+      await createStudent.mutateAsync({ schoolId: schoolId!, data: payload });
 
-      const newStudent = await response.json();
-      setStudents([...students, newStudent]);
       reset();
       setAvatarFile(null);
       setAvatarPreview("");
       setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to create student", variant: "destructive" });
-    }
-  };
-
-  const handleEnrollStudent = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedStudentForEnrollment || !enrollmentForm.classroomOfferingId) {
-      toast({ title: "Error", description: "Please select a student and classroom offering", variant: "destructive" });
-      return;
-    }
-
-    setFormState({ ...formState, isLoading: true });
-
-    try {
-      const response = await enrollmentsApi.create(
-        enrollmentForm.classroomOfferingId,
-        schoolId,
-        {
-          studentId: selectedStudentForEnrollment,
-          startDate: new Date(enrollmentForm.startDate).toISOString(),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to enroll student");
-
-      setSelectedStudentForEnrollment("");
-      setEnrollmentForm({ studentId: "", classroomOfferingId: "", startDate: new Date().toISOString().split("T")[0] });
-      setFormState({ isOpen: false, isLoading: false, editingId: null });
-      toast({ title: "Success", description: "Student enrolled successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to enroll student", variant: "destructive" });
-    } finally {
-      setFormState({ ...formState, isLoading: false });
+      refetchStudents();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to create student", variant: "destructive" });
     }
   };
 
@@ -220,7 +156,6 @@ export default function Students() {
         <TabsList>
           <TabsTrigger value="students">Student Directory</TabsTrigger>
           <TabsTrigger value="create">Create Student</TabsTrigger>
-          <TabsTrigger value="enroll">Enroll in Class</TabsTrigger>
         </TabsList>
 
         {/* Students Directory Tab */}
@@ -236,7 +171,7 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <StudentsTable students={students} onRefresh={loadData} />
+            <StudentsTable students={students} onRefresh={refetchStudents} />
           )}
         </TabsContent>
 
@@ -383,92 +318,6 @@ export default function Students() {
                   )}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Enroll in Class Tab */}
-        <TabsContent value="enroll" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enroll Student in Class</CardTitle>
-              <CardDescription>Enroll a student into a classroom offering</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {offerings.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    No classroom offerings available. Please create a classroom offering first.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <form onSubmit={handleEnrollStudent} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="student">Select Student</Label>
-                    <Select value={selectedStudentForEnrollment} onValueChange={setSelectedStudentForEnrollment}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a student" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {students.map((student) => (
-                          <SelectItem key={student.id} value={student.id}>
-                            {student.student_no} - {student.first_name} {student.last_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="offering">Select Classroom Offering</Label>
-                    <Select value={enrollmentForm.classroomOfferingId} onValueChange={(value) => setEnrollmentForm({ ...enrollmentForm, classroomOfferingId: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a classroom offering" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {offerings.map((offering) => (
-                          <SelectItem key={offering.id} value={offering.id}>
-                            {offering.display_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={enrollmentForm.startDate}
-                      onChange={(e) => setEnrollmentForm({ ...enrollmentForm, startDate: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Endpoint: POST /classroom-offerings/{"{offeringId}"}/enrollments?schoolId={schoolId}
-                    </AlertDescription>
-                  </Alert>
-
-                  <Button type="submit" disabled={formState.isLoading} className="w-full">
-                    {formState.isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Enrolling...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Enroll Student
-                      </>
-                    )}
-                  </Button>
-                </form>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
