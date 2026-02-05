@@ -27,12 +27,6 @@ interface Student {
   phone?: string;
 }
 
-interface ClassroomOffering {
-  id: string;
-  display_name: string;
-  classroom_definition_id: string;
-}
-
 interface FormState {
   isOpen: boolean;
   isLoading: boolean;

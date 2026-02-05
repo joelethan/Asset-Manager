@@ -379,7 +379,7 @@ export default function Classes() {
                       <h4 className="text-sm font-medium mb-2">Current Enrollments</h4>
                       <div className="grid gap-2">
                         {enrollments.map((e: any, idx: number) => (
-                          <div key={e.id ?? e.offeringId ?? idx} className="p-2 border rounded flex items-center justify-between">
+                          <div key={e.id ?? idx} className="p-2 border rounded flex items-center justify-between">
                             <div className="text-sm">{e.display_name || e.name || getClassroomName(e.classroom_definition_id) || "Classroom"}</div>
                             <div className="text-xs text-slate-500">{Array.isArray(e.students) ? `${e.students.length} students` : e.count ? `${e.count} students` : ""}</div>
                           </div>
