@@ -105,28 +105,10 @@ export const classroomDefinitionsApi = {
     apiClient.delete(`/schools/${schoolId}/classroom-definitions/${id}`),
 };
 
-// Classroom Offerings endpoints
-export const classroomOfferingsApi = {
-  list: (yearId: string) =>
-    apiClient.get(`/years/${yearId}/classroom-offerings`),
-  create: (yearId: string, data: unknown) =>
-    apiClient.post(`/years/${yearId}/classroom-offerings`, data),
-  get: (yearId: string, id: string) =>
-    apiClient.get(`/years/${yearId}/classroom-offerings/${id}`),
-  update: (yearId: string, id: string, data: unknown) =>
-    apiClient.patch(`/years/${yearId}/classroom-offerings/${id}`, data),
-  delete: (yearId: string, id: string) =>
-    apiClient.delete(`/years/${yearId}/classroom-offerings/${id}`),
-};
-
 // Enrollments endpoints
 export const enrollmentsApi = {
   list: (yearId: string, schoolId: string) =>
     apiClient.get(`/students/enrolled/by-classroom?schoolId=${schoolId}&academicYearId=${yearId}`),
-  create: (offeringId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`, data),
-  bulkCreate: (offeringId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-offerings/${offeringId}/enrollments/bulk?schoolId=${schoolId}`, data),
   delete: (enrollmentId: string) =>
     apiClient.delete(`/enrollments/${enrollmentId}`),
 };

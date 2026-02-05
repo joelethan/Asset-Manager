@@ -80,7 +80,6 @@ export default function Classes() {
   const { data: studentsData } = useStudents(schoolId);
   const enrollStudent = useEnrollStudent();
 
-  // Academic years and classroom offerings (via hooks)
   const { data: years } = useAcademicYears(schoolId);
   const yearList = Array.isArray(years) ? years : [];
   const activeYear = yearList.find((y: any) => String(y.status).toLowerCase() === "active");
