@@ -111,10 +111,10 @@ export const enrollmentsApi = {
     apiClient.get(`/students/enrolled/by-classroom?schoolId=${schoolId}&academicYearId=${yearId}`),
   delete: (enrollmentId: string) =>
     apiClient.delete(`/enrollments/${enrollmentId}`),
-  create: (classroomDefinitionId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-definitions/${classroomDefinitionId}/enrollments?schoolId=${schoolId}`, data),
-  bulkCreate: (classroomDefinitionId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-definitions/${classroomDefinitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
+  create: (definitionId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-definitions/${definitionId}/enrollments?schoolId=${schoolId}`, data),
+  bulkCreate: (definitionId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
 };
 
 export const studentsApi = {

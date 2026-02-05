@@ -33,7 +33,7 @@ interface AcademicYear {
 
 interface EnrollmentData {
   studentId: string;
-  classroomDefinitionId: string;
+  definitionId: string;
   startDate: string;
 }
 
@@ -67,7 +67,7 @@ export default function Classes() {
   // Enrollment state
   const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
     studentId: "",
-    classroomDefinitionId: "",
+    definitionId: "",
     startDate: new Date().toISOString().split("T")[0],
   });
 
@@ -96,8 +96,8 @@ export default function Classes() {
 
   // When classroom definitions load, default to the first available classroom for enrollments
   useEffect(() => {
-    if (classrooms.length > 0 && !enrollmentForm.classroomDefinitionId) {
-      setEnrollmentForm((f: any) => ({ ...f, classroomDefinitionId: classrooms[0].id }));
+    if (classrooms.length > 0 && !enrollmentForm.definitionId) {
+      setEnrollmentForm((f: any) => ({ ...f, definitionId: classrooms[0].id }));
     }
   }, [classrooms]);
 
@@ -212,7 +212,7 @@ export default function Classes() {
 
   const handleEnrollStudent = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedStudentForEnrollment || !enrollmentForm.classroomDefinitionId) {
+    if (!selectedStudentForEnrollment || !enrollmentForm.definitionId) {
       toast({ title: "Error", description: "Please select a student and classroom", variant: "destructive" });
       return;
     }
@@ -221,7 +221,7 @@ export default function Classes() {
 
     try {
       await enrollStudent.mutateAsync({
-        classroomDefinitionId: enrollmentForm.classroomDefinitionId,
+        definitionId: enrollmentForm.definitionId,
         schoolId: schoolId!,
         payload: {
           studentId: selectedStudentForEnrollment,
@@ -230,7 +230,7 @@ export default function Classes() {
       });
 
       setSelectedStudentForEnrollment("");
-      setEnrollmentForm({ studentId: "", classroomDefinitionId: "", startDate: new Date().toISOString().split("T")[0] });
+      setEnrollmentForm({ studentId: "", definitionId: "", startDate: new Date().toISOString().split("T")[0] });
       setEnrollmentFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student enrolled successfully" });
       // Refresh enrollments list
@@ -412,7 +412,7 @@ export default function Classes() {
 
                     <div className="space-y-2">
                       <Label htmlFor="classroom">Select Classroom</Label>
-                      <Select value={enrollmentForm.classroomDefinitionId} onValueChange={(value) => setEnrollmentForm({ ...enrollmentForm, classroomDefinitionId: value })}>
+                      <Select value={enrollmentForm.definitionId} onValueChange={(value) => setEnrollmentForm({ ...enrollmentForm, definitionId: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a classroom" />
                         </SelectTrigger>
@@ -440,7 +440,7 @@ export default function Classes() {
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Endpoint: POST /classroom-definitions/{"{classroomDefinitionId}"}/enrollments?schoolId={schoolId}
+                        Endpoint: POST /classroom-definitions/{"{definitionId}"}/enrollments?schoolId={schoolId}
                       </AlertDescription>
                     </Alert>
 

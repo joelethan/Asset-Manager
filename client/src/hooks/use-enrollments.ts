@@ -17,8 +17,8 @@ export function useEnrollments(yearId?: string, schoolId?: string) {
 export function useEnrollStudent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ classroomDefinitionId, schoolId, payload }: { classroomDefinitionId: string; schoolId: string; payload: unknown }) => {
-      const res = await enrollmentsApi.create(classroomDefinitionId, schoolId, payload);
+    mutationFn: async ({ definitionId, schoolId, payload }: { definitionId: string; schoolId: string; payload: unknown }) => {
+      const res = await enrollmentsApi.create(definitionId, schoolId, payload);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error?.message || "Failed to enroll student");
@@ -36,8 +36,8 @@ export function useEnrollStudent() {
 export function useBulkEnroll() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ classroomDefinitionId, schoolId, payload }: { classroomDefinitionId: string; schoolId: string; payload: unknown }) => {
-      const res = await enrollmentsApi.bulkCreate(classroomDefinitionId, schoolId, payload);
+    mutationFn: async ({ definitionId, schoolId, payload }: { definitionId: string; schoolId: string; payload: unknown }) => {
+      const res = await enrollmentsApi.bulkCreate(definitionId, schoolId, payload);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error?.message || "Failed to create bulk enrollments");
