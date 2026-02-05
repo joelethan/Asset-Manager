@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
+import { useForm } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ interface ClassroomDefinition {
   school_id: string;
   name: string;
   level: string;
+  ordinal?: number;
 }
 
 interface AcademicYear {
@@ -55,8 +57,11 @@ export default function Classes() {
     isLoading: false,
     editingId: null,
   });
-  // Form data
-  const [classroomData, setClassroomData] = useState({ name: "", level: "" });
+  // Form (react-hook-form)
+  const { register, handleSubmit, reset, formState } = useForm({
+    defaultValues: { name: "", level: "", ordinal: 1 },
+    mode: "onChange",
+  });
 
 
   // Enrollment state
@@ -133,23 +138,24 @@ export default function Classes() {
 
   // Classroom Definition handlers
   const handleAddClassroom = () => {
-    setClassroomData({ name: "", level: "" });
+    reset({ name: "", level: "", ordinal: 1 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: null });
   };
 
   const handleEditClassroom = (classroom: ClassroomDefinition) => {
-    setClassroomData({ name: classroom.name, level: classroom.level });
+    reset({ name: classroom.name, level: classroom.level, ordinal: classroom.ordinal ?? 1 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: classroom.id });
   };
 
-  const handleSaveClassroom = async (e: any) => {
-    e?.preventDefault?.();
-    if (!classroomData.name.trim() || !classroomData.level.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Name and level are required",
-        variant: "destructive",
-      });
+  const handleSaveClassroom = async (data: any) => {
+    if (!data.name?.trim() || !data.level?.trim()) {
+      toast({ title: "Validation Error", description: "Name and level are required", variant: "destructive" });
+      return;
+    }
+
+    const ordinal = Number(data.ordinal);
+    if (!Number.isInteger(ordinal) || ordinal < 1) {
+      toast({ title: "Validation Error", description: "Ordinal is required and must be a positive integer", variant: "destructive" });
       return;
     }
 
@@ -159,28 +165,21 @@ export default function Classes() {
       let res;
 
       if (classroomForm.editingId) {
-        res = await classroomDefinitionsApi.update(schoolId, classroomForm.editingId, classroomData);
+        res = await classroomDefinitionsApi.update(schoolId, classroomForm.editingId, data);
       } else {
-        res = await classroomDefinitionsApi.create(schoolId, classroomData);
+        res = await classroomDefinitionsApi.create(schoolId, data);
       }
 
       if (!res.ok) throw new Error(`Failed to ${method} classroom`);
 
-      toast({
-        title: "Success",
-        description: `Classroom ${method === "create" ? "created" : "updated"} successfully`,
-      });
+      toast({ title: "Success", description: `Classroom ${method === "create" ? "created" : "updated"} successfully` });
 
-      setClassroomData({ name: "", level: "" });
+      reset({ name: "", level: "", ordinal: 1 });
       setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
       loadData();
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setClassroomForm((prev: any) => ({ ...prev, isLoading: false }));
     }
@@ -245,7 +244,7 @@ export default function Classes() {
 
   if (isLoadingData) {
     return (
-      <AppLayout title="Classes" description="Manage classroom definitions and offerings">
+      <AppLayout title="Classes" description="Manage classroom definitions">
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
@@ -260,7 +259,7 @@ export default function Classes() {
   return (
     <AppLayout
       title="Classes"
-      description="Manage classroom definitions and offerings for your school"
+      description="Manage classroom definitions for your school"
       breadcrumbs={[{ label: "Classes" }]}
     >
       <Tabs defaultValue="definitions" className="w-full">
@@ -320,24 +319,18 @@ export default function Classes() {
                   <h3 className="font-semibold text-slate-900 mb-4">
                     {classroomForm.editingId ? "Edit Classroom" : "Create New Classroom"}
                   </h3>
-                  <form onSubmit={handleSaveClassroom} className="space-y-4">
+                  <form onSubmit={handleSubmit(handleSaveClassroom)} className="space-y-4">
                     <div>
                       <Label htmlFor="class-name">Classroom Name *</Label>
-                      <Input
-                        id="class-name"
-                        placeholder="e.g., Primary 7"
-                        value={classroomData.name}
-                        onChange={(e) => setClassroomData({ ...classroomData, name: e.target.value })}
-                      />
+                      <Input id="class-name" placeholder="e.g., Primary 7" {...register("name", { required: true })} />
                     </div>
                     <div>
                       <Label htmlFor="class-level">Level *</Label>
-                      <Input
-                        id="class-level"
-                        placeholder="e.g., Primary"
-                        value={classroomData.level}
-                        onChange={(e) => setClassroomData({ ...classroomData, level: e.target.value })}
-                      />
+                      <Input id="class-level" placeholder="e.g., Primary" {...register("level", { required: true })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="class-ordinal">Ordinal *</Label>
+                      <Input id="class-ordinal" type="number" min={1} placeholder="e.g., 1" {...register("ordinal", { valueAsNumber: true, required: true })} />
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -349,14 +342,7 @@ export default function Classes() {
                         {classroomForm.editingId ? "Update" : "Create"}
                       </Button>
                       {classroomForm.editingId && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setClassroomData({ name: "", level: "" });
-                            setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
-                          }}
-                        >
+                        <Button type="button" variant="outline" onClick={() => { reset({ name: "", level: "", ordinal: 1 }); setClassroomForm({ isOpen: false, isLoading: false, editingId: null }); }}>
                           Cancel
                         </Button>
                       )}
