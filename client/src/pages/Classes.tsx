@@ -293,12 +293,13 @@ export default function Classes() {
                       <p className="text-sm text-slate-400 mt-1">Create one to get started</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                       {classrooms.map((classroom) => (
                         <div key={classroom.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-slate-900">{classroom.name}</h4>
                             <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{classroom.level}</span>
+                            <span className="text-xs bg-slate-200 px-2 py-1 rounded text-slate-700">#{classroom.ordinal}</span>
                           </div>
                           <div className="flex gap-2">
                             <Button size="sm" variant="ghost" onClick={() => handleEditClassroom(classroom)} className="h-8">
