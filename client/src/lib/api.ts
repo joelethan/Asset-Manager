@@ -31,6 +31,20 @@ export const apiClient = {
     });
   },
 
+  // Post a FormData payload (multipart/form-data). Do NOT set Content-Type header so the browser can add boundary.
+  async postForm(endpoint: string, formData: FormData) {
+    const url = `${baseUrl}${endpoint}`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    return fetch(url, {
+      method: "POST",
+      body: formData,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+    });
+  },
+
   async patch(endpoint: string, data?: unknown) {
     return this.request(endpoint, {
       method: "PATCH",
@@ -122,6 +136,8 @@ export const studentsApi = {
     apiClient.get(`/students?schoolId=${schoolId}`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/students?schoolId=${schoolId}`, data),
-  templateDownload: () =>
-    apiClient.get(`/students/import/template`),
+  templateDownload: () => apiClient.get(`/students/import/template`),
+  importStudents: (schoolId: string, formData: FormData) =>
+    // Use postForm so multipart/form-data is sent correctly
+    apiClient.postForm(`/students/import?schoolId=${schoolId}`, formData),
 };

@@ -133,3 +133,7 @@ export default App;
 //           - As they report, they can be moved to the "Enrolled" section of the class,
 //              which indicates they are actively enrolled in that class for the term.
 //  - Students > Student Profile: Shows detailed information about a specific student.
+
+
+//  - Let us add an extra Tab for 'Student Uploads'. [150-153: students.tsx]
+//  - This should have both downloading a template & uploading the filled template.

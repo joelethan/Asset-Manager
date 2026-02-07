@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
+import { studentsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { useStudents, useCreateStudent } from "@/hooks/use-students";
@@ -111,6 +112,10 @@ export default function Students() {
 
   const students = Array.isArray(studentsData) ? studentsData : studentsData?.data ?? [];
 
+  // Upload state
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   const handleCreateStudent = async (data: StudentFormData) => {
     try {
       // If a file was provided, convert to data URL and include in payload
@@ -140,6 +145,54 @@ export default function Students() {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await studentsApi.templateDownload();
+      if (!res.ok) throw new Error("Failed to download template");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "students_template";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Downloaded", description: "Template downloaded" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to download template", variant: "destructive" });
+    }
+  };
+
+  const handleUploadChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setUploadFile(file);
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadFile) {
+      toast({ title: "No file", description: "Please select a file to upload", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", uploadFile);
+      const res = await studentsApi.importStudents(schoolId!, fd);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Upload failed");
+      }
+      toast({ title: "Success", description: "Students uploaded successfully" });
+      setUploadFile(null);
+      refetchStudents();
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to upload file", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <AppLayout
       title="Students"
@@ -150,6 +203,7 @@ export default function Students() {
         <TabsList>
           <TabsTrigger value="students">Student Directory</TabsTrigger>
           <TabsTrigger value="create">Create Student</TabsTrigger>
+          <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
         </TabsList>
 
         {/* Students Directory Tab */}
@@ -167,6 +221,50 @@ export default function Students() {
           ) : (
             <StudentsTable students={students} onRefresh={refetchStudents} />
           )}
+        </TabsContent>
+
+        {/* Student Uploads Tab */}
+        <TabsContent value="uploads" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Uploads</CardTitle>
+              <CardDescription>Download the template and upload a filled file.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                <Button variant="outline" onClick={handleDownloadTemplate}>
+                  <DownloadCloud className="mr-2 h-4 w-4" />
+                  Download Template
+                </Button>
+
+                <div className="flex flex-col">
+                  <Input id="students-upload" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={handleUploadChange} />
+                  {uploadFile && <p className="text-sm mt-2">Selected: {uploadFile.name}</p>}
+                </div>
+
+                <Button onClick={handleUploadSubmit} disabled={uploading || !uploadFile}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Accepted formats: CSV or XLSX. The server will process the uploaded file.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Create Student Tab */}
