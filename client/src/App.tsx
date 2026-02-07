@@ -126,3 +126,10 @@ function App() {
 }
 
 export default App;
+
+
+//  - All Students: Shows new students who haven't registered in any classes yet (For allocation).
+//  - Classes > Classroom Enrollments: Shows students who are registered per class. By promotion or otherwise.
+//           - As they report, they can be moved to the "Enrolled" section of the class,
+//              which indicates they are actively enrolled in that class for the term.
+//  - Students > Student Profile: Shows detailed information about a specific student.

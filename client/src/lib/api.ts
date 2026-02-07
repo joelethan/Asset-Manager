@@ -98,11 +98,11 @@ export const classroomDefinitionsApi = {
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/classroom-definitions`, data),
   get: (schoolId: string, id: string) =>
-    apiClient.get(`/schools/${schoolId}/classroom-definitions/${id}`),
+    apiClient.get(`/classroom-definitions/${id}`),
   update: (schoolId: string, id: string, data: unknown) =>
-    apiClient.patch(`/schools/${schoolId}/classroom-definitions/${id}`, data),
+    apiClient.patch(`/classroom-definitions/${id}`, data),
   delete: (schoolId: string, id: string) =>
-    apiClient.delete(`/schools/${schoolId}/classroom-definitions/${id}`),
+    apiClient.delete(`/classroom-definitions/${id}`),
 };
 
 // Enrollments endpoints
@@ -122,4 +122,6 @@ export const studentsApi = {
     apiClient.get(`/students?schoolId=${schoolId}`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/students?schoolId=${schoolId}`, data),
+  templateDownload: () =>
+    apiClient.get(`/students/import/template`),
 };
