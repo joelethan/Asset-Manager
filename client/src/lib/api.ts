@@ -139,5 +139,5 @@ export const studentsApi = {
   templateDownload: () => apiClient.get(`/students/import/template`),
   importStudents: (schoolId: string, formData: FormData) =>
     // Use postForm so multipart/form-data is sent correctly
-    apiClient.postForm(`/students/import?schoolId=${schoolId}`, formData),
+    apiClient.postForm(`/students/import/validate?schoolId=${schoolId}`, formData),
 };
