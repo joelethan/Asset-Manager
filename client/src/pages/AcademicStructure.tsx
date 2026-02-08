@@ -43,6 +43,16 @@ import { useForm, Controller } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
+function formatDateDMY(input?: string | Date | null) {
+  if (!input) return "";
+  const d = new Date(input as any);
+  if (isNaN(d.getTime())) return "";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export default function AcademicStructure() {
   const { selectedTenant } = useTenant();
 
@@ -252,7 +262,7 @@ function TermTemplatesSection({
                 <Input
                   id="template-name"
                   placeholder="e.g., Standard 3-Term Template"
-                  {...register("name", { 
+                  {...register("name", {
                     required: "Template name is required",
                     minLength: { value: 1, message: "Name cannot be empty" }
                   })}
@@ -459,7 +469,7 @@ function AcademicYearsSection({
                 <Input
                   id="year-name"
                   placeholder="e.g., 2025"
-                  {...register("name", { 
+                  {...register("name", {
                     required: "Year name is required",
                     minLength: { value: 1, message: "Name cannot be empty" }
                   })}
@@ -552,8 +562,7 @@ function AcademicYearCard({
         <div>
           <h4 className="font-semibold text-slate-900">Academic Year {year.name}</h4>
           <p className="text-sm text-slate-500">
-            {new Date(year.start_date).toLocaleDateString()} -{" "}
-            {new Date(year.end_date).toLocaleDateString()}
+            {formatDateDMY(year.start_date)} - {formatDateDMY(year.end_date)}
           </p>
           {year.term_template?.name && (
             <p className="text-sm text-slate-500 mt-1">Term Template: {year.term_template.name}</p>

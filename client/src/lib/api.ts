@@ -31,6 +31,20 @@ export const apiClient = {
     });
   },
 
+  // Post a FormData payload (multipart/form-data). Do NOT set Content-Type header so the browser can add boundary.
+  async postForm(endpoint: string, formData: FormData) {
+    const url = `${baseUrl}${endpoint}`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    return fetch(url, {
+      method: "POST",
+      body: formData,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+    });
+  },
+
   async patch(endpoint: string, data?: unknown) {
     return this.request(endpoint, {
       method: "PATCH",
@@ -98,37 +112,23 @@ export const classroomDefinitionsApi = {
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/classroom-definitions`, data),
   get: (schoolId: string, id: string) =>
-    apiClient.get(`/schools/${schoolId}/classroom-definitions/${id}`),
+    apiClient.get(`/classroom-definitions/${id}`),
   update: (schoolId: string, id: string, data: unknown) =>
-    apiClient.patch(`/schools/${schoolId}/classroom-definitions/${id}`, data),
+    apiClient.patch(`/classroom-definitions/${id}`, data),
   delete: (schoolId: string, id: string) =>
-    apiClient.delete(`/schools/${schoolId}/classroom-definitions/${id}`),
-};
-
-// Classroom Offerings endpoints
-export const classroomOfferingsApi = {
-  list: (yearId: string) =>
-    apiClient.get(`/years/${yearId}/classroom-offerings`),
-  create: (yearId: string, data: unknown) =>
-    apiClient.post(`/years/${yearId}/classroom-offerings`, data),
-  get: (yearId: string, id: string) =>
-    apiClient.get(`/years/${yearId}/classroom-offerings/${id}`),
-  update: (yearId: string, id: string, data: unknown) =>
-    apiClient.patch(`/years/${yearId}/classroom-offerings/${id}`, data),
-  delete: (yearId: string, id: string) =>
-    apiClient.delete(`/years/${yearId}/classroom-offerings/${id}`),
+    apiClient.delete(`/classroom-definitions/${id}`),
 };
 
 // Enrollments endpoints
 export const enrollmentsApi = {
   list: (yearId: string, schoolId: string) =>
     apiClient.get(`/students/enrolled/by-classroom?schoolId=${schoolId}&academicYearId=${yearId}`),
-  create: (offeringId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-offerings/${offeringId}/enrollments?schoolId=${schoolId}`, data),
-  bulkCreate: (offeringId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-offerings/${offeringId}/enrollments/bulk?schoolId=${schoolId}`, data),
   delete: (enrollmentId: string) =>
     apiClient.delete(`/enrollments/${enrollmentId}`),
+  create: (definitionId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-definitions/${definitionId}/enrollments?schoolId=${schoolId}`, data),
+  bulkCreate: (definitionId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
 };
 
 export const studentsApi = {
@@ -136,4 +136,8 @@ export const studentsApi = {
     apiClient.get(`/students?schoolId=${schoolId}`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/students?schoolId=${schoolId}`, data),
+  templateDownload: () => apiClient.get(`/students/import/template`),
+  importStudents: (schoolId: string, formData: FormData) =>
+    // Use postForm so multipart/form-data is sent correctly
+    apiClient.postForm(`/students/import/validate?schoolId=${schoolId}`, formData),
 };

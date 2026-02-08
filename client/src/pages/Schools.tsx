@@ -21,7 +21,7 @@ export default function Schools() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const createSchool = useCreateSchool();
-  
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(insertSchoolSchema),
     defaultValues: {
@@ -49,22 +49,22 @@ export default function Schools() {
     });
   };
 
-  const filteredSchools = schools?.filter(school => 
-    school.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredSchools = schools?.filter((school: any) =>
+    school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     school.slug.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <AppLayout 
-      title="Schools" 
+    <AppLayout
+      title="Schools"
       description="Manage educational institutions and tenant configurations."
       breadcrumbs={[{ label: "Schools" }]}
     >
       <div className="relative w-full max-w-sm mb-6">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-        <Input 
-          type="search" 
-          placeholder="Search schools..." 
+        <Input
+          type="search"
+          placeholder="Search schools..."
           className="pl-9 bg-white border-slate-200 focus-visible:ring-primary"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,7 +103,7 @@ export default function Schools() {
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                    {filteredSchools?.map((school) => (
+                    {filteredSchools?.map((school: any) => (
                       <SchoolCard key={school.id} school={school} />
                     ))}
                   </div>
@@ -116,9 +116,9 @@ export default function Schools() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">School Name</Label>
-                    <Input 
-                      id="name" 
-                      placeholder="e.g. Springfield High" 
+                    <Input
+                      id="name"
+                      placeholder="e.g. Springfield High"
                       {...form.register("name")}
                       className="focus-visible:ring-primary"
                     />
@@ -128,10 +128,10 @@ export default function Schools() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="slug">Unique Slug</Label>
-                    <Input 
-                      id="slug" 
-                      placeholder="e.g. springfield-high" 
-                      {...form.register("slug")} 
+                    <Input
+                      id="slug"
+                      placeholder="e.g. springfield-high"
+                      {...form.register("slug")}
                       className="focus-visible:ring-primary font-mono text-sm"
                     />
                     {form.formState.errors.slug && (

@@ -108,16 +108,3 @@ export function useTerms(yearId?: number) {
     enabled: !!yearId,
   });
 }
-
-// Classroom Offerings
-export function useClassroomOfferings(yearId?: string) {
-  return useQuery({
-    queryKey: ["classroom-offerings", yearId],
-    queryFn: async () => {
-      const res = await import("@/lib/api").then((m) => m.classroomOfferingsApi.list(yearId!));
-      if (!res.ok) throw new Error("Failed to fetch classroom offerings");
-      return res.json();
-    },
-    enabled: !!yearId,
-  });
-}
