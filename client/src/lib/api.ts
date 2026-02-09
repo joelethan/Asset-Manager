@@ -1,6 +1,6 @@
 import { schools } from "@/mock-data";
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "http://localhost:3000/api";
 
 export const apiClient = {
   async request(
@@ -127,13 +127,13 @@ export const enrollmentsApi = {
     apiClient.delete(`/enrollments/${enrollmentId}`),
   create: (definitionId: string, schoolId: string, data: unknown) =>
     apiClient.post(`/classroom-definitions/${definitionId}/enrollments?schoolId=${schoolId}`, data),
-  bulkCreate: (definitionId: string, schoolId: string, data: unknown) =>
-    apiClient.post(`/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
+  bulkCreate: (yearId: string, definitionId: string, schoolId: string, data: unknown) =>
+    apiClient.post(`/years/${yearId}/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
 };
 
 export const studentsApi = {
   list: (schoolId: string) =>
-    apiClient.get(`/students?schoolId=${schoolId}`),
+    apiClient.get(`/students/new?schoolId=${schoolId}`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/students?schoolId=${schoolId}`, data),
   templateDownload: () => apiClient.get(`/students/import/template`),

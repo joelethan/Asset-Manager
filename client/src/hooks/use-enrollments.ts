@@ -33,24 +33,6 @@ export function useEnrollStudent() {
   });
 }
 
-export function useBulkEnroll() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ definitionId, schoolId, payload }: { definitionId: string; schoolId: string; payload: unknown }) => {
-      const res = await enrollmentsApi.bulkCreate(definitionId, schoolId, payload);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error?.message || "Failed to create bulk enrollments");
-      }
-      return res.json();
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["students", variables.schoolId] });
-      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
-    },
-  });
-}
-
 export function useDeleteEnrollment() {
   const queryClient = useQueryClient();
   return useMutation({

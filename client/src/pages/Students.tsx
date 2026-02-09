@@ -10,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud, Users, ArrowRight } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
-import { studentsApi } from "@/lib/api";
+import { studentsApi, enrollmentsApi, academicYearsApi, classroomDefinitionsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { useStudents, useCreateStudent } from "@/hooks/use-students";
@@ -78,11 +78,27 @@ export default function Students() {
   const { data: studentsData, refetch: refetchStudents } = useStudents(schoolId);
   const createStudent = useCreateStudent();
 
-  const [formState, setFormState] = useState<FormState>({
-    isOpen: false,
-    isLoading: false,
-    editingId: null,
-  });
+  // Bulk enrollment states
+  const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
+  const [enrollmentStartDate, setEnrollmentStartDate] = useState<string>("");
+  const [bulkEnrolling, setBulkEnrolling] = useState(false);
+  const [activeTab, setActiveTab] = useState("students");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedDefinition, setSelectedDefinition] = useState<string>("");
+  const [years, setYears] = useState<any[]>([]);
+  const [definitions, setDefinitions] = useState<any[]>([]);
+  const [loadingYears, setLoadingYears] = useState(false);
+  const [loadingDefinitions, setLoadingDefinitions] = useState(false);
+
+  // Student enrollments viewing states
+  const [viewYear, setViewYear] = useState<string>("");
+  const [viewDefinition, setViewDefinition] = useState<string>("");
+  const [viewYears, setViewYears] = useState<any[]>([]);
+  const [viewDefinitions, setViewDefinitions] = useState<any[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [loadingViewYears, setLoadingViewYears] = useState(false);
+  const [loadingViewDefinitions, setLoadingViewDefinitions] = useState(false);
+  const [loadingEnrolled, setLoadingEnrolled] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
@@ -137,11 +153,145 @@ export default function Students() {
       reset();
       setAvatarFile(null);
       setAvatarPreview("");
-      setFormState({ isOpen: false, isLoading: false, editingId: null });
       toast({ title: "Success", description: "Student created successfully" });
       refetchStudents();
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to create student", variant: "destructive" });
+    }
+  };
+
+  const handleBulkEnroll = async () => {
+    if (selectedStudents.length === 0) {
+      toast({ title: "No students selected", description: "Please select at least one student", variant: "destructive" });
+      return;
+    }
+    if (!enrollmentStartDate) {
+      toast({ title: "No start date", description: "Please select an enrollment start date", variant: "destructive" });
+      return;
+    }
+
+    // Load years and navigate to enrollments tab
+    setLoadingYears(true);
+    try {
+      const res = await academicYearsApi.list(schoolId);
+      const data = await res.json();
+      setYears(Array.isArray(data) ? data : data?.data || []);
+      setActiveTab("enrollments");
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load academic years", variant: "destructive" });
+    } finally {
+      setLoadingYears(false);
+    }
+  };
+
+  const handleYearChange = async (yearId: string) => {
+    setSelectedYear(yearId);
+    setSelectedDefinition("");
+    setLoadingDefinitions(true);
+    try {
+      const res = await classroomDefinitionsApi.list(schoolId);
+      const data = await res.json();
+      setDefinitions(Array.isArray(data) ? data : data?.data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load classroom definitions", variant: "destructive" });
+    } finally {
+      setLoadingDefinitions(false);
+    }
+  };
+
+  const handleConfirmEnrollment = async () => {
+    if (!selectedYear) {
+      toast({ title: "No year selected", description: "Please select an academic year", variant: "destructive" });
+      return;
+    }
+    if (!selectedDefinition) {
+      toast({ title: "No definition selected", description: "Please select a classroom definition", variant: "destructive" });
+      return;
+    }
+
+    setBulkEnrolling(true);
+    try {
+      const enrollments = selectedStudents.map((student: any) => ({
+        studentId: student.id,
+        startDate: new Date(enrollmentStartDate).toISOString(),
+      }));
+
+      await enrollmentsApi.bulkCreate(
+        selectedYear,
+        selectedDefinition,
+        schoolId,
+        { enrollments }
+      );
+
+      toast({ title: "Success", description: `${selectedStudents.length} students enrolled successfully` });
+      setSelectedStudents([]);
+      setEnrollmentStartDate("");
+      setSelectedYear("");
+      setSelectedDefinition("");
+      refetchStudents();
+      setActiveTab("students");
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to enroll students", variant: "destructive" });
+    } finally {
+      setBulkEnrolling(false);
+    }
+  };
+
+  const handleLoadViewYears = async () => {
+    setLoadingViewYears(true);
+    try {
+      const res = await academicYearsApi.list(schoolId);
+      const data = await res.json();
+      setViewYears(Array.isArray(data) ? data : data?.data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load academic years", variant: "destructive" });
+    } finally {
+      setLoadingViewYears(false);
+    }
+  };
+
+  const handleViewYearChange = async (yearId: string) => {
+    setViewYear(yearId);
+    setViewDefinition("");
+    setEnrolledStudents([]);
+    setLoadingViewDefinitions(true);
+    try {
+      const res = await classroomDefinitionsApi.list(schoolId);
+      const data = await res.json();
+      setViewDefinitions(Array.isArray(data) ? data : data?.data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load classroom definitions", variant: "destructive" });
+    } finally {
+      setLoadingViewDefinitions(false);
+    }
+  };
+
+  const handleViewDefinitionChange = async (definitionId: string) => {
+    setViewDefinition(definitionId);
+    setLoadingEnrolled(true);
+    try {
+      const res = await enrollmentsApi.list(viewYear, schoolId);
+      const data = await res.json();
+      
+      // data structure: { academicYear, classrooms: [...], totalStudents }
+      const responseData = Array.isArray(data) ? { classrooms: data } : data;
+      const classrooms = responseData?.classrooms || [];
+      
+      // Find the classroom that matches the selected definition
+      const selectedClassroom = classrooms.find(
+        (classroom: any) => String(classroom.classroomDefinition?.id) === definitionId
+      );
+      
+      if (selectedClassroom) {
+        setEnrolledStudents(selectedClassroom.students || []);
+      } else {
+        setEnrolledStudents([]);
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load enrolled students", variant: "destructive" });
+      setEnrolledStudents([]);
+    } finally {
+      setLoadingEnrolled(false);
     }
   };
 
@@ -199,15 +349,69 @@ export default function Students() {
       description="Manage students and their enrollments"
       breadcrumbs={[{ label: "Students" }]}
     >
-      <Tabs defaultValue="students" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="students">Student Directory</TabsTrigger>
-          <TabsTrigger value="create">Create Student</TabsTrigger>
+          {/* <TabsTrigger value="create">Create Student</TabsTrigger> */}
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
+          <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
         </TabsList>
 
         {/* Students Directory Tab */}
         <TabsContent value="students" className="space-y-4">
+          {selectedStudents.length > 0 && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-blue-900">{selectedStudents.length} student(s) selected</p>
+                      <p className="text-sm text-blue-700">Ready to enroll in a class</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="enrollmentDate" className="text-sm">Start Date</Label>
+                    <Input
+                      id="enrollmentDate"
+                      type="date"
+                      value={enrollmentStartDate}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setEnrollmentStartDate(e.target.value)}
+                      className="max-w-xs"
+                    />
+
+                    <Button
+                      onClick={handleBulkEnroll}
+                      disabled={loadingYears || !enrollmentStartDate}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loadingYears ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="mr-2 h-4 w-4" />
+                          Bulk Enroll
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedStudents([]);
+                        setEnrollmentStartDate("");
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {students.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
@@ -219,7 +423,12 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <StudentsTable students={students} onRefresh={refetchStudents} />
+            <StudentsTable
+              students={students}
+              onRefresh={refetchStudents}
+              onSelectionChange={setSelectedStudents}
+              selectedIds={selectedStudents.map((s: Student) => s.id)}
+            />
           )}
         </TabsContent>
 
@@ -410,6 +619,240 @@ export default function Students() {
                   )}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Student Enrollments Tab */}
+        <TabsContent value="enrollments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Enroll Students</CardTitle>
+              <CardDescription>Select the academic year and classroom definition for enrollment</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Summary Card */}
+              <Card className="border-blue-100 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-blue-900">
+                      Enrolling <span className="font-bold">{selectedStudents.length}</span> student(s)
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Start Date: <span className="font-semibold">{new Date(enrollmentStartDate).toLocaleDateString()}</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Year and Definition Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="year">Academic Year *</Label>
+                  <Select value={selectedYear} onValueChange={handleYearChange} disabled={loadingYears}>
+                    <SelectTrigger id="year">
+                      <SelectValue placeholder={loadingYears ? "Loading..." : "Select academic year"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year.id} value={String(year.id)}>
+                          {year.name || `Year ${year.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="definition">Classroom Definition *</Label>
+                  <Select value={selectedDefinition} onValueChange={setSelectedDefinition} disabled={!selectedYear || loadingDefinitions}>
+                    <SelectTrigger id="definition">
+                      <SelectValue placeholder={!selectedYear ? "Select a year first" : loadingDefinitions ? "Loading..." : "Select classroom definition"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {definitions.map((def) => (
+                        <SelectItem key={def.id} value={String(def.id)}>
+                          {def.name || `Definition ${def.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Selected Students List */}
+              <div className="space-y-2">
+                <Label>Selected Students ({selectedStudents.length})</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-4 bg-slate-50">
+                  {selectedStudents.length > 0 ? (
+                    <ul className="space-y-2">
+                      {selectedStudents.map((student) => (
+                        <li key={student.id} className="text-sm text-slate-700">
+                          <span className="font-medium">{student.first_name} {student.last_name}</span>
+                          <span className="text-slate-500"> ({student.student_no || student.reg_no})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-slate-500">No students selected</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setActiveTab("students");
+                    setSelectedYear("");
+                    setSelectedDefinition("");
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleConfirmEnrollment}
+                  disabled={bulkEnrolling || !selectedYear || !selectedDefinition}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {bulkEnrolling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enrolling...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Confirm Enrollment
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Student Enrollments View Tab */}
+        <TabsContent value="student-enrollments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>View Student Enrollments</CardTitle>
+              <CardDescription>View students enrolled in a specific classroom definition</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Year and Definition Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="viewYear">Academic Year *</Label>
+                  <Select value={viewYear} onValueChange={handleViewYearChange} disabled={loadingViewYears}>
+                    <SelectTrigger id="viewYear">
+                      <SelectValue placeholder="Select academic year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {viewYears.length === 0 && !loadingViewYears && (
+                        <div className="p-2 text-sm text-slate-500">
+                          {viewYears.length === 0 ? (
+                            <span onClick={handleLoadViewYears} className="cursor-pointer text-blue-600 hover:underline">
+                              Click to load years
+                            </span>
+                          ) : (
+                            "No years available"
+                          )}
+                        </div>
+                      )}
+                      {viewYears.map((year) => (
+                        <SelectItem key={year.id} value={String(year.id)}>
+                          {year.name || `Year ${year.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="viewDefinition">Classroom Definition *</Label>
+                  <Select value={viewDefinition} onValueChange={handleViewDefinitionChange} disabled={!viewYear || loadingViewDefinitions}>
+                    <SelectTrigger id="viewDefinition">
+                      <SelectValue placeholder={!viewYear ? "Select a year first" : loadingViewDefinitions ? "Loading..." : "Select classroom definition"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {viewDefinitions.map((def) => (
+                        <SelectItem key={def.id} value={String(def.id)}>
+                          {def.name || `Definition ${def.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Enrolled Students Table */}
+              {viewDefinition && (
+                <div className="space-y-2">
+                  <Label>Enrolled Students ({enrolledStudents.length})</Label>
+                  {loadingEnrolled ? (
+                    <Card>
+                      <CardContent className="pt-6 pb-6 flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                      </CardContent>
+                    </Card>
+                  ) : enrolledStudents.length > 0 ? (
+                    <div className="overflow-x-auto border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Student No</TableHead>
+                            <TableHead>Reg No</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Enrolled Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {enrolledStudents.map((enrollment) => (
+                            <TableRow key={enrollment.enrollmentId}>
+                              <TableCell className="font-medium">
+                                {enrollment.student?.firstName} {enrollment.student?.lastName}
+                              </TableCell>
+                              <TableCell>{enrollment.student?.studentNo || "-"}</TableCell>
+                              <TableCell>{enrollment.student?.regNo || "-"}</TableCell>
+                              <TableCell>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {enrollment.student?.status ? enrollment.student.status.charAt(0).toUpperCase() + enrollment.student.status.slice(1) : "Active"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {enrollment.startDate
+                                  ? new Date(enrollment.startDate).toLocaleDateString()
+                                  : "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6 pb-6">
+                        <p className="text-sm text-slate-500 text-center">
+                          No students enrolled in this classroom definition
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {!viewDefinition && viewYear && (
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <p className="text-sm text-slate-500 text-center">
+                      Select a classroom definition to view enrolled students
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
