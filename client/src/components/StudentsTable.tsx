@@ -64,13 +64,13 @@ export default function StudentsTable({
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const newSelected = new Set(selectedIds);
-      pageItems.forEach((s) => newSelected.add(s.id));
+      pageItems.forEach((s: Student) => newSelected.add(s.id));
       setSelectedIds(newSelected);
       const selectedStudents = students.filter((s) => newSelected.has(s.id));
       onSelectionChange?.(selectedStudents);
     } else {
       const newSelected = new Set(selectedIds);
-      pageItems.forEach((s) => newSelected.delete(s.id));
+      pageItems.forEach((s: Student) => newSelected.delete(s.id));
       setSelectedIds(newSelected);
       const selectedStudents = students.filter((s) => newSelected.has(s.id));
       onSelectionChange?.(selectedStudents);
@@ -89,8 +89,8 @@ export default function StudentsTable({
     onSelectionChange?.(selectedStudents);
   };
 
-  const isAllPageSelected = pageItems.length > 0 && pageItems.every((s) => selectedIds.has(s.id));
-  const isPartialSelected = pageItems.some((s) => selectedIds.has(s.id)) && !isAllPageSelected;
+  const isAllPageSelected = pageItems.length > 0 && pageItems.every((s: Student) => selectedIds.has(s.id));
+  const isPartialSelected = pageItems.some((s: Student) => selectedIds.has(s.id)) && !isAllPageSelected;
 
   const exportCSV = () => {
     const headers = ["student_no", "reg_no", "first_name", "last_name", "email", "phone", "gender", "status", "date_of_birth", "created_at"];
@@ -125,10 +125,10 @@ export default function StudentsTable({
           <Input
             placeholder="Search by name, reg or student no"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSearch(e.target.value); setPage(1); }}
             className="max-w-sm"
           />
-          <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
+          <Select value={String(perPage)} onValueChange={(v: string) => { setPerPage(Number(v)); setPage(1); }}>
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
@@ -170,12 +170,12 @@ export default function StudentsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageItems.map((s) => (
+              {pageItems.map((s: Student) => (
                   <TableRow key={s.id} className="hover:bg-slate-50">
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.has(s.id)}
-                      onCheckedChange={(checked) => handleSelectRow(s.id, checked as boolean)}
+                      onCheckedChange={(checked: boolean | string) => handleSelectRow(s.id, checked as boolean)}
                       aria-label={`Select ${s.first_name} ${s.last_name}`}
                     />
                   </TableCell>
@@ -216,9 +216,9 @@ export default function StudentsTable({
         <div className="mt-4 flex items-center justify-between">
           <div className="text-sm text-slate-500">Showing {start + 1}–{Math.min(start + perPage, total)} of {total} entries</div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+            <Button variant="outline" disabled={page === 1} onClick={() => setPage((p: number) => Math.max(1, p - 1))}>Prev</Button>
             <div className="px-2">{page} / {totalPages}</div>
-            <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+            <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}>Next</Button>
           </div>
         </div>
       </CardContent>

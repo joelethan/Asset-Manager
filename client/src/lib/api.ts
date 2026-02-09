@@ -1,6 +1,6 @@
 import { schools } from "@/mock-data";
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "http://localhost:3000/api";
 
 export const apiClient = {
   async request(

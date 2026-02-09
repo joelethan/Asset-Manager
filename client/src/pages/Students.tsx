@@ -352,10 +352,9 @@ export default function Students() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="students">Student Directory</TabsTrigger>
-          <TabsTrigger value="create">Create Student</TabsTrigger>
+          {/* <TabsTrigger value="create">Create Student</TabsTrigger> */}
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
           <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
-          {/* Note: enrollments tab intentionally has no trigger here — navigation is only via Bulk Enroll */}
         </TabsList>
 
         {/* Students Directory Tab */}
@@ -377,7 +376,7 @@ export default function Students() {
                       id="enrollmentDate"
                       type="date"
                       value={enrollmentStartDate}
-                      onChange={(e) => setEnrollmentStartDate(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setEnrollmentStartDate(e.target.value)}
                       className="max-w-xs"
                     />
 
@@ -428,7 +427,7 @@ export default function Students() {
               students={students}
               onRefresh={refetchStudents}
               onSelectionChange={setSelectedStudents}
-              selectedIds={selectedStudents.map((s) => s.id)}
+              selectedIds={selectedStudents.map((s: Student) => s.id)}
             />
           )}
         </TabsContent>
