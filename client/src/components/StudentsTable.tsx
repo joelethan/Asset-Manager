@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,15 +28,23 @@ export default function StudentsTable({
   students,
   onRefresh,
   onSelectionChange,
+  selectedIds: propSelectedIds,
 }: {
   students: Student[];
   onRefresh?: () => void;
   onSelectionChange?: (selectedStudents: Student[]) => void;
+  selectedIds?: string[];
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Keep internal selection in sync with external prop when provided
+  useEffect(() => {
+    if (!propSelectedIds) return;
+    setSelectedIds(new Set(propSelectedIds));
+  }, [propSelectedIds]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

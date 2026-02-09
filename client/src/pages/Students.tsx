@@ -285,14 +285,14 @@ export default function Students() {
           <TabsTrigger value="students">Student Directory</TabsTrigger>
           <TabsTrigger value="create">Create Student</TabsTrigger>
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
-          <TabsTrigger value="enrollments">Student Enrollments</TabsTrigger>
+          {/* Note: enrollments tab intentionally has no trigger here — navigation is only via Bulk Enroll */}
         </TabsList>
 
         {/* Students Directory Tab */}
         <TabsContent value="students" className="space-y-4">
           {selectedStudents.length > 0 && (
             <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="pt-6">
+              <CardContent className="py-3">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-blue-600" />
@@ -301,45 +301,43 @@ export default function Students() {
                       <p className="text-sm text-blue-700">Ready to enroll in a class</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="enrollmentDate" className="text-sm">Start Date</Label>
-                      <Input
-                        id="enrollmentDate"
-                        type="date"
-                        value={enrollmentStartDate}
-                        onChange={(e) => setEnrollmentStartDate(e.target.value)}
-                        className="max-w-xs"
-                      />
-                    </div>
-                    <div className="flex gap-2 flex-col mt-6">
-                      <Button
-                        onClick={handleBulkEnroll}
-                        disabled={loadingYears || !enrollmentStartDate}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {loadingYears ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            <ArrowRight className="mr-2 h-4 w-4" />
-                            Bulk Enroll
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedStudents([]);
-                          setEnrollmentStartDate("");
-                        }}
-                      >
-                        Clear
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="enrollmentDate" className="text-sm">Start Date</Label>
+                    <Input
+                      id="enrollmentDate"
+                      type="date"
+                      value={enrollmentStartDate}
+                      onChange={(e) => setEnrollmentStartDate(e.target.value)}
+                      className="max-w-xs"
+                    />
+
+                    <Button
+                      onClick={handleBulkEnroll}
+                      disabled={loadingYears || !enrollmentStartDate}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loadingYears ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="mr-2 h-4 w-4" />
+                          Bulk Enroll
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedStudents([]);
+                        setEnrollmentStartDate("");
+                      }}
+                    >
+                      Clear
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -356,7 +354,12 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <StudentsTable students={students} onRefresh={refetchStudents} onSelectionChange={setSelectedStudents} />
+            <StudentsTable
+              students={students}
+              onRefresh={refetchStudents}
+              onSelectionChange={setSelectedStudents}
+              selectedIds={selectedStudents.map((s) => s.id)}
+            />
           )}
         </TabsContent>
 
