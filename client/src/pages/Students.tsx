@@ -272,12 +272,21 @@ export default function Students() {
     try {
       const res = await enrollmentsApi.list(viewYear, schoolId);
       const data = await res.json();
-      const allEnrollments = Array.isArray(data) ? data : data?.data || [];
-      // Filter enrollments by definition
-      const filtered = allEnrollments.filter(
-        (enroll: any) => String(enroll.classroom_definition_id) === definitionId
+      
+      // data structure: { academicYear, classrooms: [...], totalStudents }
+      const responseData = Array.isArray(data) ? { classrooms: data } : data;
+      const classrooms = responseData?.classrooms || [];
+      
+      // Find the classroom that matches the selected definition
+      const selectedClassroom = classrooms.find(
+        (classroom: any) => String(classroom.classroomDefinition?.id) === definitionId
       );
-      setEnrolledStudents(filtered);
+      
+      if (selectedClassroom) {
+        setEnrolledStudents(selectedClassroom.students || []);
+      } else {
+        setEnrolledStudents([]);
+      }
     } catch (error: any) {
       toast({ title: "Error", description: "Failed to load enrolled students", variant: "destructive" });
       setEnrolledStudents([]);
@@ -803,20 +812,20 @@ export default function Students() {
                         </TableHeader>
                         <TableBody>
                           {enrolledStudents.map((enrollment) => (
-                            <TableRow key={enrollment.id}>
+                            <TableRow key={enrollment.enrollmentId}>
                               <TableCell className="font-medium">
-                                {enrollment.student?.first_name} {enrollment.student?.last_name}
+                                {enrollment.student?.firstName} {enrollment.student?.lastName}
                               </TableCell>
-                              <TableCell>{enrollment.student?.student_no || "-"}</TableCell>
-                              <TableCell>{enrollment.student?.reg_no || "-"}</TableCell>
+                              <TableCell>{enrollment.student?.studentNo || "-"}</TableCell>
+                              <TableCell>{enrollment.student?.regNo || "-"}</TableCell>
                               <TableCell>
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  {enrollment.status || "Active"}
+                                  {enrollment.student?.status ? enrollment.student.status.charAt(0).toUpperCase() + enrollment.student.status.slice(1) : "Active"}
                                 </span>
                               </TableCell>
                               <TableCell>
-                                {enrollment.start_date
-                                  ? new Date(enrollment.start_date).toLocaleDateString()
+                                {enrollment.startDate
+                                  ? new Date(enrollment.startDate).toLocaleDateString()
                                   : "-"}
                               </TableCell>
                             </TableRow>
