@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, RefreshCw, Eye, Edit2, DollarSign } from "lucide-react";
 
@@ -26,13 +27,16 @@ type Student = {
 export default function StudentsTable({
   students,
   onRefresh,
+  onSelectionChange,
 }: {
   students: Student[];
   onRefresh?: () => void;
+  onSelectionChange?: (selectedStudents: Student[]) => void;
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -48,6 +52,37 @@ export default function StudentsTable({
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const start = (page - 1) * perPage;
   const pageItems = filtered.slice(start, start + perPage);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const newSelected = new Set(selectedIds);
+      pageItems.forEach((s) => newSelected.add(s.id));
+      setSelectedIds(newSelected);
+      const selectedStudents = students.filter((s) => newSelected.has(s.id));
+      onSelectionChange?.(selectedStudents);
+    } else {
+      const newSelected = new Set(selectedIds);
+      pageItems.forEach((s) => newSelected.delete(s.id));
+      setSelectedIds(newSelected);
+      const selectedStudents = students.filter((s) => newSelected.has(s.id));
+      onSelectionChange?.(selectedStudents);
+    }
+  };
+
+  const handleSelectRow = (studentId: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(studentId);
+    } else {
+      newSelected.delete(studentId);
+    }
+    setSelectedIds(newSelected);
+    const selectedStudents = students.filter((s) => newSelected.has(s.id));
+    onSelectionChange?.(selectedStudents);
+  };
+
+  const isAllPageSelected = pageItems.length > 0 && pageItems.every((s) => selectedIds.has(s.id));
+  const isPartialSelected = pageItems.some((s) => selectedIds.has(s.id)) && !isAllPageSelected;
 
   const exportCSV = () => {
     const headers = ["student_no", "reg_no", "first_name", "last_name", "email", "phone", "gender", "status", "date_of_birth", "created_at"];
@@ -108,7 +143,14 @@ export default function StudentsTable({
           <Table>
             <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllPageSelected}
+                      indeterminate={isPartialSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
                 <TableHead>Student No</TableHead>
                 <TableHead>Reg No</TableHead>
                 <TableHead>Name</TableHead>
@@ -123,15 +165,11 @@ export default function StudentsTable({
               {pageItems.map((s) => (
                   <TableRow key={s.id} className="hover:bg-slate-50">
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-10 w-10">
-                        {s.avatar_url ? (
-                          <AvatarImage src={s.avatar_url} alt={`${s.first_name} ${s.last_name}`} />
-                        ) : (
-                            <AvatarFallback className="text-sm">{(s.first_name?.[0] || "") + (s.last_name?.[0] || "")}</AvatarFallback>
-                        )}
-                      </Avatar>
-                    </div>
+                    <Checkbox
+                      checked={selectedIds.has(s.id)}
+                      onCheckedChange={(checked) => handleSelectRow(s.id, checked as boolean)}
+                      aria-label={`Select ${s.first_name} ${s.last_name}`}
+                    />
                   </TableCell>
                   <TableCell className="font-medium">{s.student_no || "-"}</TableCell>
                   <TableCell>{s.reg_no || "-"}</TableCell>

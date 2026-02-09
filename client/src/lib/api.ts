@@ -130,14 +130,6 @@ export const enrollmentsApi = {
   bulkCreate: (yearId: string, definitionId: string, schoolId: string, data: unknown) =>
     apiClient.post(`/years/${yearId}/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
 };
-// {
-//   "enrollments": [
-//     { "studentId": "<studentId1>", "startDate": "2025-02-01T00:00:00.000Z" },
-//     { "studentId": "<studentId2>", "startDate": "2025-02-01T00:00:00.000Z" },
-//     { "studentId": "<studentId3>" }
-//   ]
-// }
-
 
 export const studentsApi = {
   list: (schoolId: string) =>
