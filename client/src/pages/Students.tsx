@@ -90,6 +90,16 @@ export default function Students() {
   const [loadingYears, setLoadingYears] = useState(false);
   const [loadingDefinitions, setLoadingDefinitions] = useState(false);
 
+  // Student enrollments viewing states
+  const [viewYear, setViewYear] = useState<string>("");
+  const [viewDefinition, setViewDefinition] = useState<string>("");
+  const [viewYears, setViewYears] = useState<any[]>([]);
+  const [viewDefinitions, setViewDefinitions] = useState<any[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [loadingViewYears, setLoadingViewYears] = useState(false);
+  const [loadingViewDefinitions, setLoadingViewDefinitions] = useState(false);
+  const [loadingEnrolled, setLoadingEnrolled] = useState(false);
+
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -218,11 +228,61 @@ export default function Students() {
       setEnrollmentStartDate("");
       setSelectedYear("");
       setSelectedDefinition("");
+      refetchStudents();
       setActiveTab("students");
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to enroll students", variant: "destructive" });
     } finally {
       setBulkEnrolling(false);
+    }
+  };
+
+  const handleLoadViewYears = async () => {
+    setLoadingViewYears(true);
+    try {
+      const res = await academicYearsApi.list(schoolId);
+      const data = await res.json();
+      setViewYears(Array.isArray(data) ? data : data?.data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load academic years", variant: "destructive" });
+    } finally {
+      setLoadingViewYears(false);
+    }
+  };
+
+  const handleViewYearChange = async (yearId: string) => {
+    setViewYear(yearId);
+    setViewDefinition("");
+    setEnrolledStudents([]);
+    setLoadingViewDefinitions(true);
+    try {
+      const res = await classroomDefinitionsApi.list(schoolId);
+      const data = await res.json();
+      setViewDefinitions(Array.isArray(data) ? data : data?.data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load classroom definitions", variant: "destructive" });
+    } finally {
+      setLoadingViewDefinitions(false);
+    }
+  };
+
+  const handleViewDefinitionChange = async (definitionId: string) => {
+    setViewDefinition(definitionId);
+    setLoadingEnrolled(true);
+    try {
+      const res = await enrollmentsApi.list(viewYear, schoolId);
+      const data = await res.json();
+      const allEnrollments = Array.isArray(data) ? data : data?.data || [];
+      // Filter enrollments by definition
+      const filtered = allEnrollments.filter(
+        (enroll: any) => String(enroll.classroom_definition_id) === definitionId
+      );
+      setEnrolledStudents(filtered);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to load enrolled students", variant: "destructive" });
+      setEnrolledStudents([]);
+    } finally {
+      setLoadingEnrolled(false);
     }
   };
 
@@ -285,6 +345,7 @@ export default function Students() {
           <TabsTrigger value="students">Student Directory</TabsTrigger>
           <TabsTrigger value="create">Create Student</TabsTrigger>
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
+          <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
           {/* Note: enrollments tab intentionally has no trigger here — navigation is only via Bulk Enroll */}
         </TabsList>
 
@@ -660,6 +721,130 @@ export default function Students() {
                   )}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Student Enrollments View Tab */}
+        <TabsContent value="student-enrollments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>View Student Enrollments</CardTitle>
+              <CardDescription>View students enrolled in a specific classroom definition</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Year and Definition Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="viewYear">Academic Year *</Label>
+                  <Select value={viewYear} onValueChange={handleViewYearChange} disabled={loadingViewYears}>
+                    <SelectTrigger id="viewYear">
+                      <SelectValue placeholder="Select academic year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {viewYears.length === 0 && !loadingViewYears && (
+                        <div className="p-2 text-sm text-slate-500">
+                          {viewYears.length === 0 ? (
+                            <span onClick={handleLoadViewYears} className="cursor-pointer text-blue-600 hover:underline">
+                              Click to load years
+                            </span>
+                          ) : (
+                            "No years available"
+                          )}
+                        </div>
+                      )}
+                      {viewYears.map((year) => (
+                        <SelectItem key={year.id} value={String(year.id)}>
+                          {year.name || `Year ${year.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="viewDefinition">Classroom Definition *</Label>
+                  <Select value={viewDefinition} onValueChange={handleViewDefinitionChange} disabled={!viewYear || loadingViewDefinitions}>
+                    <SelectTrigger id="viewDefinition">
+                      <SelectValue placeholder={!viewYear ? "Select a year first" : loadingViewDefinitions ? "Loading..." : "Select classroom definition"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {viewDefinitions.map((def) => (
+                        <SelectItem key={def.id} value={String(def.id)}>
+                          {def.name || `Definition ${def.id}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Enrolled Students Table */}
+              {viewDefinition && (
+                <div className="space-y-2">
+                  <Label>Enrolled Students ({enrolledStudents.length})</Label>
+                  {loadingEnrolled ? (
+                    <Card>
+                      <CardContent className="pt-6 pb-6 flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                      </CardContent>
+                    </Card>
+                  ) : enrolledStudents.length > 0 ? (
+                    <div className="overflow-x-auto border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Student No</TableHead>
+                            <TableHead>Reg No</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Enrolled Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {enrolledStudents.map((enrollment) => (
+                            <TableRow key={enrollment.id}>
+                              <TableCell className="font-medium">
+                                {enrollment.student?.first_name} {enrollment.student?.last_name}
+                              </TableCell>
+                              <TableCell>{enrollment.student?.student_no || "-"}</TableCell>
+                              <TableCell>{enrollment.student?.reg_no || "-"}</TableCell>
+                              <TableCell>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {enrollment.status || "Active"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {enrollment.start_date
+                                  ? new Date(enrollment.start_date).toLocaleDateString()
+                                  : "-"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="pt-6 pb-6">
+                        <p className="text-sm text-slate-500 text-center">
+                          No students enrolled in this classroom definition
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {!viewDefinition && viewYear && (
+                <Card>
+                  <CardContent className="pt-6 pb-6">
+                    <p className="text-sm text-slate-500 text-center">
+                      Select a classroom definition to view enrolled students
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

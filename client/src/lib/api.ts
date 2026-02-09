@@ -133,7 +133,7 @@ export const enrollmentsApi = {
 
 export const studentsApi = {
   list: (schoolId: string) =>
-    apiClient.get(`/students?schoolId=${schoolId}`),
+    apiClient.get(`/students/new?schoolId=${schoolId}`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/students?schoolId=${schoolId}`, data),
   templateDownload: () => apiClient.get(`/students/import/template`),
