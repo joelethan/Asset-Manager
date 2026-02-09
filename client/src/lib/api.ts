@@ -141,3 +141,16 @@ export const studentsApi = {
     // Use postForm so multipart/form-data is sent correctly
     apiClient.postForm(`/students/import/validate?schoolId=${schoolId}`, formData),
 };
+
+export const subjectsApi = {
+  list: (schoolId: string) =>
+    apiClient.get(`/schools/${schoolId}/subjects`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/subjects`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/subjects/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.put(`/schools/${schoolId}/subjects/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/subjects/${id}`),
+};
