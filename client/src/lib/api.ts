@@ -150,7 +150,20 @@ export const subjectsApi = {
   get: (schoolId: string, id: string) =>
     apiClient.get(`/schools/${schoolId}/subjects/${id}`),
   update: (schoolId: string, id: string, data: unknown) =>
-    apiClient.put(`/schools/${schoolId}/subjects/${id}`, data),
+    apiClient.patch(`/schools/${schoolId}/subjects/${id}`, data),
   delete: (schoolId: string, id: string) =>
     apiClient.delete(`/schools/${schoolId}/subjects/${id}`),
 };
+
+export const assessmentsApi = {
+  list: (schoolId: string, termId: string) =>
+    apiClient.get(`/schools/${schoolId}/assessments?termId=${termId}`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/assessments`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/assessments/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/assessments/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/assessments/${id}`),
+}
