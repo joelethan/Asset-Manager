@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, Loader2, Trash2 } from "lucide-react";
+import { Plus, AlertCircle, Loader2, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { subjectsApi } from "@/lib/api";
@@ -35,6 +35,9 @@ export default function Subjects() {
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("subjects");
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
     defaultValues: {
@@ -68,10 +71,10 @@ export default function Subjects() {
       const response = await subjectsApi.create(schoolId, data);
       if (!response.ok) throw new Error("Failed to create subject");
 
-      const newSubject = await response.json();
-      setSubjects([...subjects, newSubject]);
       reset();
+      await fetchSubjects();
       toast({ title: "Success", description: "Subject created successfully" });
+      setActiveTab("subjects");
     } catch (error) {
       toast({ title: "Error", description: "Failed to create subject", variant: "destructive" });
     } finally {
@@ -86,11 +89,40 @@ export default function Subjects() {
       const response = await subjectsApi.delete(schoolId, subjectId);
       if (!response.ok) throw new Error("Failed to delete subject");
 
-      setSubjects(subjects.filter((s) => s.id !== subjectId));
+      await fetchSubjects();
       toast({ title: "Success", description: "Subject deleted successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete subject", variant: "destructive" });
     }
+  };
+
+  const handleUpdateSubject = async (data: SubjectFormData) => {
+    if (!editingSubject) return;
+    setIsLoading(true);
+    try {
+      const response = await subjectsApi.update(schoolId, editingSubject.id, data);
+      if (!response.ok) throw new Error("Failed to update subject");
+
+      await fetchSubjects();
+      reset();
+      setEditingSubject(null);
+      setIsEditModalOpen(false);
+      toast({ title: "Success", description: "Subject updated successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update subject", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEditSubject = (subject: Subject) => {
+    setEditingSubject(subject);
+    reset({
+      name: subject.name,
+      code: subject.code,
+      description: subject.description || "",
+    });
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -99,7 +131,7 @@ export default function Subjects() {
       description="Manage school subjects"
       breadcrumbs={[{ label: "Subjects" }]}
     >
-      <Tabs defaultValue="subjects" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="subjects">Subject List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
@@ -146,7 +178,15 @@ export default function Subjects() {
                               {subject.is_active ? "Active" : "Inactive"}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right space-x-2 flex justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditSubject(subject)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -229,6 +269,74 @@ export default function Subjects() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && editingSubject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Edit Subject</CardTitle>
+              <CardDescription>Update subject details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(handleUpdateSubject)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Subject Name *</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Mathematics"
+                    {...register("name", { required: "Subject name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                  />
+                  {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-code">Subject Code *</Label>
+                  <Input
+                    id="edit-code"
+                    placeholder="MATH"
+                    {...register("code", { required: "Subject code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
+                  />
+                  {errors.code && <p className="text-sm text-red-600">{errors.code.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Input
+                    id="edit-description"
+                    placeholder="Optional description of the subject"
+                    {...register("description")}
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditingSubject(null);
+                      reset();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>Update Subject</>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </AppLayout>
   );
 }
