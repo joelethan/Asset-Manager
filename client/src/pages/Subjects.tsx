@@ -229,14 +229,23 @@ export default function Subjects() {
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     try {
+      // Get the selected term object to extract its name
+      const selectedTerm = terms.find((t) => t.id === data.termId);
+      if (!selectedTerm) throw new Error("Selected term not found");
+
+      // Parse date and add time to create full timestamp
+      const dateonly = data.assessmentDate;
+      const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
+
       const payload = {
-        termId: data.termId,
+        yearId: selectedAcademicYearId,
+        termName: selectedTerm.name,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
         maxScore: parseFloat(data.maxScore),
         weight: parseFloat(data.weight),
-        assessmentDate: new Date(data.assessmentDate).toISOString(),
+        assessmentDate: timestamp,
       };
       const response = await assessmentsApi.create(schoolId, payload);
       if (!response.ok) throw new Error("Failed to create assessment");
@@ -270,14 +279,23 @@ export default function Subjects() {
     if (!editingAssessment) return;
     setIsAssessmentLoading(true);
     try {
+      // Get the selected term object to extract its name
+      const selectedTerm = terms.find((t) => t.id === data.termId);
+      if (!selectedTerm) throw new Error("Selected term not found");
+
+      // Parse date and add time to create full timestamp
+      const dateonly = data.assessmentDate;
+      const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
+
       const payload = {
-        termId: data.termId,
+        yearId: selectedAcademicYearId,
+        termName: selectedTerm.name,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
         maxScore: parseFloat(data.maxScore),
         weight: parseFloat(data.weight),
-        assessmentDate: new Date(data.assessmentDate).toISOString(),
+        assessmentDate: timestamp,
       };
       const response = await assessmentsApi.update(schoolId, editingAssessment.id, payload);
       if (!response.ok) throw new Error("Failed to update assessment");
