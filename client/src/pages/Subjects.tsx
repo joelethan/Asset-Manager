@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,10 +35,13 @@ export default function Subjects() {
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [subjectForm, setSubjectForm] = useState<SubjectFormData>({
-    name: "",
-    code: "",
-    description: "",
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
+    defaultValues: {
+      name: "",
+      code: "",
+      description: "",
+    },
   });
 
   // Fetch subjects on mount
@@ -58,17 +62,15 @@ export default function Subjects() {
     }
   };
 
-  const handleCreateSubject = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateSubject = async (data: SubjectFormData) => {
     setIsLoading(true);
-
     try {
-      const response = await subjectsApi.create(schoolId, subjectForm);
+      const response = await subjectsApi.create(schoolId, data);
       if (!response.ok) throw new Error("Failed to create subject");
 
       const newSubject = await response.json();
       setSubjects([...subjects, newSubject]);
-      setSubjectForm({ name: "", code: "", description: "" });
+      reset();
       toast({ title: "Success", description: "Subject created successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to create subject", variant: "destructive" });
@@ -172,16 +174,15 @@ export default function Subjects() {
               <CardDescription>Add a new subject to the school (6.1)</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateSubject} className="space-y-4">
+              <form onSubmit={handleSubmit(handleCreateSubject)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Subject Name *</Label>
                   <Input
                     id="name"
                     placeholder="Mathematics"
-                    value={subjectForm.name}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
-                    required
+                    {...register("name", { required: "Subject name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
                   />
+                  {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -189,10 +190,9 @@ export default function Subjects() {
                   <Input
                     id="code"
                     placeholder="MATH"
-                    value={subjectForm.code}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
-                    required
+                    {...register("code", { required: "Subject code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
                   />
+                  {errors.code && <p className="text-sm text-red-600">{errors.code.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -200,8 +200,7 @@ export default function Subjects() {
                   <Input
                     id="description"
                     placeholder="Optional description of the subject"
-                    value={subjectForm.description}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, description: e.target.value })}
+                    {...register("description")}
                   />
                 </div>
 
