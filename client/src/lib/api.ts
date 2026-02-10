@@ -88,6 +88,12 @@ export const termTemplatesApi = {
     apiClient.get(`/schools/${schoolId}/term-templates`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/term-templates`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/term-templates/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/term-templates/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/term-templates/${id}`),
 };
 
 // Academic Years endpoints
