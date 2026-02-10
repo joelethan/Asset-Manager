@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
+import { subjectsApi } from "@/lib/api";
 
 interface Subject {
   id: string;
@@ -48,9 +49,7 @@ export default function Subjects() {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch(`/api/schools/${schoolId}/subjects`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await subjectsApi.list(schoolId);
       if (!response.ok) throw new Error("Failed to fetch subjects");
       const data = await response.json();
       setSubjects(Array.isArray(data) ? data : data.data || []);
@@ -64,15 +63,7 @@ export default function Subjects() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/subjects`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-        body: JSON.stringify(subjectForm),
-      });
-
+      const response = await subjectsApi.create(schoolId, subjectForm);
       if (!response.ok) throw new Error("Failed to create subject");
 
       const newSubject = await response.json();
@@ -90,11 +81,7 @@ export default function Subjects() {
     if (!confirm("Are you sure you want to delete this subject?")) return;
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/subjects/${subjectId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
-
+      const response = await subjectsApi.delete(schoolId, subjectId);
       if (!response.ok) throw new Error("Failed to delete subject");
 
       setSubjects(subjects.filter((s) => s.id !== subjectId));
