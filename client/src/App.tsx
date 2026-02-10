@@ -17,6 +17,7 @@ import Teachers from "@/pages/Teachers";
 import Classes from "@/pages/Classes";
 import Settings from "@/pages/Settings";
 import CreateSchool from "@/pages/CreateSchool";
+import Subjects from "@/pages/Subjects";
 
 function ProtectedRoute({ component: Component }: { component: any }) {
   const { isAuthenticated, initialized } = useProfile();
@@ -82,6 +83,7 @@ function AppRouter() {
             <Route path="/students" component={Students} />
             <Route path="/teachers" component={Teachers} />
             <Route path="/classes" component={Classes} />
+            <Route path="/subjects" component={Subjects} />
             <Route path="/settings" component={Settings} />
           </>
         )}
