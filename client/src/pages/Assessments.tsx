@@ -11,6 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
+import { academicYearsApi, termsApi, subjectsApi, assessmentsApi } from "@/lib/api";
+
+interface AcademicYear {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  termTemplateId: string;
+}
 
 interface Term {
   id: string;
@@ -51,6 +60,8 @@ export default function Assessments() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -68,14 +79,41 @@ export default function Assessments() {
   // Fetch data on mount
   useEffect(() => {
     if (schoolId) {
-      fetchAssessments();
+      fetchAcademicYears();
       fetchSubjects();
-      fetchTerms();
     }
   }, [schoolId]);
 
+  // Fetch terms when academic year is selected
+  useEffect(() => {
+    if (selectedYearId) {
+      fetchTerms(selectedYearId);
+      fetchAssessments();
+    }
+  }, [selectedYearId]);
+
+  const fetchAcademicYears = async () => {
+    try {
+      const response = await academicYearsApi.list(schoolId);
+      if (!response.ok) throw new Error("Failed to fetch academic years");
+      const data = await response.json();
+      const years = Array.isArray(data) ? data : data.data || [];
+      setAcademicYears(years);
+      
+      // Auto-select first year if available
+      if (years.length > 0) {
+        setSelectedYearId(years[0].id);
+      }
+    } catch (error) {
+      console.warn("Failed to fetch academic years");
+      toast({ title: "Error", description: "Failed to fetch academic years", variant: "destructive" });
+    }
+  };
+
   const fetchAssessments = async () => {
     try {
+      // We'll fetch assessments for the specific year by getting terms first
+      // then fetching assessments filtered by those terms
       const response = await fetch(`/api/schools/${schoolId}/assessments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
       });
@@ -87,41 +125,30 @@ export default function Assessments() {
     }
   };
 
+
   const fetchSubjects = async () => {
     try {
-      const response = await fetch(`/api/schools/${schoolId}/subjects`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await subjectsApi.list(schoolId);
       if (!response.ok) throw new Error("Failed to fetch subjects");
       const data = await response.json();
       setSubjects(Array.isArray(data) ? data : data.data || []);
     } catch (error) {
       console.warn("Failed to fetch subjects");
+      toast({ title: "Error", description: "Failed to fetch subjects", variant: "destructive" });
     }
   };
 
-  const fetchTerms = async () => {
+  const fetchTerms = async (yearId: number) => {
     try {
-      // Fetch academic years first to get terms
-      const yearsResponse = await fetch(`/api/schools/${schoolId}/years`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
-      if (!yearsResponse.ok) return;
-
-      const years = await yearsResponse.json();
-      const yearId = Array.isArray(years) ? years[0]?.id : years.data?.[0]?.id;
-
-      if (yearId) {
-        const termsResponse = await fetch(`/api/years/${yearId}/terms`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        });
-        if (termsResponse.ok) {
-          const data = await termsResponse.json();
-          setTerms(Array.isArray(data) ? data : data.data || []);
-        }
-      }
+      const response = await termsApi.list(yearId);
+      if (!response.ok) throw new Error("Failed to fetch terms");
+      const data = await response.json();
+      setTerms(Array.isArray(data) ? data : data.data || []);
+      // Reset term selection when year changes
+      setAssessmentForm((prev: AssessmentFormData) => ({ ...prev, termId: "" }));
     } catch (error) {
       console.warn("Failed to fetch terms");
+      toast({ title: "Error", description: "Failed to fetch terms", variant: "destructive" });
     }
   };
 
@@ -130,21 +157,14 @@ export default function Assessments() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/assessments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-        body: JSON.stringify({
-          termId: assessmentForm.termId,
-          subjectId: assessmentForm.subjectId,
-          name: assessmentForm.name,
-          type: assessmentForm.type,
-          maxScore: parseFloat(assessmentForm.maxScore),
-          weight: parseFloat(assessmentForm.weight),
-          assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
-        }),
+      const response = await assessmentsApi.create(schoolId, {
+        termId: assessmentForm.termId,
+        subjectId: assessmentForm.subjectId,
+        name: assessmentForm.name,
+        type: assessmentForm.type,
+        maxScore: parseFloat(assessmentForm.maxScore),
+        weight: parseFloat(assessmentForm.weight),
+        assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
       });
 
       if (!response.ok) throw new Error("Failed to create assessment");
@@ -172,14 +192,11 @@ export default function Assessments() {
     if (!confirm("Are you sure you want to delete this assessment?")) return;
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/assessments/${assessmentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await assessmentsApi.delete(schoolId, assessmentId);
 
       if (!response.ok) throw new Error("Failed to delete assessment");
 
-      setAssessments(assessments.filter((a) => a.id !== assessmentId));
+      setAssessments(assessments.filter((a: Assessment) => a.id !== assessmentId));
       toast({ title: "Success", description: "Assessment deleted successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete assessment", variant: "destructive" });
@@ -192,6 +209,39 @@ export default function Assessments() {
       description="Manage school assessments and exams"
       breadcrumbs={[{ label: "Assessments" }]}
     >
+      {/* Academic Year Selector */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Select Academic Year</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {academicYears.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No academic years found. Please create an academic year first.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Select
+              value={selectedYearId?.toString() || ""}
+              onValueChange={(value: string) => setSelectedYearId(parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an academic year" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year: AcademicYear) => (
+                  <SelectItem key={year.id} value={year.id.toString()}>
+                    {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="assessments" className="w-full">
         <TabsList>
           <TabsTrigger value="assessments">Assessment List</TabsTrigger>
@@ -230,8 +280,8 @@ export default function Assessments() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {assessments.map((assessment) => {
-                        const subject = subjects.find((s) => s.id === assessment.subject_id);
+                      {assessments.map((assessment: Assessment) => {
+                        const subject = subjects.find((s: Subject) => s.id === assessment.subject_id);
                         return (
                           <TableRow key={assessment.id}>
                             <TableCell className="font-medium">{assessment.name}</TableCell>
@@ -280,12 +330,12 @@ export default function Assessments() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="term">Term *</Label>
-                      <Select value={assessmentForm.termId} onValueChange={(value) => setAssessmentForm({ ...assessmentForm, termId: value })}>
+                      <Select value={assessmentForm.termId} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, termId: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a term" />
                         </SelectTrigger>
                         <SelectContent>
-                          {terms.map((term) => (
+                          {terms.map((term: Term) => (
                             <SelectItem key={term.id} value={term.id}>
                               {term.name}
                             </SelectItem>
@@ -295,12 +345,12 @@ export default function Assessments() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="subject">Subject *</Label>
-                      <Select value={assessmentForm.subjectId} onValueChange={(value) => setAssessmentForm({ ...assessmentForm, subjectId: value })}>
+                      <Select value={assessmentForm.subjectId} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, subjectId: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a subject" />
                         </SelectTrigger>
                         <SelectContent>
-                          {subjects.map((subject) => (
+                          {subjects.map((subject: Subject) => (
                             <SelectItem key={subject.id} value={subject.id}>
                               {subject.name}
                             </SelectItem>
@@ -316,7 +366,7 @@ export default function Assessments() {
                       id="name"
                       placeholder="Mid-Term Exam"
                       value={assessmentForm.name}
-                      onChange={(e) => setAssessmentForm({ ...assessmentForm, name: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, name: e.target.value })}
                       required
                     />
                   </div>
@@ -324,7 +374,7 @@ export default function Assessments() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="type">Assessment Type *</Label>
-                      <Select value={assessmentForm.type} onValueChange={(value) => setAssessmentForm({ ...assessmentForm, type: value })}>
+                      <Select value={assessmentForm.type} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, type: value })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -344,7 +394,7 @@ export default function Assessments() {
                         type="number"
                         placeholder="100"
                         value={assessmentForm.maxScore}
-                        onChange={(e) => setAssessmentForm({ ...assessmentForm, maxScore: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, maxScore: e.target.value })}
                         required
                       />
                     </div>
@@ -359,7 +409,7 @@ export default function Assessments() {
                         placeholder="0.4"
                         step="0.1"
                         value={assessmentForm.weight}
-                        onChange={(e) => setAssessmentForm({ ...assessmentForm, weight: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, weight: e.target.value })}
                         required
                       />
                     </div>
@@ -369,7 +419,7 @@ export default function Assessments() {
                         id="date"
                         type="date"
                         value={assessmentForm.assessmentDate}
-                        onChange={(e) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
                       />
                     </div>
                   </div>
