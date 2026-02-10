@@ -207,6 +207,12 @@ export default function Subjects() {
     }
   };
 
+  // Helper to extract a term's display name from various possible keys
+  const getTermNameFromObj = (t: any) => {
+    if (!t) return "";
+    return t.name || t.termName || t.term_name || t.title || t.label || "";
+  };
+
   const fetchAssessments = async (termId: string) => {
     if (!termId) return;
     try {
@@ -233,7 +239,7 @@ export default function Subjects() {
       const selectedTerm =
         terms.find((t) => String(t.id) === String(data.termId)) ||
         terms.find((t) => String(t.id) === String(selectedTermId));
-      const termName = selectedTerm?.name || "";
+      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : (data.termId || selectedTermId || "");
 
       // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
@@ -285,7 +291,7 @@ export default function Subjects() {
       const selectedTerm =
         terms.find((t) => String(t.id) === String(data.termId)) ||
         terms.find((t) => String(t.id) === String(selectedTermId));
-      const termName = selectedTerm?.name || "";
+      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : (data.termId || selectedTermId || "");
 
       // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
