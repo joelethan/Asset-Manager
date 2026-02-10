@@ -229,17 +229,19 @@ export default function Subjects() {
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     try {
-      // Get the selected term object to extract its name
-      const selectedTerm = terms.find((t) => t.id === data.termId);
-      if (!selectedTerm) throw new Error("Selected term not found");
+      // Find selected term (handle numeric/string id mismatches) or fallback to selectedTermId
+      const selectedTerm =
+        terms.find((t) => String(t.id) === String(data.termId)) ||
+        terms.find((t) => String(t.id) === String(selectedTermId));
+      const termName = selectedTerm?.name || "";
 
-      // Parse date and add time to create full timestamp
+      // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
         yearId: selectedAcademicYearId,
-        termName: selectedTerm.name,
+        termName,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
@@ -279,17 +281,19 @@ export default function Subjects() {
     if (!editingAssessment) return;
     setIsAssessmentLoading(true);
     try {
-      // Get the selected term object to extract its name
-      const selectedTerm = terms.find((t) => t.id === data.termId);
-      if (!selectedTerm) throw new Error("Selected term not found");
+      // Find selected term (handle numeric/string id mismatches) or fallback to selectedTermId
+      const selectedTerm =
+        terms.find((t) => String(t.id) === String(data.termId)) ||
+        terms.find((t) => String(t.id) === String(selectedTermId));
+      const termName = selectedTerm?.name || "";
 
-      // Parse date and add time to create full timestamp
+      // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
         yearId: selectedAcademicYearId,
-        termName: selectedTerm.name,
+        termName,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
