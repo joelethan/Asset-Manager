@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { academicYearsApi, termsApi, subjectsApi, assessmentsApi } from "@/lib/api";
+import { academicYearsApi, termTemplatesApi, subjectsApi, assessmentsApi } from "@/lib/api";
 
 interface AcademicYear {
   id: number;
@@ -19,6 +19,12 @@ interface AcademicYear {
   startDate: string;
   endDate: string;
   termTemplateId: string;
+}
+
+interface TermTemplate {
+  id: string;
+  name: string;
+  structure: Term[];
 }
 
 interface Term {
@@ -87,10 +93,13 @@ export default function Assessments() {
   // Fetch terms when academic year is selected
   useEffect(() => {
     if (selectedYearId) {
-      fetchTerms(selectedYearId);
-      fetchAssessments();
+      const selectedYear = academicYears.find((y) => y.id === selectedYearId);
+      if (selectedYear) {
+        fetchTerms(selectedYear.termTemplateId);
+        fetchAssessments();
+      }
     }
-  }, [selectedYearId]);
+  }, [selectedYearId, academicYears]);
 
   const fetchAcademicYears = async () => {
     try {
@@ -138,17 +147,19 @@ export default function Assessments() {
     }
   };
 
-  const fetchTerms = async (yearId: number) => {
+  const fetchTerms = async (termTemplateId: string) => {
     try {
-      const response = await termsApi.list(yearId);
-      if (!response.ok) throw new Error("Failed to fetch terms");
+      const response = await termTemplatesApi.get(schoolId, termTemplateId);
+      if (!response.ok) throw new Error("Failed to fetch term template");
       const data = await response.json();
-      setTerms(Array.isArray(data) ? data : data.data || []);
+      const template: TermTemplate = Array.isArray(data) ? data[0] : data;
+      const terms = template.structure || [];
+      setTerms(terms);
       // Reset term selection when year changes
       setAssessmentForm((prev: AssessmentFormData) => ({ ...prev, termId: "" }));
     } catch (error) {
-      console.warn("Failed to fetch terms");
-      toast({ title: "Error", description: "Failed to fetch terms", variant: "destructive" });
+      console.warn("Failed to fetch term template");
+      toast({ title: "Error", description: "Failed to fetch term template", variant: "destructive" });
     }
   };
 
