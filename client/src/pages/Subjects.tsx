@@ -529,7 +529,7 @@ export default function Subjects() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Name</TableHead>
+                                <TableHead>Subject & Assessment</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Max Score</TableHead>
                                 <TableHead>Weight</TableHead>
@@ -538,33 +538,41 @@ export default function Subjects() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {assessments.map((assessment) => (
-                                <TableRow key={assessment.id}>
-                                  <TableCell className="font-medium">{assessment.name}</TableCell>
-                                  <TableCell>{assessment.type}</TableCell>
-                                  <TableCell>{assessment.max_score}</TableCell>
-                                  <TableCell>{assessment.weight}</TableCell>
-                                  <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
-                                  <TableCell className="text-right space-x-2 flex justify-end">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => startEditAssessment(assessment)}
-                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteAssessment(assessment.id)}
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                              {assessments.map((assessment) => {
+                                const subject = subjects.find((s) => s.id === assessment.subject_id);
+                                return (
+                                  <TableRow key={assessment.id}>
+                                    <TableCell className="font-medium">
+                                      <div className="flex flex-col">
+                                        <span className="text-slate-900">{subject?.name || "Unknown"}</span>
+                                        <span className="text-sm text-slate-600">{assessment.name}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>{assessment.type}</TableCell>
+                                    <TableCell>{assessment.max_score}</TableCell>
+                                    <TableCell>{assessment.weight}</TableCell>
+                                    <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
+                                    <TableCell className="text-right space-x-2 flex justify-end">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => startEditAssessment(assessment)}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteAssessment(assessment.id)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
