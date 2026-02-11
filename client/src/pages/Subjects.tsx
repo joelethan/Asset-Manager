@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, Loader2, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { subjectsApi, assessmentsApi, termsApi } from "@/lib/api";
+import { subjectsApi, assessmentsApi, termsApi, academicYearsApi, termTemplatesApi } from "@/lib/api";
 
 interface Subject {
   id: string;
@@ -64,6 +64,8 @@ export default function Subjects() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [selectedTermId, setSelectedTermId] = useState<string>("");
+  const [academicYears, setAcademicYears] = useState<any[]>([]);
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>("");
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [isAssessmentEditModalOpen, setIsAssessmentEditModalOpen] = useState(false);
@@ -85,11 +87,11 @@ export default function Subjects() {
     },
   });
 
-  // Fetch terms and subjects on mount
+  // Fetch subjects and academic years on mount
   useEffect(() => {
     if (schoolId) {
       fetchSubjects();
-      fetchTerms();
+      fetchAcademicYears();
     }
   }, [schoolId]);
 
@@ -165,13 +167,34 @@ export default function Subjects() {
   };
 
   // Assessment handlers
-  const fetchTerms = async () => {
+  const fetchAcademicYears = async () => {
     try {
-      const res = await termsApi.list(0);
+      const res = await academicYearsApi.list(schoolId);
+      if (!res.ok) return;
       const data = await res.json();
-      setTerms(Array.isArray(data) ? data : data.data || []);
+      const years = Array.isArray(data) ? data : data.data || [];
+      setAcademicYears(years);
+      if (years.length > 0) {
+        setSelectedAcademicYearId(String(years[0].id));
+        const templateId = years[0].termTemplateId || years[0].term_template_id || years[0].term_template?.id;
+        if (templateId) await fetchTerms(String(templateId));
+      }
     } catch (error) {
-      // Silently fail
+      // silently fail
+    }
+  };
+
+  const fetchTerms = async (termTemplateId: string) => {
+    try {
+      if (!termTemplateId) return;
+      const res = await termTemplatesApi.get(schoolId, termTemplateId);
+      if (!res.ok) return;
+      const data = await res.json();
+      const template = Array.isArray(data) ? data[0] : data;
+      const structure = template?.structure || template?.terms || [];
+      setTerms(Array.isArray(structure) ? structure : []);
+    } catch (error) {
+      // silently fail
     }
   };
 
@@ -503,6 +526,27 @@ export default function Subjects() {
             <CardContent>
               <form onSubmit={handleAssessmentSubmit(handleCreateAssessment)} className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="assess-year">Academic Year</Label>
+                  <select
+                    id="assess-year"
+                    value={selectedAcademicYearId}
+                    onChange={(e) => {
+                      const yearId = e.target.value;
+                      setSelectedAcademicYearId(yearId);
+                      const year = academicYears.find((y: any) => String(y.id) === yearId);
+                      const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
+                      if (templateId) fetchTerms(String(templateId));
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md mb-3"
+                  >
+                    <option value="">Select an academic year...</option>
+                    {academicYears.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
+                      </option>
+                    ))}
+                  </select>
+
                   <Label htmlFor="assess-term">Term *</Label>
                   <select
                     id="assess-term"
