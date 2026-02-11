@@ -31,17 +31,23 @@ interface SubjectFormData {
 interface Assessment {
   id: string;
   school_id: string;
+  term_id: string;
+  subject_id: string;
   name: string;
-  code: string;
-  description?: string;
-  term_id?: string;
+  type: string;
+  max_score: string;
+  weight: string;
+  assessment_date?: string;
 }
 
 interface AssessmentFormData {
+  termId: string;
+  subjectId: string;
   name: string;
-  code: string;
-  description: string;
-  term_id: string;
+  type: string;
+  maxScore: string;
+  weight: string;
+  assessmentDate: string;
 }
 
 interface Term {
@@ -80,10 +86,13 @@ export default function Subjects() {
 
   const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors } } = useForm<AssessmentFormData>({
     defaultValues: {
+      termId: "",
+      subjectId: "",
       name: "",
-      code: "",
-      description: "",
-      term_id: "",
+      type: "exam",
+      maxScore: "100",
+      weight: "0.4",
+      assessmentDate: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -220,7 +229,16 @@ export default function Subjects() {
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     try {
-      const response = await assessmentsApi.create(schoolId, data);
+      const payload = {
+        termId: data.termId,
+        subjectId: data.subjectId,
+        name: data.name,
+        type: data.type,
+        maxScore: parseFloat(data.maxScore),
+        weight: parseFloat(data.weight),
+        assessmentDate: new Date(data.assessmentDate).toISOString(),
+      };
+      const response = await assessmentsApi.create(schoolId, payload);
       if (!response.ok) throw new Error("Failed to create assessment");
 
       resetAssessment();
@@ -252,7 +270,16 @@ export default function Subjects() {
     if (!editingAssessment) return;
     setIsAssessmentLoading(true);
     try {
-      const response = await assessmentsApi.update(schoolId, editingAssessment.id, data);
+      const payload = {
+        termId: data.termId,
+        subjectId: data.subjectId,
+        name: data.name,
+        type: data.type,
+        maxScore: parseFloat(data.maxScore),
+        weight: parseFloat(data.weight),
+        assessmentDate: new Date(data.assessmentDate).toISOString(),
+      };
+      const response = await assessmentsApi.update(schoolId, editingAssessment.id, payload);
       if (!response.ok) throw new Error("Failed to update assessment");
 
       await fetchAssessments(selectedTermId);
@@ -270,10 +297,13 @@ export default function Subjects() {
   const startEditAssessment = (assessment: Assessment) => {
     setEditingAssessment(assessment);
     resetAssessment({
+      termId: assessment.term_id,
+      subjectId: assessment.subject_id,
       name: assessment.name,
-      code: assessment.code,
-      description: assessment.description || "",
-      term_id: assessment.term_id || "",
+      type: assessment.type,
+      maxScore: String(assessment.max_score),
+      weight: String(assessment.weight),
+      assessmentDate: assessment.assessment_date ? assessment.assessment_date.split("T")[0] : new Date().toISOString().split("T")[0],
     });
     setIsAssessmentEditModalOpen(true);
   };
@@ -500,8 +530,10 @@ export default function Subjects() {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Name</TableHead>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Description</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Max Score</TableHead>
+                                <TableHead>Weight</TableHead>
+                                <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -509,8 +541,10 @@ export default function Subjects() {
                               {assessments.map((assessment) => (
                                 <TableRow key={assessment.id}>
                                   <TableCell className="font-medium">{assessment.name}</TableCell>
-                                  <TableCell>{assessment.code}</TableCell>
-                                  <TableCell className="text-slate-600">{assessment.description || "-"}</TableCell>
+                                  <TableCell>{assessment.type}</TableCell>
+                                  <TableCell>{assessment.max_score}</TableCell>
+                                  <TableCell>{assessment.weight}</TableCell>
+                                  <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
                                   <TableCell className="text-right space-x-2 flex justify-end">
                                     <Button
                                       variant="ghost"
@@ -564,7 +598,7 @@ export default function Subjects() {
                         const year = academicYears.find((y: any) => String(y.id) === yearId);
                         const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
                         // reset selected term when year changes
-                        resetAssessment({ name: "", code: "", description: "", term_id: "" });
+                        resetAssessment({ termId: "", subjectId: "", name: "", type: "exam", maxScore: "100", weight: "0.4", assessmentDate: new Date().toISOString().split("T")[0] });
                         if (templateId) fetchTerms(String(templateId));
                       }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md"
@@ -582,7 +616,7 @@ export default function Subjects() {
                     <Label htmlFor="assess-term">Term *</Label>
                     <select
                       id="assess-term"
-                      {...registerAssessment("term_id", { required: "Term is required" })}
+                      {...registerAssessment("termId", { required: "Term is required" })}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md"
                     >
                       <option value="">Select a term...</option>
@@ -592,8 +626,25 @@ export default function Subjects() {
                         </option>
                       ))}
                     </select>
-                    {assessmentErrors.term_id && <p className="text-sm text-red-600">{assessmentErrors.term_id.message}</p>}
+                    {assessmentErrors.termId && <p className="text-sm text-red-600">{assessmentErrors.termId.message}</p>}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assess-subject">Subject *</Label>
+                  <select
+                    id="assess-subject"
+                    {...registerAssessment("subjectId", { required: "Subject is required" })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="">Select a subject...</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                  {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -606,23 +657,55 @@ export default function Subjects() {
                   {assessmentErrors.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="assess-code">Assessment Code *</Label>
-                  <Input
-                    id="assess-code"
-                    placeholder="MTE"
-                    {...registerAssessment("code", { required: "Assessment code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
-                  />
-                  {assessmentErrors.code && <p className="text-sm text-red-600">{assessmentErrors.code.message}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-type">Type *</Label>
+                    <select
+                      id="assess-type"
+                      {...registerAssessment("type", { required: "Type is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="exam">Exam</option>
+                      <option value="test">Test</option>
+                      <option value="quiz">Quiz</option>
+                      <option value="homework">Homework</option>
+                      <option value="project">Project</option>
+                    </select>
+                    {assessmentErrors.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-maxScore">Max Score *</Label>
+                    <Input
+                      id="assess-maxScore"
+                      type="number"
+                      placeholder="100"
+                      {...registerAssessment("maxScore", { required: "Max score is required", min: { value: 0, message: "Must be 0 or more" } })}
+                    />
+                    {assessmentErrors.maxScore && <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="assess-description">Description</Label>
-                  <Input
-                    id="assess-description"
-                    placeholder="Optional description"
-                    {...registerAssessment("description")}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-weight">Weight *</Label>
+                    <Input
+                      id="assess-weight"
+                      type="number"
+                      step="0.1"
+                      placeholder="0.4"
+                      {...registerAssessment("weight", { required: "Weight is required", min: { value: 0, message: "Must be 0 or more" } })}
+                    />
+                    {assessmentErrors.weight && <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-date">Assessment Date *</Label>
+                    <Input
+                      id="assess-date"
+                      type="date"
+                      {...registerAssessment("assessmentDate", { required: "Assessment date is required" })}
+                    />
+                    {assessmentErrors.assessmentDate && <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
+                  </div>
                 </div>
 
                 <Alert>
@@ -733,7 +816,7 @@ export default function Subjects() {
                   <Label htmlFor="edit-assess-term">Term *</Label>
                   <select
                     id="edit-assess-term"
-                    {...registerAssessment("term_id", { required: "Term is required" })}
+                    {...registerAssessment("termId", { required: "Term is required" })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-md"
                   >
                     <option value="">Select a term...</option>
@@ -743,7 +826,24 @@ export default function Subjects() {
                       </option>
                     ))}
                   </select>
-                  {assessmentErrors.term_id && <p className="text-sm text-red-600">{assessmentErrors.term_id.message}</p>}
+                  {assessmentErrors.termId && <p className="text-sm text-red-600">{assessmentErrors.termId.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-assess-subject">Subject *</Label>
+                  <select
+                    id="edit-assess-subject"
+                    {...registerAssessment("subjectId", { required: "Subject is required" })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="">Select a subject...</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                  {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -757,22 +857,52 @@ export default function Subjects() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-assess-code">Assessment Code *</Label>
-                  <Input
-                    id="edit-assess-code"
-                    placeholder="MTE"
-                    {...registerAssessment("code", { required: "Assessment code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
-                  />
-                  {assessmentErrors.code && <p className="text-sm text-red-600">{assessmentErrors.code.message}</p>}
+                  <Label htmlFor="edit-assess-type">Type *</Label>
+                  <select
+                    id="edit-assess-type"
+                    {...registerAssessment("type", { required: "Type is required" })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="exam">Exam</option>
+                    <option value="test">Test</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="homework">Homework</option>
+                    <option value="project">Project</option>
+                  </select>
+                  {assessmentErrors.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-assess-description">Description</Label>
+                  <Label htmlFor="edit-assess-maxScore">Max Score *</Label>
                   <Input
-                    id="edit-assess-description"
-                    placeholder="Optional description"
-                    {...registerAssessment("description")}
+                    id="edit-assess-maxScore"
+                    type="number"
+                    placeholder="100"
+                    {...registerAssessment("maxScore", { required: "Max score is required", min: { value: 0, message: "Must be 0 or more" } })}
                   />
+                  {assessmentErrors.maxScore && <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-assess-weight">Weight *</Label>
+                  <Input
+                    id="edit-assess-weight"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.4"
+                    {...registerAssessment("weight", { required: "Weight is required", min: { value: 0, message: "Must be 0 or more" } })}
+                  />
+                  {assessmentErrors.weight && <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-assess-date">Assessment Date *</Label>
+                  <Input
+                    id="edit-assess-date"
+                    type="date"
+                    {...registerAssessment("assessmentDate", { required: "Assessment date is required" })}
+                  />
+                  {assessmentErrors.assessmentDate && <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
                 </div>
 
                 <div className="flex gap-2 justify-end">
