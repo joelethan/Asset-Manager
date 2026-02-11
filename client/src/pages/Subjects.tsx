@@ -638,31 +638,33 @@ export default function Subjects() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="assess-subject">Subject *</Label>
-                  <select
-                    id="assess-subject"
-                    {...registerAssessment("subjectId", { required: "Subject is required" })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  >
-                    <option value="">Select a subject...</option>
-                    {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
-                  {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-subject">Subject *</Label>
+                    <select
+                      id="assess-subject"
+                      {...registerAssessment("subjectId", { required: "Subject is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select a subject...</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="assess-name">Assessment Name *</Label>
-                  <Input
-                    id="assess-name"
-                    placeholder="Midterm Exam"
-                    {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
-                  />
-                  {assessmentErrors.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-name">Assessment Name *</Label>
+                    <Input
+                      id="assess-name"
+                      placeholder="Midterm Exam"
+                      {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                    />
+                    {assessmentErrors.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -837,31 +839,33 @@ export default function Subjects() {
                   {assessmentErrors.termId && <p className="text-sm text-red-600">{assessmentErrors.termId.message}</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="edit-assess-subject">Subject *</Label>
-                  <select
-                    id="edit-assess-subject"
-                    {...registerAssessment("subjectId", { required: "Subject is required" })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  >
-                    <option value="">Select a subject...</option>
-                    {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
-                  {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-assess-subject">Subject *</Label>
+                    <select
+                      id="edit-assess-subject"
+                      {...registerAssessment("subjectId", { required: "Subject is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select a subject...</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="edit-assess-name">Assessment Name *</Label>
-                  <Input
-                    id="edit-assess-name"
-                    placeholder="Midterm Exam"
-                    {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
-                  />
-                  {assessmentErrors.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-assess-name">Assessment Name *</Label>
+                    <Input
+                      id="edit-assess-name"
+                      placeholder="Midterm Exam"
+                      {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                    />
+                    {assessmentErrors.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
