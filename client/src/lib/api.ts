@@ -162,8 +162,13 @@ export const subjectsApi = {
 };
 
 export const assessmentsApi = {
-  list: (schoolId: string, termId: string) =>
-    apiClient.get(`/schools/${schoolId}/assessments?termId=${termId}`),
+  list: (schoolId: string, yearId?: string, termName?: string) => {
+    const params = new URLSearchParams();
+    if (yearId) params.append('yearId', yearId);
+    if (termName) params.append('termName', termName);
+    const queryString = params.toString();
+    return apiClient.get(`/schools/${schoolId}/assessments${queryString ? '?' + queryString : ''}`);
+  },
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/assessments`, data),
   get: (schoolId: string, id: string) =>

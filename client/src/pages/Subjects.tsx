@@ -216,7 +216,9 @@ export default function Subjects() {
   const fetchAssessments = async (termId: string) => {
     if (!termId) return;
     try {
-      const response = await assessmentsApi.list(schoolId, termId);
+      const selectedTerm = terms.find((t) => String(t.id) === String(termId));
+      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : "";
+      const response = await assessmentsApi.list(schoolId, selectedAcademicYearId, termName);
       if (!response.ok) throw new Error("Failed to fetch assessments");
       const data = await response.json();
       setAssessments(Array.isArray(data) ? data : data.data || []);
