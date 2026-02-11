@@ -432,21 +432,48 @@ export default function Subjects() {
               <CardDescription>Choose an academic term to manage assessments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="term-select">Term</Label>
-                <select
-                  id="term-select"
-                  value={selectedTermId}
-                  onChange={(e) => handleTermChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                >
-                  <option value="">Select a term...</option>
-                  {terms.map((term) => (
-                    <option key={term.id} value={term.id}>
-                      {term.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="view-assess-year">Academic Year</Label>
+                  <select
+                    id="view-assess-year"
+                    value={selectedAcademicYearId}
+                    onChange={(e) => {
+                      const yearId = e.target.value;
+                      setSelectedAcademicYearId(yearId);
+                      const year = academicYears.find((y: any) => String(y.id) === yearId);
+                      const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
+                      setSelectedTermId("");
+                      setAssessments([]);
+                      if (templateId) fetchTerms(String(templateId));
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="">Select an academic year...</option>
+                    {academicYears.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="term-select">Term</Label>
+                  <select
+                    id="term-select"
+                    value={selectedTermId}
+                    onChange={(e) => handleTermChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="">Select a term...</option>
+                    {terms.map((term) => (
+                      <option key={term.id} value={term.id}>
+                        {term.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {selectedTermId && (
@@ -525,42 +552,48 @@ export default function Subjects() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAssessmentSubmit(handleCreateAssessment)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="assess-year">Academic Year</Label>
-                  <select
-                    id="assess-year"
-                    value={selectedAcademicYearId}
-                    onChange={(e) => {
-                      const yearId = e.target.value;
-                      setSelectedAcademicYearId(yearId);
-                      const year = academicYears.find((y: any) => String(y.id) === yearId);
-                      const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
-                      if (templateId) fetchTerms(String(templateId));
-                    }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md mb-3"
-                  >
-                    <option value="">Select an academic year...</option>
-                    {academicYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-year">Academic Year</Label>
+                    <select
+                      id="assess-year"
+                      value={selectedAcademicYearId}
+                      onChange={(e) => {
+                        const yearId = e.target.value;
+                        setSelectedAcademicYearId(yearId);
+                        const year = academicYears.find((y: any) => String(y.id) === yearId);
+                        const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
+                        // reset selected term when year changes
+                        resetAssessment({ name: "", code: "", description: "", term_id: "" });
+                        if (templateId) fetchTerms(String(templateId));
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select an academic year...</option>
+                      {academicYears.map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <Label htmlFor="assess-term">Term *</Label>
-                  <select
-                    id="assess-term"
-                    {...registerAssessment("term_id", { required: "Term is required" })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  >
-                    <option value="">Select a term...</option>
-                    {terms.map((term) => (
-                      <option key={term.id} value={term.id}>
-                        {term.name}
-                      </option>
-                    ))}
-                  </select>
-                  {assessmentErrors.term_id && <p className="text-sm text-red-600">{assessmentErrors.term_id.message}</p>}
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-term">Term *</Label>
+                    <select
+                      id="assess-term"
+                      {...registerAssessment("term_id", { required: "Term is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select a term...</option>
+                      {terms.map((term) => (
+                        <option key={term.id} value={term.id}>
+                          {term.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assessmentErrors.term_id && <p className="text-sm text-red-600">{assessmentErrors.term_id.message}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
