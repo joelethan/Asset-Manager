@@ -363,16 +363,16 @@ export default function Students() {
     try {
       const res = await enrollmentsApi.list(viewYear, schoolId);
       const data = await res.json();
-      
+
       // data structure: { academicYear, classrooms: [...], totalStudents }
       const responseData = Array.isArray(data) ? { classrooms: data } : data;
       const classrooms = responseData?.classrooms || [];
-      
+
       // Find the classroom that matches the selected definition
       const selectedClassroom = classrooms.find(
         (classroom: any) => String(classroom.classroomDefinition?.id) === definitionId
       );
-      
+
       if (selectedClassroom) {
         setEnrolledStudents(selectedClassroom.students || []);
       } else {
@@ -442,7 +442,7 @@ export default function Students() {
       const data = await response.json();
       const years = Array.isArray(data) ? data : data.data || [];
       setAcademicYears(years);
-      
+
       // Auto-select first year if available
       if (years.length > 0) {
         setSelectedYearId(years[0].id);
@@ -557,8 +557,8 @@ export default function Students() {
           {/* <TabsTrigger value="create">Create Student</TabsTrigger> */}
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
           <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
-          <TabsTrigger value="assessments-view">Assessments</TabsTrigger>
-          <TabsTrigger value="assessments-create">Create Assessment</TabsTrigger>
+          {/* <TabsTrigger value="assessments-view">Assessments</TabsTrigger>
+          <TabsTrigger value="assessments-create">Create Assessment</TabsTrigger> */}
         </TabsList>
 
         {/* Students Directory Tab */}

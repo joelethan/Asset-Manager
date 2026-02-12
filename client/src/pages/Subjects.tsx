@@ -459,13 +459,6 @@ export default function Subjects() {
                   />
                 </div>
 
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Endpoint: POST /schools/{schoolId}/subjects
-                  </AlertDescription>
-                </Alert>
-
                 <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? (
                     <>
@@ -747,13 +740,6 @@ export default function Subjects() {
                     {assessmentErrors.assessmentDate && <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
                   </div>
                 </div>
-
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Endpoint: POST /schools/{schoolId}/assessments
-                  </AlertDescription>
-                </Alert>
 
                 <Button type="submit" disabled={isAssessmentLoading} className="w-full">
                   {isAssessmentLoading ? (
