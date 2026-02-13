@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertCircle, Loader2, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { subjectsApi, assessmentsApi, termsApi, academicYearsApi, termTemplatesApi } from "@/lib/api";
+import { subjectsApi, assessmentsApi, termsApi, academicYearsApi, termTemplatesApi, classroomDefinitionsApi } from "@/lib/api";
 
 interface Subject {
   id: string;
@@ -33,6 +33,7 @@ interface Assessment {
   school_id: string;
   term_id: string;
   subject_id: string;
+  classroom_definition_id: string;
   name: string;
   type: string;
   max_score: string;
@@ -43,6 +44,7 @@ interface Assessment {
 interface AssessmentFormData {
   termId: string;
   subjectId: string;
+  classroomDefinitionId: string;
   name: string;
   type: string;
   maxScore: string;
@@ -72,6 +74,7 @@ export default function Subjects() {
   const [selectedTermId, setSelectedTermId] = useState<string>("");
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>("");
+  const [classroomDefinitions, setClassroomDefinitions] = useState<any[]>([]);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [isAssessmentEditModalOpen, setIsAssessmentEditModalOpen] = useState(false);
@@ -88,6 +91,7 @@ export default function Subjects() {
     defaultValues: {
       termId: "",
       subjectId: "",
+      classroomDefinitionId: "",
       name: "",
       type: "exam",
       maxScore: "100",
@@ -101,6 +105,7 @@ export default function Subjects() {
     if (schoolId) {
       fetchSubjects();
       fetchAcademicYears();
+      fetchClassroomDefinitions();
     }
   }, [schoolId]);
 
@@ -188,6 +193,18 @@ export default function Subjects() {
         const templateId = years[0].termTemplateId || years[0].term_template_id || years[0].term_template?.id;
         if (templateId) await fetchTerms(String(templateId));
       }
+    } catch (error) {
+      // silently fail
+    }
+  };
+
+  const fetchClassroomDefinitions = async () => {
+    try {
+      const res = await classroomDefinitionsApi.list(schoolId);
+      if (!res.ok) return;
+      const data = await res.json();
+      const classrooms = Array.isArray(data) ? data : data.data || [];
+      setClassroomDefinitions(classrooms);
     } catch (error) {
       // silently fail
     }
@@ -329,6 +346,7 @@ export default function Subjects() {
     resetAssessment({
       termId: assessment.term_id,
       subjectId: assessment.subject_id,
+      classroomDefinitionId: assessment.classroom_definition_id,
       name: assessment.name,
       type: assessment.type,
       maxScore: String(assessment.max_score),
@@ -629,7 +647,7 @@ export default function Subjects() {
                         const year = academicYears.find((y: any) => String(y.id) === yearId);
                         const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
                         // reset selected term when year changes
-                        resetAssessment({ termId: "", subjectId: "", name: "", type: "exam", maxScore: "100", weight: "0.4", assessmentDate: new Date().toISOString().split("T")[0] });
+                        resetAssessment({ termId: "", subjectId: "", classroomDefinitionId: "", name: "", type: "exam", maxScore: "100", weight: "0.4", assessmentDate: new Date().toISOString().split("T")[0] });
                         if (templateId) fetchTerms(String(templateId));
                       }}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md"
@@ -679,6 +697,25 @@ export default function Subjects() {
                     {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-classroom">Classroom Definition *</Label>
+                    <select
+                      id="assess-classroom"
+                      {...registerAssessment("classroomDefinitionId", { required: "Classroom definition is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select a classroom...</option>
+                      {classroomDefinitions.map((classroom) => (
+                        <option key={classroom.id} value={classroom.id}>
+                          {classroom.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assessmentErrors.classroomDefinitionId && <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-name">Assessment Name *</Label>
                     <Input
@@ -873,6 +910,25 @@ export default function Subjects() {
                     {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-assess-classroom">Classroom Definition *</Label>
+                    <select
+                      id="edit-assess-classroom"
+                      {...registerAssessment("classroomDefinitionId", { required: "Classroom definition is required" })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    >
+                      <option value="">Select a classroom...</option>
+                      {classroomDefinitions.map((classroom) => (
+                        <option key={classroom.id} value={classroom.id}>
+                          {classroom.name}
+                        </option>
+                      ))}
+                    </select>
+                    {assessmentErrors.classroomDefinitionId && <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-assess-name">Assessment Name *</Label>
                     <Input
