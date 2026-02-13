@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, useRef, FormEvent } from "react";
+import { useState, ChangeEvent, useRef, FormEvent, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud, Users, ArrowRight } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud, Users, ArrowRight, Trash2 } from "lucide-react";
 import StudentsTable from "@/components/StudentsTable";
-import { studentsApi, enrollmentsApi, academicYearsApi, classroomDefinitionsApi } from "@/lib/api";
+import { studentsApi, enrollmentsApi, academicYearsApi, classroomDefinitionsApi, termTemplatesApi, subjectsApi, assessmentsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
 import { useStudents, useCreateStudent } from "@/hooks/use-students";
@@ -43,6 +43,54 @@ interface StudentFormData {
   dateOfBirth: string;
   address: string;
   avatarUrl: string;
+}
+
+interface AcademicYear {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  termTemplateId: string;
+}
+
+interface TermTemplate {
+  id: string;
+  name: string;
+  structure: Term[];
+}
+
+interface Term {
+  id: string;
+  name: string;
+  ordinal: number;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Assessment {
+  id: string;
+  school_id: string;
+  term_id: string;
+  subject_id: string;
+  name: string;
+  type: string;
+  max_score: string;
+  weight: string;
+  assessment_date?: string;
+}
+
+interface AssessmentFormData {
+  termId: string;
+  subjectId: string;
+  name: string;
+  type: string;
+  maxScore: string;
+  weight: string;
+  assessmentDate: string;
 }
 
 export default function Students() {
@@ -98,6 +146,49 @@ export default function Students() {
   const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
   const [loadingViewYears, setLoadingViewYears] = useState(false);
   const [loadingViewDefinitions, setLoadingViewDefinitions] = useState(false);
+
+  // Assessment states
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [terms, setTerms] = useState<Term[]>([]);
+  const [assessmentSubjects, setAssessmentSubjects] = useState<Subject[]>([]);
+  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  const [assessmentForm, setAssessmentForm] = useState<AssessmentFormData>({
+    termId: "",
+    subjectId: "",
+    name: "",
+    type: "exam",
+    maxScore: "100",
+    weight: "0.4",
+    assessmentDate: new Date().toISOString().split("T")[0],
+  });
+
+  // Fetch academic years and subjects on mount for assessments tab
+  useEffect(() => {
+    if (schoolId && activeTab === "assessments-view") {
+      fetchAcademicYears();
+    }
+  }, [schoolId, activeTab]);
+
+  // Fetch assessment subjects on mount
+  useEffect(() => {
+    if (schoolId) {
+      fetchAssessmentSubjects();
+    }
+  }, [schoolId]);
+
+  // Fetch terms when academic year is selected
+  useEffect(() => {
+    if (selectedYearId && activeTab === "assessments-create") {
+      const selectedYear = academicYears.find((y: AcademicYear) => y.id === selectedYearId);
+      if (selectedYear) {
+        fetchTerms(selectedYear.termTemplateId);
+        fetchAssessments();
+      }
+    }
+  }, [selectedYearId, activeTab, academicYears]);
+
   const [loadingEnrolled, setLoadingEnrolled] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -272,16 +363,16 @@ export default function Students() {
     try {
       const res = await enrollmentsApi.list(viewYear, schoolId);
       const data = await res.json();
-      
+
       // data structure: { academicYear, classrooms: [...], totalStudents }
       const responseData = Array.isArray(data) ? { classrooms: data } : data;
       const classrooms = responseData?.classrooms || [];
-      
+
       // Find the classroom that matches the selected definition
       const selectedClassroom = classrooms.find(
         (classroom: any) => String(classroom.classroomDefinition?.id) === definitionId
       );
-      
+
       if (selectedClassroom) {
         setEnrolledStudents(selectedClassroom.students || []);
       } else {
@@ -343,6 +434,117 @@ export default function Students() {
     }
   };
 
+  // Assessment functions
+  const fetchAcademicYears = async () => {
+    try {
+      const response = await academicYearsApi.list(schoolId);
+      if (!response.ok) throw new Error("Failed to fetch academic years");
+      const data = await response.json();
+      const years = Array.isArray(data) ? data : data.data || [];
+      setAcademicYears(years);
+
+      // Auto-select first year if available
+      if (years.length > 0) {
+        setSelectedYearId(years[0].id);
+      }
+    } catch (error) {
+      console.warn("Failed to fetch academic years");
+      toast({ title: "Error", description: "Failed to fetch academic years", variant: "destructive" });
+    }
+  };
+
+  const fetchAssessments = async () => {
+    try {
+      const response = await fetch(`/api/schools/${schoolId}/assessments`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch assessments");
+      const data = await response.json();
+      setAssessments(Array.isArray(data) ? data : data.data || []);
+    } catch (error) {
+      console.warn("Failed to fetch assessments");
+    }
+  };
+
+  const fetchAssessmentSubjects = async () => {
+    try {
+      const response = await subjectsApi.list(schoolId);
+      if (!response.ok) throw new Error("Failed to fetch subjects");
+      const data = await response.json();
+      setAssessmentSubjects(Array.isArray(data) ? data : data.data || []);
+    } catch (error) {
+      console.warn("Failed to fetch subjects");
+      toast({ title: "Error", description: "Failed to fetch subjects", variant: "destructive" });
+    }
+  };
+
+  const fetchTerms = async (termTemplateId: string) => {
+    try {
+      const response = await termTemplatesApi.get(schoolId, termTemplateId);
+      if (!response.ok) throw new Error("Failed to fetch term template");
+      const data = await response.json();
+      const template: TermTemplate = Array.isArray(data) ? data[0] : data;
+      const termList = template.structure || [];
+      setTerms(termList);
+      // Reset term selection when year changes
+      setAssessmentForm((prev: AssessmentFormData) => ({ ...prev, termId: "" }));
+    } catch (error) {
+      console.warn("Failed to fetch term template");
+      toast({ title: "Error", description: "Failed to fetch term template", variant: "destructive" });
+    }
+  };
+
+  const handleCreateAssessment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAssessmentLoading(true);
+
+    try {
+      const response = await assessmentsApi.create(schoolId, {
+        termId: assessmentForm.termId,
+        subjectId: assessmentForm.subjectId,
+        name: assessmentForm.name,
+        type: assessmentForm.type,
+        maxScore: parseFloat(assessmentForm.maxScore),
+        weight: parseFloat(assessmentForm.weight),
+        assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
+      });
+
+      if (!response.ok) throw new Error("Failed to create assessment");
+
+      const newAssessment = await response.json();
+      setAssessments([...assessments, newAssessment]);
+      setAssessmentForm({
+        termId: "",
+        subjectId: "",
+        name: "",
+        type: "exam",
+        maxScore: "100",
+        weight: "0.4",
+        assessmentDate: new Date().toISOString().split("T")[0],
+      });
+      toast({ title: "Success", description: "Assessment created successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to create assessment", variant: "destructive" });
+    } finally {
+      setAssessmentLoading(false);
+    }
+  };
+
+  const handleDeleteAssessment = async (assessmentId: string) => {
+    if (!confirm("Are you sure you want to delete this assessment?")) return;
+
+    try {
+      const response = await assessmentsApi.delete(schoolId, assessmentId);
+
+      if (!response.ok) throw new Error("Failed to delete assessment");
+
+      setAssessments(assessments.filter((a: Assessment) => a.id !== assessmentId));
+      toast({ title: "Success", description: "Assessment deleted successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete assessment", variant: "destructive" });
+    }
+  };
+
   return (
     <AppLayout
       title="Students"
@@ -355,6 +557,8 @@ export default function Students() {
           {/* <TabsTrigger value="create">Create Student</TabsTrigger> */}
           <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
           <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
+          {/* <TabsTrigger value="assessments-view">Assessments</TabsTrigger>
+          <TabsTrigger value="assessments-create">Create Assessment</TabsTrigger> */}
         </TabsList>
 
         {/* Students Directory Tab */}
@@ -852,6 +1056,233 @@ export default function Students() {
                     </p>
                   </CardContent>
                 </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Assessments View Tab */}
+        <TabsContent value="assessments-view" className="space-y-4">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Select Academic Year</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {academicYears.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No academic years found. Please create an academic year first.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select
+                  value={selectedYearId?.toString() || ""}
+                  onValueChange={(value: string) => setSelectedYearId(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an academic year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.map((year: AcademicYear) => (
+                      <SelectItem key={year.id} value={year.id.toString()}>
+                        {year.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </CardContent>
+          </Card>
+
+          {assessments.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+                  <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900">No assessments yet</h3>
+                  <p className="text-slate-500 max-w-sm mt-2">Create your first assessment to get started.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>All Assessments</CardTitle>
+                <CardDescription>Total: {assessments.length} assessments</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Max Score</TableHead>
+                        <TableHead>Weight</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {assessments.map((assessment: Assessment) => {
+                        const subject = assessmentSubjects.find((s: Subject) => s.id === assessment.subject_id);
+                        return (
+                          <TableRow key={assessment.id}>
+                            <TableCell className="font-medium">{assessment.name}</TableCell>
+                            <TableCell>{subject?.name || "-"}</TableCell>
+                            <TableCell>{assessment.type}</TableCell>
+                            <TableCell>{assessment.max_score}</TableCell>
+                            <TableCell>{assessment.weight}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAssessment(assessment.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Create Assessment Tab */}
+        <TabsContent value="assessments-create" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Assessment</CardTitle>
+              <CardDescription>Add a new assessment or exam</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {terms.length === 0 || assessmentSubjects.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please create terms and subjects first before creating assessments.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <form onSubmit={handleCreateAssessment} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="term">Term *</Label>
+                      <Select value={assessmentForm.termId} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, termId: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a term" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {terms.map((term: Term) => (
+                            <SelectItem key={term.id} value={term.id}>
+                              {term.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Select value={assessmentForm.subjectId} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, subjectId: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assessmentSubjects.map((subject: Subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              {subject.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Assessment Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Mid-Term Exam"
+                      value={assessmentForm.name}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="type">Assessment Type *</Label>
+                      <Select value={assessmentForm.type} onValueChange={(value: string) => setAssessmentForm({ ...assessmentForm, type: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="exam">Exam</SelectItem>
+                          <SelectItem value="test">Test</SelectItem>
+                          <SelectItem value="quiz">Quiz</SelectItem>
+                          <SelectItem value="homework">Homework</SelectItem>
+                          <SelectItem value="project">Project</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="maxScore">Max Score *</Label>
+                      <Input
+                        id="maxScore"
+                        type="number"
+                        placeholder="100"
+                        value={assessmentForm.maxScore}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, maxScore: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="weight">Weight *</Label>
+                      <Input
+                        id="weight"
+                        type="number"
+                        placeholder="0.4"
+                        step="0.1"
+                        value={assessmentForm.weight}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, weight: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Assessment Date</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={assessmentForm.assessmentDate}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" disabled={assessmentLoading} className="w-full">
+                    {assessmentLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Assessment
+                      </>
+                    )}
+                  </Button>
+                </form>
               )}
             </CardContent>
           </Card>

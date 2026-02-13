@@ -88,6 +88,12 @@ export const termTemplatesApi = {
     apiClient.get(`/schools/${schoolId}/term-templates`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/term-templates`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/term-templates/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/term-templates/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/term-templates/${id}`),
 };
 
 // Academic Years endpoints
@@ -141,3 +147,34 @@ export const studentsApi = {
     // Use postForm so multipart/form-data is sent correctly
     apiClient.postForm(`/students/import/validate?schoolId=${schoolId}`, formData),
 };
+
+export const subjectsApi = {
+  list: (schoolId: string) =>
+    apiClient.get(`/schools/${schoolId}/subjects`),
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/subjects`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/subjects/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/subjects/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/subjects/${id}`),
+};
+
+export const assessmentsApi = {
+  list: (schoolId: string, yearId?: string, termItemId?: string) => {
+    const params = new URLSearchParams();
+    if (yearId) params.append('yearId', yearId);
+    if (termItemId) params.append('termItemId', termItemId);
+    const queryString = params.toString();
+    return apiClient.get(`/schools/${schoolId}/assessments${queryString ? '?' + queryString : ''}`);
+  },
+  create: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/assessments`, data),
+  get: (schoolId: string, id: string) =>
+    apiClient.get(`/schools/${schoolId}/assessments/${id}`),
+  update: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/assessments/${id}`, data),
+  delete: (schoolId: string, id: string) =>
+    apiClient.delete(`/schools/${schoolId}/assessments/${id}`),
+}

@@ -59,7 +59,7 @@ export default function Classes() {
   });
   // Form (react-hook-form)
   const { register, handleSubmit, reset, formState } = useForm({
-    defaultValues: { name: "", level: "", ordinal: 1 },
+    defaultValues: { name: "", level: "", ordinal: 0 },
     mode: "onChange",
   });
 
@@ -138,12 +138,12 @@ export default function Classes() {
 
   // Classroom Definition handlers
   const handleAddClassroom = () => {
-    reset({ name: "", level: "", ordinal: 1 });
+    reset({ name: "", level: "", ordinal: 0 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: null });
   };
 
   const handleEditClassroom = (classroom: ClassroomDefinition) => {
-    reset({ name: classroom.name, level: classroom.level, ordinal: classroom.ordinal ?? 1 });
+    reset({ name: classroom.name, level: classroom.level, ordinal: classroom.ordinal ?? 0 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: classroom.id });
   };
 
@@ -174,7 +174,7 @@ export default function Classes() {
 
       toast({ title: "Success", description: `Classroom ${method === "create" ? "created" : "updated"} successfully` });
 
-      reset({ name: "", level: "", ordinal: 1 });
+      reset({ name: "", level: "", ordinal: 0 });
       setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
       loadData();
     } catch (err) {
@@ -263,10 +263,10 @@ export default function Classes() {
       breadcrumbs={[{ label: "Classes" }]}
     >
       <Tabs defaultValue="definitions" className="w-full">
-        <TabsList className="grid w-full max-w-lg grid-cols-2">
+        {/* <TabsList className="grid w-full max-w-lg grid-cols-2">
           <TabsTrigger value="definitions">Classroom Definitions</TabsTrigger>
           <TabsTrigger value="enrollments">Enroll in Class</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
         {/* Classroom Definitions Tab */}
         <TabsContent value="definitions" className="space-y-4">
@@ -343,7 +343,7 @@ export default function Classes() {
                         {classroomForm.editingId ? "Update" : "Create"}
                       </Button>
                       {classroomForm.editingId && (
-                        <Button type="button" variant="outline" onClick={() => { reset({ name: "", level: "", ordinal: 1 }); setClassroomForm({ isOpen: false, isLoading: false, editingId: null }); }}>
+                        <Button type="button" variant="outline" onClick={() => { reset({ name: "", level: "", ordinal: 0 }); setClassroomForm({ isOpen: false, isLoading: false, editingId: null }); }}>
                           Cancel
                         </Button>
                       )}
