@@ -235,9 +235,7 @@ export default function Subjects() {
   const fetchAssessments = async (termId: string) => {
     if (!termId) return;
     try {
-      const selectedTerm = terms.find((t) => String(t.id) === String(termId));
-      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : "";
-      const response = await assessmentsApi.list(schoolId, selectedAcademicYearId, termName);
+      const response = await assessmentsApi.list(schoolId, selectedAcademicYearId, termId);
       if (!response.ok) throw new Error("Failed to fetch assessments");
       const data = await response.json();
       // Backend returns grouped data: [{ classroomDefinition, assessments: [...] }]
@@ -261,19 +259,14 @@ export default function Subjects() {
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     try {
-      // Find selected term (handle numeric/string id mismatches) or fallback to selectedTermId
-      const selectedTerm =
-        terms.find((t) => String(t.id) === String(data.termId)) ||
-        terms.find((t) => String(t.id) === String(selectedTermId));
-      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : (data.termId || selectedTermId || "");
-
       // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
         yearId: selectedAcademicYearId,
-        termName,
+        termTemplateItemId: data.termId,
+        classroomDefinitionId: data.classroomDefinitionId,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
@@ -313,19 +306,14 @@ export default function Subjects() {
     if (!editingAssessment) return;
     setIsAssessmentLoading(true);
     try {
-      // Find selected term (handle numeric/string id mismatches) or fallback to selectedTermId
-      const selectedTerm =
-        terms.find((t) => String(t.id) === String(data.termId)) ||
-        terms.find((t) => String(t.id) === String(selectedTermId));
-      const termName = selectedTerm ? getTermNameFromObj(selectedTerm) : (data.termId || selectedTermId || "");
-
       // Parse date (date-only input) and create full UTC timestamp at 09:00
       const dateonly = data.assessmentDate;
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
         yearId: selectedAcademicYearId,
-        termName,
+        termTemplateItemId: data.termId,
+        classroomDefinitionId: data.classroomDefinitionId,
         subjectId: data.subjectId,
         name: data.name,
         type: data.type,
@@ -571,7 +559,7 @@ export default function Subjects() {
                       {groupedAssessments.map((group: any) => {
                         const classroom = group.classroomDefinition || group.classroom_definition || {};
                         const items = group.assessments || [];
-                        const header = `${classroom.name || "Unknown"}${classroom.level ? ` — ${classroom.level}` : ""} (${items.length})`;
+                        const header = `${classroom.name || "Unknown"}${classroom.level ? ` :` : ""} [ ${items.length} ]`;
                         return (
                           <AccordionItem key={classroom.id || header} value={String(classroom.id || header)}>
                             <AccordionTrigger>{header}</AccordionTrigger>
@@ -728,7 +716,7 @@ export default function Subjects() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-name">Assessment Name *</Label>
                     <Input

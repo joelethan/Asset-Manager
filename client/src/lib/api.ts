@@ -162,10 +162,10 @@ export const subjectsApi = {
 };
 
 export const assessmentsApi = {
-  list: (schoolId: string, yearId?: string, termName?: string) => {
+  list: (schoolId: string, yearId?: string, termItemId?: string) => {
     const params = new URLSearchParams();
     if (yearId) params.append('yearId', yearId);
-    if (termName) params.append('termName', termName);
+    if (termItemId) params.append('termItemId', termItemId);
     const queryString = params.toString();
     return apiClient.get(`/schools/${schoolId}/assessments${queryString ? '?' + queryString : ''}`);
   },
