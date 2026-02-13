@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Plus, AlertCircle, Loader2, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
@@ -70,6 +71,7 @@ export default function Subjects() {
 
   // Assessment state
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [groupedAssessments, setGroupedAssessments] = useState<any[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [selectedTermId, setSelectedTermId] = useState<string>("");
   const [academicYears, setAcademicYears] = useState<any[]>([]);
@@ -238,7 +240,12 @@ export default function Subjects() {
       const response = await assessmentsApi.list(schoolId, selectedAcademicYearId, termName);
       if (!response.ok) throw new Error("Failed to fetch assessments");
       const data = await response.json();
-      setAssessments(Array.isArray(data) ? data : data.data || []);
+      // Backend returns grouped data: [{ classroomDefinition, assessments: [...] }]
+      const groups = Array.isArray(data) ? data : data.data || [];
+      setGroupedAssessments(groups);
+      // also set flat assessments for legacy usage
+      const flat = groups.reduce((acc: any[], g: any) => acc.concat(g.assessments || []), [] as any[]);
+      setAssessments(flat);
     } catch (error) {
       toast({ title: "Error", description: "Failed to fetch assessments", variant: "destructive" });
     }
@@ -549,7 +556,7 @@ export default function Subjects() {
 
               {selectedTermId && (
                 <>
-                  {assessments.length === 0 ? (
+                  {groupedAssessments.length === 0 ? (
                     <Card>
                       <CardContent className="pt-6">
                         <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
@@ -560,65 +567,71 @@ export default function Subjects() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Assessments</CardTitle>
-                        <CardDescription>Total: {assessments.length} assessments</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Subject & Assessment</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Max Score</TableHead>
-                                <TableHead>Weight</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {assessments.map((assessment) => {
-                                const subject = subjects.find((s) => s.id === assessment.subject_id);
-                                return (
-                                  <TableRow key={assessment.id}>
-                                    <TableCell className="font-medium">
-                                      <div className="flex flex-col">
-                                        <span className="text-slate-900">{subject?.name || "Unknown"}</span>
-                                        <span className="text-sm text-slate-600">{assessment.name}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>{assessment.type}</TableCell>
-                                    <TableCell>{assessment.max_score}</TableCell>
-                                    <TableCell>{assessment.weight}</TableCell>
-                                    <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
-                                    <TableCell className="text-right space-x-2 flex justify-end">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => startEditAssessment(assessment)}
-                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteAssessment(assessment.id)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <Accordion type="multiple" className="space-y-2">
+                      {groupedAssessments.map((group: any) => {
+                        const classroom = group.classroomDefinition || group.classroom_definition || {};
+                        const items = group.assessments || [];
+                        const header = `${classroom.name || "Unknown"}${classroom.level ? ` — ${classroom.level}` : ""} (${items.length})`;
+                        return (
+                          <AccordionItem key={classroom.id || header} value={String(classroom.id || header)}>
+                            <AccordionTrigger>{header}</AccordionTrigger>
+                            <AccordionContent>
+                              <div className="overflow-x-auto">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Subject & Assessment</TableHead>
+                                      <TableHead>Type</TableHead>
+                                      <TableHead>Max Score</TableHead>
+                                      <TableHead>Weight</TableHead>
+                                      <TableHead>Date</TableHead>
+                                      <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {items.map((assessment: any) => {
+                                      const subject = assessment.subject || subjects.find((s) => s.id === assessment.subject_id) || {};
+                                      return (
+                                        <TableRow key={assessment.id}>
+                                          <TableCell className="font-medium">
+                                            <div className="flex flex-col">
+                                              <span className="text-slate-900">{subject.name || "Unknown"}</span>
+                                              <span className="text-sm text-slate-600">{assessment.name}</span>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>{assessment.type}</TableCell>
+                                          <TableCell>{assessment.max_score}</TableCell>
+                                          <TableCell>{assessment.weight}</TableCell>
+                                          <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
+                                          <TableCell className="text-right space-x-2 flex justify-end">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => startEditAssessment(assessment)}
+                                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            >
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => handleDeleteAssessment(assessment.id)}
+                                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      );
+                                    })}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
                   )}
                 </>
               )}
