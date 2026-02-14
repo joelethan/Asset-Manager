@@ -73,7 +73,7 @@ export default function Login() {
       // Redirect to dashboard
       navigate("/dashboard");
     } catch (error) {
-      const errorMsg = "An unexpected error occurred. Please try again.";
+      const errorMsg = "An unexpected error occurred. Please try again later.";
       setServerError(errorMsg);
       toast({
         title: "Error",

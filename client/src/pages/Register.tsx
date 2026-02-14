@@ -100,7 +100,7 @@ export default function Register() {
       // Redirect to create school if the user has no memberships yet
       navigate("/schools-create");
     } catch (error) {
-      const errorMsg = "An unexpected error occurred. Please try again.";
+      const errorMsg = "An unexpected error occurred. Please try again later.";
       setServerErrors([errorMsg]);
       toast({
         title: "Error",
