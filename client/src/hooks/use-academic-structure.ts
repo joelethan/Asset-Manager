@@ -8,7 +8,10 @@ export function useTermTemplates(schoolId?: string) {
     queryKey: ["term-templates", schoolId],
     queryFn: async () => {
       const res = await termTemplatesApi.list(schoolId!);
-      if (!res.ok) throw new Error("Failed to fetch term templates");
+      if (!res.ok) {
+        const error = await res.json();
+        throw error; // throw the full error object, not just new Error()
+      }
       return res.json();
     },
     enabled: !!schoolId,
@@ -23,7 +26,7 @@ export function useCreateTermTemplate() {
       const res = await termTemplatesApi.create(data.schoolId, dataToSend);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to create term template");
+        throw error; // throw the full error object, not just new Error()
       }
       return res.json();
     },
@@ -41,7 +44,10 @@ export function useAcademicYears(schoolId?: string) {
     queryKey: ["academic-years", schoolId],
     queryFn: async () => {
       const res = await academicYearsApi.list(schoolId!);
-      if (!res.ok) throw new Error("Failed to fetch academic years");
+      if (!res.ok) {
+        const error = await res.json();
+        throw error; // throw the full error object, not just new Error()
+      }
       return res.json();
     },
     enabled: !!schoolId,
@@ -61,7 +67,7 @@ export function useCreateAcademicYear() {
       const res = await academicYearsApi.create(data.schoolId, dataToSend);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to create academic year");
+        throw error; // throw the full error object, not just new Error()
       }
       return res.json();
     },
@@ -86,7 +92,7 @@ export function useUpdateAcademicYearStatus() {
       const res = await academicYearsApi.updateStatus(id, status);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to update academic year status");
+        throw error; // throw the full error object, not just new Error()
       }
       return res.json();
     },
@@ -102,7 +108,10 @@ export function useTerms(yearId?: number) {
     queryKey: ["terms", yearId],
     queryFn: async () => {
       const res = await termsApi.list(yearId!);
-      if (!res.ok) throw new Error("Failed to fetch terms");
+      if (!res.ok) {
+        const error = await res.json();
+        throw error; // throw the full error object, not just new Error()
+      }
       return res.json();
     },
     enabled: !!yearId,
