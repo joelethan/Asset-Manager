@@ -43,11 +43,11 @@ export default function Register() {
     try {
       const res = await authApi.register(values);
       const data = await res.json();
-      
+
       if (!res.ok) {
         // Handle array of validation errors or plain error message
         const errors: (ErrorDetail | string)[] = [];
-        
+
         if (data.error?.errors && Array.isArray(data.error.errors)) {
           // Handle validation errors array
           errors.push(...data.error.errors);
@@ -60,9 +60,9 @@ export default function Register() {
         } else {
           errors.push("Please check your information and try again.");
         }
-        
+
         setServerErrors(errors);
-        
+
         // Show toast with main error message
         const mainMessage = data.error?.message || data.message || "Registration failed";
         toast({
@@ -96,7 +96,7 @@ export default function Register() {
         title: "Success",
         description: "Your account has been created successfully. Welcome!",
       });
-      
+
       // Redirect to create school if the user has no memberships yet
       navigate("/schools-create");
     } catch (error) {
@@ -113,8 +113,8 @@ export default function Register() {
   }
 
   return (
-    <AppLayout 
-      title="Register User" 
+    <AppLayout
+      title="Register User"
       description="Create a new user account in the system."
       breadcrumbs={[{ label: "Register" }]}
       centered
@@ -130,7 +130,7 @@ export default function Register() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {serverErrors.length > 0 && (
                   <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    {(serverErrors.length === 1 && typeof serverErrors[0] === 'string') && <AlertCircle className="h-4 w-4" />}
                     <AlertDescription>
                       {serverErrors.length === 1 && typeof serverErrors[0] === 'string' ? (
                         serverErrors[0]
