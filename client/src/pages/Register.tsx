@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerUserSchema, type RegisterUserRequest } from "@/lib/schemas";
@@ -12,11 +13,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
 import { useProfile } from "@/context/ProfileContext";
+import { AlertCircle } from "lucide-react";
+
+interface ErrorDetail {
+  field?: string | null;
+  message: string;
+}
 
 export default function Register() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [serverErrors, setServerErrors] = useState<(ErrorDetail | string)[]>([]);
   const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<RegisterUserRequest>({
     resolver: zodResolver(registerUserSchema),
@@ -31,14 +39,35 @@ export default function Register() {
 
   async function onSubmit(values: RegisterUserRequest) {
     setIsLoading(true);
+    setServerErrors([]);
     try {
       const res = await authApi.register(values);
       const data = await res.json();
       
       if (!res.ok) {
+        // Handle array of validation errors or plain error message
+        const errors: (ErrorDetail | string)[] = [];
+        
+        if (data.error?.errors && Array.isArray(data.error.errors)) {
+          // Handle validation errors array
+          errors.push(...data.error.errors);
+        } else if (data.error?.message) {
+          // Handle plain error message
+          errors.push(data.error.message);
+        } else if (data.message) {
+          // Fallback to message field
+          errors.push(data.message);
+        } else {
+          errors.push("Please check your information and try again.");
+        }
+        
+        setServerErrors(errors);
+        
+        // Show toast with main error message
+        const mainMessage = data.error?.message || data.message || "Registration failed";
         toast({
           title: "Registration failed",
-          description: data.message || "Please check your information and try again.",
+          description: mainMessage,
           variant: "destructive",
         });
         return;
@@ -71,9 +100,11 @@ export default function Register() {
       // Redirect to create school if the user has no memberships yet
       navigate("/schools-create");
     } catch (error) {
+      const errorMsg = "An unexpected error occurred. Please try again.";
+      setServerErrors([errorMsg]);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -97,6 +128,25 @@ export default function Register() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {serverErrors.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {serverErrors.length === 1 && typeof serverErrors[0] === 'string' ? (
+                        serverErrors[0]
+                      ) : (
+                        <ul className="mt-2 ml-4 list-disc space-y-1">
+                          {serverErrors.map((error, idx) => (
+                            <li key={idx}>
+                              {typeof error === 'string' ? error : error.message}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -169,7 +219,10 @@ export default function Register() {
                 />
 
                 <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => {
+                    form.reset();
+                    setServerErrors([]);
+                  }} disabled={isLoading} className="flex-1">
                     Reset
                   </Button>
                   <Button type="submit" disabled={isLoading} className="flex-1">
