@@ -150,11 +150,6 @@ export default function Login() {
               </form>
             </Form>
           </CardContent>
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
         </Card>
       </div>
     </AppLayout>
