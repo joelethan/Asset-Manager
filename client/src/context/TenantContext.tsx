@@ -19,7 +19,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
-  // Derive tenants from profile memberships
+  // Derive tenants from profile memberships, clear on logout
   useEffect(() => {
     if (profile?.memberships && profile.memberships.length > 0) {
       const derivedTenants: Tenant[] = profile.memberships.map((m) => ({
@@ -30,6 +30,10 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       if (derivedTenants.length > 0 && !selectedTenant) {
         setSelectedTenant(derivedTenants[0]);
       }
+    } else {
+      // Clear tenant data on logout (when profile is null)
+      setTenants([]);
+      setSelectedTenant(null);
     }
   }, [profile, selectedTenant]);
 

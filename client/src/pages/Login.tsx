@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
@@ -11,11 +12,13 @@ import { authApi } from "@/lib/api";
 import { useProfile } from "@/context/ProfileContext";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { AlertCircle } from "lucide-react";
 
 export default function Login() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
@@ -27,14 +30,20 @@ export default function Login() {
 
   async function onSubmit(values: LoginUserRequest) {
     setIsLoading(true);
+    setServerError(null);
     try {
       const res = await authApi.login(values.email, values.password);
       const data = await res.json();
 
       if (!res.ok) {
+        // Handle authentication errors with proper UI display
+        const errorMessage = data.error?.message || data.message || "Invalid email or password.";
+        setServerError(errorMessage);
+        
+        // Also show toast for additional feedback
         toast({
           title: "Login failed",
-          description: data.message || "Invalid email or password.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -64,9 +73,11 @@ export default function Login() {
       // Redirect to dashboard
       navigate("/dashboard");
     } catch (error) {
+      const errorMsg = "An unexpected error occurred. Please try again.";
+      setServerError(errorMsg);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -90,6 +101,13 @@ export default function Login() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {serverError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{serverError}</AlertDescription>
+                  </Alert>
+                )}
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -119,11 +137,19 @@ export default function Login() {
                 />
 
                 <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isLoading} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => {
+                    form.reset();
+                    setServerError(null);
+                  }} disabled={isLoading} className="flex-1">
                     Clear
                   </Button>
                   <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
                   </Button>
                 </div>
               </form>
