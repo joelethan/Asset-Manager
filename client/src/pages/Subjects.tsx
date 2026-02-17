@@ -91,7 +91,7 @@ export default function Subjects() {
     },
   });
 
-  const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, watch: watchAssessment, } = useForm<AssessmentFormData>({
+  const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, } = useForm<AssessmentFormData>({
     defaultValues: {
       termId: "",
       subjectId: "",
@@ -103,13 +103,6 @@ export default function Subjects() {
       assessmentDate: new Date().toISOString().split("T")[0],
     },
   });
-  // Log form data as you type in any field
-  useEffect(() => {
-    const subscription = watchAssessment((value) => {
-      console.log("Assessment form changed:", value);
-    });
-    return () => subscription.unsubscribe();
-  }, [watchAssessment]);
 
   // Fetch subjects and academic years on mount
   useEffect(() => {
@@ -659,8 +652,6 @@ export default function Subjects() {
                       <CardContent>
                         <form
                           onSubmit={handleAssessmentSubmit((formData) => {
-                            console.log('Edit Assessment form submit event:');
-                            console.log('handleUpdateAssessment called with:', formData);
                             handleUpdateAssessment(formData);
                           })}
                           className="space-y-4"
