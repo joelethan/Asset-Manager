@@ -57,12 +57,13 @@ export default function Classes() {
     isLoading: false,
     editingId: null,
   });
+  const [classroomServerError, setClassroomServerError] = useState<string>("");
+  const [classroomServerErrorList, setClassroomServerErrorList] = useState<string[]>([]);
   // Form (react-hook-form)
-  const { register, handleSubmit, reset, formState } = useForm({
-    defaultValues: { name: "", level: "", ordinal: 0 },
+  const { register, handleSubmit, reset, formState: { errors, isValid } } = useForm({
+    defaultValues: { name: "", level: "", ordinal: 1 },
     mode: "onChange",
   });
-
 
   // Enrollment state
   const [enrollmentForm, setEnrollmentForm] = useState<EnrollmentData>({
@@ -109,8 +110,6 @@ export default function Classes() {
   }, [schoolId]);
 
   // Load academic years when selected year changes
-
-
   const loadData = async () => {
     try {
       setIsLoadingData(true);
@@ -134,51 +133,58 @@ export default function Classes() {
     }
   };
 
-
-
   // Classroom Definition handlers
   const handleAddClassroom = () => {
-    reset({ name: "", level: "", ordinal: 0 });
+    reset({ name: "", level: "", ordinal: 1 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: null });
   };
 
   const handleEditClassroom = (classroom: ClassroomDefinition) => {
-    reset({ name: classroom.name, level: classroom.level, ordinal: classroom.ordinal ?? 0 });
+    reset({ name: classroom.name, level: classroom.level, ordinal: classroom.ordinal ?? 1 });
     setClassroomForm({ isOpen: true, isLoading: false, editingId: classroom.id });
   };
 
   const handleSaveClassroom = async (data: any) => {
-    if (!data.name?.trim() || !data.level?.trim()) {
-      toast({ title: "Validation Error", description: "Name and level are required", variant: "destructive" });
-      return;
-    }
-
-    const ordinal = Number(data.ordinal);
-    if (!Number.isInteger(ordinal) || ordinal < 1) {
-      toast({ title: "Validation Error", description: "Ordinal is required and must be a positive integer", variant: "destructive" });
-      return;
-    }
-
+    setError(null);
+    setClassroomServerError("");
+    setClassroomServerErrorList([]);
     setClassroomForm((prev: any) => ({ ...prev, isLoading: true }));
     try {
       const method = classroomForm.editingId ? "update" : "create";
       let res;
-
       if (classroomForm.editingId) {
         res = await classroomDefinitionsApi.update(schoolId, classroomForm.editingId, data);
       } else {
         res = await classroomDefinitionsApi.create(schoolId, data);
       }
-
-      if (!res.ok) throw new Error(`Failed to ${method} classroom`);
-
+      if (!res.ok) {
+        let msg = `Failed to ${method} classroom`;
+        let errorList: string[] = [];
+        try {
+          const err = await res.json();
+          if (err?.error?.errors && Array.isArray(err.error.errors)) {
+            msg = err?.error?.message || msg;
+            errorList = err.error.errors.map((e: any) => e.message);
+          } else if (err?.error?.message) {
+            msg = err.error.message;
+          } else if (err?.message) {
+            msg = err.message;
+          }
+        } catch { }
+        setClassroomServerError(msg);
+        setClassroomServerErrorList(errorList);
+        setError(msg);
+        toast({ title: "Error", description: errorList.length > 0 ? errorList[0] : msg, variant: "destructive" });
+        return;
+      }
       toast({ title: "Success", description: `Classroom ${method === "create" ? "created" : "updated"} successfully` });
-
-      reset({ name: "", level: "", ordinal: 0 });
+      reset({ name: "", level: "", ordinal: 1 });
       setClassroomForm({ isOpen: false, isLoading: false, editingId: null });
       loadData();
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
+      setClassroomServerError(message);
+      setError(message);
       toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setClassroomForm((prev: any) => ({ ...prev, isLoading: false }));
@@ -207,8 +213,6 @@ export default function Classes() {
       });
     }
   };
-
-
 
   const handleEnrollStudent = async (e: FormEvent) => {
     e.preventDefault();
@@ -263,19 +267,15 @@ export default function Classes() {
       breadcrumbs={[{ label: "Classes" }]}
     >
       <Tabs defaultValue="definitions" className="w-full">
-        {/* <TabsList className="grid w-full max-w-lg grid-cols-2">
-          <TabsTrigger value="definitions">Classroom Definitions</TabsTrigger>
-          <TabsTrigger value="enrollments">Enroll in Class</TabsTrigger>
-        </TabsList> */}
 
         {/* Classroom Definitions Tab */}
         <TabsContent value="definitions" className="space-y-4">
-          {error && (
+          {/* {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
+          )} */}
 
           <Card className="border-slate-200">
             <CardHeader>
@@ -320,30 +320,61 @@ export default function Classes() {
                   <h3 className="font-semibold text-slate-900 mb-4">
                     {classroomForm.editingId ? "Edit Classroom" : "Create New Classroom"}
                   </h3>
+                  {(classroomServerError || classroomServerErrorList.length > 0) && (
+                    <Alert variant="destructive" className="mb-4">
+                      {classroomServerErrorList.length === 0 && <AlertCircle className="h-4 w-4" />}
+                      <AlertDescription>
+                        {classroomServerError && classroomServerErrorList.length === 0 && <div>{classroomServerError}</div>}
+                        {classroomServerErrorList.length > 0 && (
+                          <ul className="mt-2 ml-4 list-disc space-y-1">
+                            {([...new Set(classroomServerErrorList)]).map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <form onSubmit={handleSubmit(handleSaveClassroom)} className="space-y-4">
                     <div>
                       <Label htmlFor="class-name">Classroom Name *</Label>
-                      <Input id="class-name" placeholder="e.g., Primary 7" {...register("name", { required: true })} />
+                      <Input id="class-name" placeholder="e.g., Primary 7" {...register("name", {
+                        required: "Classroom name is required",
+                        minLength: { value: 3, message: "Name must be at least 3 characters" },
+                        validate: value => value.trim().length > 0 || "Name cannot be empty"
+                      })} />
+                      {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>}
                     </div>
                     <div>
                       <Label htmlFor="class-level">Level *</Label>
-                      <Input id="class-level" placeholder="e.g., Primary" {...register("level", { required: true })} />
+                      <Input id="class-level" placeholder="e.g., Primary" {...register("level", {
+                        required: "Level is required",
+                        minLength: { value: 2, message: "Level must be at least 2 characters" },
+                        validate: value => value.trim().length > 0 || "Level cannot be empty"
+                      })} />
+                      {errors.level && <p className="text-xs text-red-500 mt-1">{errors.level.message as string}</p>}
                     </div>
                     <div>
                       <Label htmlFor="class-ordinal">Ordinal *</Label>
-                      <Input id="class-ordinal" type="number" min={1} placeholder="e.g., 1" {...register("ordinal", { valueAsNumber: true, required: true })} />
+                      <Input id="class-ordinal" type="number" min={1} placeholder="e.g., 1" {...register("ordinal", {
+                        required: "Ordinal is required",
+                        valueAsNumber: true,
+                        min: { value: 1, message: "Ordinal must be a positive integer" },
+                        validate: value => Number.isInteger(value) && value > 0 || "Ordinal must be a positive integer"
+                      })} />
+                      {errors.ordinal && <p className="text-xs text-red-500 mt-1">{errors.ordinal.message as string}</p>}
                     </div>
                     <div className="flex gap-2">
                       <Button
                         type="submit"
-                        disabled={classroomForm.isLoading}
+                        disabled={classroomForm.isLoading || !isValid}
                         className="flex-1 gap-2"
                       >
                         {classroomForm.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {classroomForm.editingId ? "Update" : "Create"}
                       </Button>
                       {classroomForm.editingId && (
-                        <Button type="button" variant="outline" onClick={() => { reset({ name: "", level: "", ordinal: 0 }); setClassroomForm({ isOpen: false, isLoading: false, editingId: null }); }}>
+                        <Button type="button" variant="outline" onClick={() => { reset({ name: "", level: "", ordinal: 1 }); setClassroomForm({ isOpen: false, isLoading: false, editingId: null }); }}>
                           Cancel
                         </Button>
                       )}
@@ -354,8 +385,6 @@ export default function Classes() {
             </CardContent>
           </Card>
         </TabsContent>
-
-
 
         {/* Enroll in Class Tab */}
         <TabsContent value="enrollments" className="space-y-4">
