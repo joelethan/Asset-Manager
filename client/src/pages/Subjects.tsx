@@ -83,6 +83,10 @@ export default function Subjects() {
   const [assessmentError, setAssessmentError] = useState<string | string[] | null>(null);
   const [assessmentErrorList, setAssessmentErrorList] = useState<string[]>([]);
 
+  const [gradingAssessment, setGradingAssessment] = useState<Assessment | null>(null);
+
+  const assessmentSubjects = subjects.filter((s) => assessments.some((a) => a.subject_id === s.id));
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
     defaultValues: {
       name: "",
@@ -193,8 +197,10 @@ export default function Subjects() {
       const years = Array.isArray(data) ? data : data.data || [];
       setAcademicYears(years);
       if (years.length > 0) {
-        setSelectedAcademicYearId(String(years[0].id));
-        const templateId = years[0].termTemplateId || years[0].term_template_id || years[0].term_template?.id;
+        // Prefer the year with status === 'active', fallback to first.
+        const activeYear = years.find((y: any) => y.status === "active") || years[0];
+        setSelectedAcademicYearId(String(activeYear.id));
+        const templateId = activeYear.termTemplateId || activeYear.term_template_id || activeYear.term_template?.id;
         if (templateId) await fetchTerms(String(templateId));
       }
     } catch (error) {
@@ -379,8 +385,11 @@ export default function Subjects() {
         <TabsList>
           <TabsTrigger value="subjects">Subject List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
-          <TabsTrigger value="assessments-list">Assessments List</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
+          <TabsTrigger value="assessments-list">Assessments List</TabsTrigger>
+          {gradingAssessment && (
+            <TabsTrigger value="grade-assessment">Grade Assessment</TabsTrigger>
+          )}
         </TabsList>
 
         {/* Subjects List Tab */}
@@ -526,6 +535,7 @@ export default function Subjects() {
                       const yearId = e.target.value;
                       setSelectedAcademicYearId(yearId);
                       const year = academicYears.find((y: any) => String(y.id) === yearId);
+                      console.log("Selected year:", year);
                       const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
                       setSelectedTermId("");
                       setAssessments([]);
@@ -536,7 +546,7 @@ export default function Subjects() {
                     <option value="">Select an academic year...</option>
                     {academicYears.map((year) => (
                       <option key={year.id} value={year.id}>
-                        {year.name}
+                        {`${year.name} ${year.status === "active" ? "(Active)" : ""}`}
                       </option>
                     ))}
                   </select>
@@ -592,9 +602,11 @@ export default function Subjects() {
                                         <TableHead>Max Score</TableHead>
                                         <TableHead>Weight</TableHead>
                                         <TableHead>Date</TableHead>
+                                        <TableHead>Grade</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
+
                                     <TableBody>
                                       {items.map((assessment: any) => {
                                         const subject = assessment.subject || subjects.find((s) => s.id === assessment.subject_id) || {};
@@ -610,6 +622,18 @@ export default function Subjects() {
                                             <TableCell>{assessment.max_score}</TableCell>
                                             <TableCell>{assessment.weight}</TableCell>
                                             <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
+                                            <TableCell>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                  setGradingAssessment(assessment);
+                                                  setActiveTab("grade-assessment");
+                                                }}
+                                              >
+                                                Grade
+                                              </Button>
+                                            </TableCell>
                                             <TableCell className="text-right space-x-2 flex justify-end">
                                               <Button
                                                 variant="ghost"
@@ -970,6 +994,30 @@ export default function Subjects() {
                   )}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Grade Assessment Tab */}
+        <TabsContent value="grade-assessment" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Grade Assessment</CardTitle>
+              <CardDescription>
+                {gradingAssessment
+                  ? `Grading: ${gradingAssessment.name} (${assessmentSubjects.find(s => s.id === gradingAssessment.subject_id)?.name || "Unknown Subject"})`
+                  : "Select an assessment to grade."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {gradingAssessment ? (
+                <div>
+                  {/* TODO: Fetch and display students for this assessment */}
+                  <p>Student list and grade entry will appear here.</p>
+                </div>
+              ) : (
+                <p>Select an assessment from the list to begin grading.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -630,7 +630,7 @@ export default function Students() {
             <StudentsTable
               students={students}
               onRefresh={refetchStudents}
-              onSelectionChange={setSelectedStudents}
+              onSelectionChange={(students) => setSelectedStudents(students as any)}
               selectedIds={selectedStudents.map((s: Student) => s.id)}
             />
           )}

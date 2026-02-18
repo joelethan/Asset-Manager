@@ -178,3 +178,8 @@ export const assessmentsApi = {
   delete: (schoolId: string, id: string) =>
     apiClient.delete(`/schools/${schoolId}/assessments/${id}`),
 }
+
+export const gradesApi = {
+  bulkCreate: (schoolId: string, data: unknown) =>
+    apiClient.post(`/schools/${schoolId}/grades/bulk`, data),
+};
