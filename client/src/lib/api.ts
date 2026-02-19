@@ -135,6 +135,8 @@ export const enrollmentsApi = {
     apiClient.post(`/classroom-definitions/${definitionId}/enrollments?schoolId=${schoolId}`, data),
   bulkCreate: (yearId: string, definitionId: string, schoolId: string, data: unknown) =>
     apiClient.post(`/years/${yearId}/classroom-definitions/${definitionId}/enrollments/bulk?schoolId=${schoolId}`, data),
+  enrolledStudents: (schoolId: string, assessmentId: string) =>
+    apiClient.get(`/schools/${schoolId}/assessments/${assessmentId}/enrolled-students`),
 };
 
 export const studentsApi = {

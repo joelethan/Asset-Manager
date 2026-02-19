@@ -1,18 +1,19 @@
-import { useState, useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Plus, AlertCircle, Loader2, Trash2, Edit } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { subjectsApi, assessmentsApi, termsApi, academicYearsApi, termTemplatesApi, classroomDefinitionsApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { enrollmentsApi, gradesApi, academicYearsApi, assessmentsApi, classroomDefinitionsApi, subjectsApi, termTemplatesApi } from "@/lib/api";
+import { AlertCircle, Edit, Loader2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+
 
 interface Subject {
   id: string;
@@ -84,6 +85,8 @@ export default function Subjects() {
   const [assessmentErrorList, setAssessmentErrorList] = useState<string[]>([]);
 
   const [gradingAssessment, setGradingAssessment] = useState<Assessment | null>(null);
+  const [gradingStudents, setGradingStudents] = useState<any[]>([]);
+  const [loadingGradingStudents, setLoadingGradingStudents] = useState(false);
 
   const assessmentSubjects = subjects.filter((s) => assessments.some((a) => a.subject_id === s.id));
 
@@ -116,6 +119,21 @@ export default function Subjects() {
       fetchClassroomDefinitions();
     }
   }, [schoolId]);
+
+  useEffect(() => {
+    if (gradingAssessment && schoolId) {
+      setLoadingGradingStudents(true);
+      enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
+        .then(async (res) => {
+          const data = await res.json();
+          setGradingStudents(Array.isArray(data) ? data : data?.data || []);
+        })
+        .catch(() => setGradingStudents([]))
+        .finally(() => setLoadingGradingStudents(false));
+    } else {
+      setGradingStudents([]);
+    }
+  }, [gradingAssessment, schoolId]);
 
   const fetchSubjects = async () => {
     try {
@@ -1011,10 +1029,37 @@ export default function Subjects() {
             </CardHeader>
             <CardContent>
               {gradingAssessment ? (
-                <div>
-                  {/* TODO: Fetch and display students for this assessment */}
-                  <p>Student list and grade entry will appear here.</p>
-                </div>
+                loadingGradingStudents ? (
+                  <p>Loading students...</p>
+                ) : gradingStudents.length === 0 ? (
+                  <p>No students enrolled for this assessment.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student Name (Stnd No.)</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Remarks</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {gradingStudents.map((student) => {
+                        console.log("Grading student:", student);
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell>{`${student.first_name} ${student.last_name} (${student.student_no})`}</TableCell>
+                            <TableCell>
+                              {/* TODO: Input for score */}
+                            </TableCell>
+                            <TableCell>
+                              {/* TODO: Input for remarks */}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                )
               ) : (
                 <p>Select an assessment from the list to begin grading.</p>
               )}
