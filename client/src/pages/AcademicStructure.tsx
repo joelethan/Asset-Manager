@@ -35,13 +35,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Zap } from "lucide-react";
+import { Plus, Calendar, Zap, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { termTemplatesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 function formatDateDMY(input?: string | Date | null) {
   if (!input) return "";
@@ -137,6 +138,8 @@ function TermTemplatesSection({
     },
     mode: "onChange",
   });
+  const [serverError, setServerError] = useState<string>("");
+  const [serverErrorList, setServerErrorList] = useState<string[]>([]);
 
   const { fields, append, remove } = watch("structure") ?
     {
@@ -154,6 +157,8 @@ function TermTemplatesSection({
     : { fields: [], append: () => { }, remove: () => { } };
 
   const onSubmit = (data: any) => {
+    setServerError("");
+    setServerErrorList([]);
     if (!data.name.trim()) {
       toast({
         title: "Error",
@@ -189,11 +194,23 @@ function TermTemplatesSection({
         onSuccess: () => {
           toast({ title: "Success", description: "Term template created" });
           reset();
+          setServerError("");
+          setServerErrorList([]);
         },
         onError: (error: any) => {
+          let msg = "Failed to create template";
+          let errorList: string[] = [];
+          if (error?.error?.errors && Array.isArray(error.error.errors)) {
+            msg = error?.error?.message || msg;
+            errorList = error.error.errors.map((e: any) => e.message);
+          } else if (error?.error?.message) {
+            msg = error.error.message;
+          }
+          setServerError(msg);
+          setServerErrorList(errorList);
           toast({
             title: "Error",
-            description: error.message,
+            description: errorList.length > 0 ? errorList[0] : msg,
             variant: "destructive",
           });
         },
@@ -256,6 +273,21 @@ function TermTemplatesSection({
           {/* Right: Create Form */}
           <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
             <h3 className="font-semibold text-slate-900 mb-4">Create New Template</h3>
+            {(serverError || serverErrorList.length > 0) && (
+              <Alert variant="destructive" className="mb-4">
+                {serverErrorList.length === 0 && <AlertCircle className="h-4 w-4" />}
+                <AlertDescription>
+                  {serverError && serverErrorList.length === 0 && <div>{serverError}</div>}
+                  {serverErrorList.length > 0 && (
+                    <ul className="mt-2 ml-4 list-disc space-y-1">
+                      {([...new Set(serverErrorList)]).map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="template-name">Template Name</Label>
@@ -345,7 +377,12 @@ function AcademicYearsSection({
     mode: "onChange",
   });
 
+  const [yearServerError, setYearServerError] = useState<string>("");
+  const [yearServerErrorList, setYearServerErrorList] = useState<string[]>([]);
+
   const onSubmit = (data: any) => {
+    setYearServerError("");
+    setYearServerErrorList([]);
     if (!data.name.trim()) {
       toast({
         title: "Error",
@@ -388,11 +425,23 @@ function AcademicYearsSection({
             description: "Academic year created",
           });
           reset();
+          setYearServerError("");
+          setYearServerErrorList([]);
         },
         onError: (error: any) => {
+          let msg = "Failed to create academic year";
+          let errorList: string[] = [];
+          if (error?.error?.errors && Array.isArray(error.error.errors)) {
+            msg = error?.error?.message || msg;
+            errorList = error.error.errors.map((e: any) => e.message);
+          } else if (error?.error?.message) {
+            msg = error.error.message;
+          }
+          setYearServerError(msg);
+          setYearServerErrorList(errorList);
           toast({
             title: "Error",
-            description: error.message,
+            description: errorList.length > 0 ? errorList[0] : msg,
             variant: "destructive",
           });
         },
@@ -463,6 +512,21 @@ function AcademicYearsSection({
           {/* Right: Create Form */}
           <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
             <h3 className="font-semibold text-slate-900 mb-4">Create New Year</h3>
+            {(yearServerError || yearServerErrorList.length > 0) && (
+              <Alert variant="destructive" className="mb-4">
+                {yearServerErrorList.length === 0 && <AlertCircle className="h-4 w-4" />}
+                <AlertDescription>
+                  {yearServerError && yearServerErrorList.length === 0 && <div>{yearServerError}</div>}
+                  {yearServerErrorList.length > 0 && (
+                    <ul className="mt-2 ml-4 list-disc space-y-1">
+                      {([...new Set(yearServerErrorList)]).map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="year-name">Year Name</Label>

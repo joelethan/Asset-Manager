@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useTenant } from "@/context/TenantContext";
 import { useProfile } from "@/context/ProfileContext";
 import { authApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import {
   SidebarProvider,
   Sidebar,
@@ -90,7 +91,8 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // localStorage.removeItem("access_token");
+      // Clear all cached data from React Query
+      queryClient.clear();
       logout();
       setIsLoggingOut(false);
     }

@@ -630,7 +630,7 @@ export default function Students() {
             <StudentsTable
               students={students}
               onRefresh={refetchStudents}
-              onSelectionChange={setSelectedStudents}
+              onSelectionChange={(students) => setSelectedStudents(students as any)}
               selectedIds={selectedStudents.map((s: Student) => s.id)}
             />
           )}
@@ -673,7 +673,7 @@ export default function Students() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Accepted formats: CSV or XLSX. The server will process the uploaded file.
+                  Accepted formats: XLSX. The server will process the uploaded file.
                 </AlertDescription>
               </Alert>
             </CardContent>

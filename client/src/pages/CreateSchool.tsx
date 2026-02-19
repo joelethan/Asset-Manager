@@ -48,6 +48,8 @@ export default function CreateSchool() {
   const { setProfile, profile } = useProfile();
   const { setSelectedTenant } = useTenant();
   const [isResending, setIsResending] = useState(false);
+  const [serverErrors, setServerErrors] = useState<string[]>([]);
+  const [mainErrorMessage, setMainErrorMessage] = useState<string>("");
 
   const handleResend = async () => {
     if (isResending) return;
@@ -68,11 +70,25 @@ export default function CreateSchool() {
   };
 
   const onSubmit = async (data: FormSchema) => {
+    setServerErrors([]);
+    setMainErrorMessage("");
     try {
       const res = await schoolsApi.create(data);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Failed to create school" }));
-        toast({ variant: "destructive", title: "Error", description: err.message || "Failed to create school" });
+        let errors: string[] = [];
+        let mainMsg = "Failed to create school";
+        const err = await res.json().catch(() => ({ message: mainMsg }));
+        if (err?.error) {
+          if (err.error.message) mainMsg = err.error.message;
+          if (err.error.errors && Array.isArray(err.error.errors)) {
+            errors = err.error.errors.map((e: any) => e.message || String(e));
+          }
+        } else if (err?.message) {
+          mainMsg = err.message;
+        }
+        setMainErrorMessage(mainMsg);
+        setServerErrors(errors);
+        toast({ variant: "destructive", title: "Error", description: mainMsg });
         return;
       }
 
@@ -84,7 +100,7 @@ export default function CreateSchool() {
         if (created && created.id) {
           setSelectedTenant({ id: String(created.id), name: created.name });
         }
-      } catch {}
+      } catch { }
 
       // Refresh profile to include new membership
       try {
@@ -93,9 +109,9 @@ export default function CreateSchool() {
           const p = await profileRes.json();
           try {
             setProfile(p);
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
 
       navigate("/dashboard");
     } catch (error: any) {
@@ -116,26 +132,40 @@ export default function CreateSchool() {
             <CardDescription>You'll be assigned as the School Admin for this school.</CardDescription>
           </CardHeader>
           <CardContent>
-          {profile?.emailVerified === false && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle>Email not verified</AlertTitle>
-              <AlertDescription>
-                <div className="flex items-center justify-between gap-4">
-                  <div>Please verify your email by clicking the link we sent to your email address before creating a school.</div>
-                  <div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResend}
-                      disabled={isResending || profile?.emailVerified === true}
-                    >
-                      {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend verification"}
-                    </Button>
+            {(mainErrorMessage || serverErrors?.length > 0) && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>
+                  {mainErrorMessage && <div>{mainErrorMessage}</div>}
+                  {serverErrors?.length > 0 && (
+                    <ul className="mt-2 ml-4 list-disc space-y-1">
+                      {serverErrors?.map((error, idx) => (
+                        <li key={idx}>{error}</li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            {profile?.emailVerified === false && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTitle>Email not verified</AlertTitle>
+                <AlertDescription>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>Please verify your email by clicking the link we sent to your email address before creating a school.</div>
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResend}
+                        disabled={isResending || profile?.emailVerified === true}
+                      >
+                        {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend verification"}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Alert className="mb-4">
               <AlertTitle>Note</AlertTitle>
