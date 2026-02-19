@@ -9,11 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
-import { enrollmentsApi, gradesApi, academicYearsApi, assessmentsApi, classroomDefinitionsApi, subjectsApi, termTemplatesApi } from "@/lib/api";
+import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsApi, gradesApi, subjectsApi, termTemplatesApi } from "@/lib/api";
 import { AlertCircle, Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
+import { useFieldArray, useForm } from "react-hook-form";
 
 interface Subject {
   id: string;
@@ -22,6 +21,12 @@ interface Subject {
   code: string;
   description?: string;
   is_active: boolean;
+}
+
+interface GradeInput {
+  studentId: string;
+  score: string;
+  remarks: string;
 }
 
 interface SubjectFormData {
@@ -96,6 +101,37 @@ export default function Subjects() {
       code: "",
       description: "",
     },
+  });
+
+  const {
+    control,
+    handleSubmit: handleGradesSubmit,
+    formState: { errors: gradeErrors },
+    reset: resetGradesForm,
+  } = useForm<{ grades: GradeInput[] }>({
+    defaultValues: {
+      grades: gradingStudents.map((student) => ({
+        studentId: student.id,
+        score: "",
+        remarks: "",
+      })),
+    },
+  });
+
+  useEffect(() => {
+    // Reset form when students change
+    resetGradesForm({
+      grades: gradingStudents.map((student) => ({
+        studentId: student.id,
+        score: "",
+        remarks: "",
+      })),
+    });
+  }, [gradingStudents, resetGradesForm]);
+
+  const { fields } = useFieldArray({
+    control,
+    name: "grades",
   });
 
   const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, } = useForm<AssessmentFormData>({
@@ -1020,7 +1056,47 @@ export default function Subjects() {
         <TabsContent value="grade-assessment" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Grade Assessment</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Grade Assessment</CardTitle>
+                {/* Only show submit button if there are students to grade and an assessment is selected */}
+                {gradingAssessment && gradingStudents.length > 0 && (
+                  <Button
+                    onClick={handleGradesSubmit(async (data) => {
+                      try {
+                        if (!gradingAssessment) {
+                          toast({ title: "Error", description: "No assessment selected.", variant: "destructive" });
+                          return;
+                        }
+                        const payload = {
+                          assessmentId: gradingAssessment.id,
+                          grades: data.grades
+                            .filter(g => g.score !== "" && !isNaN(Number(g.score)))
+                            .map(g => ({
+                              studentId: g.studentId,
+                              score: parseFloat(g.score),
+                              remarks: g.remarks,
+                            })),
+                        };
+                        if (payload.grades.length === 0) {
+                          toast({ title: "Error", description: "Please enter at least one score.", variant: "destructive" });
+                          return;
+                        }
+                        const res = await gradesApi.bulkCreate(schoolId, payload);
+                        if (!res.ok) throw new Error("Failed to submit grades");
+                        toast({ title: "Success", description: "Grades submitted successfully." });
+                        resetGradesForm();
+                        setGradingAssessment(null);
+                        setActiveTab("assessments-list");
+                      } catch (error) {
+                        toast({ title: "Error", description: "Failed to submit grades", variant: "destructive" });
+                      }
+                    })}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Submit Grades
+                  </Button>
+                )}
+              </div>
               <CardDescription>
                 {gradingAssessment
                   ? `Grading: ${gradingAssessment.name} (${assessmentSubjects.find(s => s.id === gradingAssessment.subject_id)?.name || "Unknown Subject"})`
@@ -1043,20 +1119,37 @@ export default function Subjects() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {gradingStudents.map((student) => {
-                        console.log("Grading student:", student);
-                        return (
-                          <TableRow key={student.id}>
-                            <TableCell>{`${student.first_name} ${student.last_name} (${student.student_no})`}</TableCell>
-                            <TableCell>
-                              {/* TODO: Input for score */}
-                            </TableCell>
-                            <TableCell>
-                              {/* TODO: Input for remarks */}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
+                      {fields.map((field, idx) => (
+                        <TableRow key={field.studentId}>
+                          <TableCell>
+                            {`${gradingStudents[idx]?.first_name} ${gradingStudents[idx]?.last_name} (${gradingStudents[idx]?.student_no})`}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={gradingAssessment?.max_score || 100}
+                              {...control.register(`grades.${idx}.score`, {
+                                required: "Score is required",
+                                min: { value: 0, message: "Score must be at least 0" },
+                                max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
+                                validate: value => !isNaN(Number(value)) || "Must be a number",
+                              })}
+                              placeholder="Score"
+                              className="w-24"
+                            />
+                            {gradeErrors.grades?.[idx]?.score && (
+                              <p className="text-xs text-red-600">{gradeErrors.grades[idx].score.message}</p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              {...control.register(`grades.${idx}.remarks`)}
+                              placeholder="Remarks"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 )
