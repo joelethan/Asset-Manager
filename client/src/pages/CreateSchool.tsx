@@ -22,7 +22,7 @@ const createSchoolFormSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(7),
   address: z.string().optional(),
-  logoUrl: z.string().url().optional(),
+  // logoUrl: z.string().url().optional(),
   currency: z.string().min(1),
   timeZone: z.string().min(1),
 });
@@ -39,7 +39,7 @@ export default function CreateSchool() {
       email: "",
       phone: "",
       address: "",
-      logoUrl: "",
+      // logoUrl: "",
       currency: "UGX",
       timeZone: "Africa/Kampala",
     },
@@ -196,16 +196,17 @@ export default function CreateSchool() {
                   <Input id="email" type="email" placeholder="contact@domain.test" {...form.register("email")} className="focus-visible:ring-primary" />
                   {form.formState.errors.email && <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="0700000001" {...form.register("phone")} className="focus-visible:ring-primary" />
-                  {form.formState.errors.phone && <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>}
-                </div>
-                <div className="space-y-2">
+                {/* {false && <div className="space-y-2">
                   <Label htmlFor="logoUrl">Logo URL</Label>
                   <Input id="logoUrl" placeholder="https://example.com/logo.png" {...form.register("logoUrl")} className="focus-visible:ring-primary" />
                   {form.formState.errors.logoUrl && <p className="text-sm text-red-500">{form.formState.errors.logoUrl.message}</p>}
-                </div>
+                </div>} */}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" placeholder="0700000001" {...form.register("phone")} className="focus-visible:ring-primary" />
+                {form.formState.errors.phone && <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>}
               </div>
 
               <div className="space-y-2">

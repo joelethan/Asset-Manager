@@ -1,21 +1,21 @@
-import { useState, ChangeEvent, useRef, FormEvent, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
+import StudentsTable from "@/components/StudentsTable";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, CheckCircle2, Loader2, DownloadCloud, UploadCloud, Users, ArrowRight, Trash2 } from "lucide-react";
-import StudentsTable from "@/components/StudentsTable";
-import { studentsApi, enrollmentsApi, academicYearsApi, classroomDefinitionsApi, termTemplatesApi, subjectsApi, assessmentsApi } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
-import { useStudents, useCreateStudent } from "@/hooks/use-students";
+import { useCreateStudent, useStudents } from "@/hooks/use-students";
+import { useToast } from "@/hooks/use-toast";
+import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsApi, studentsApi, subjectsApi, termTemplatesApi } from "@/lib/api";
+import { AlertCircle, ArrowRight, CheckCircle2, DownloadCloud, Loader2, Plus, Trash2, UploadCloud, Users } from "lucide-react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 interface Student {
   id: string;
@@ -968,6 +968,9 @@ export default function Students() {
                       {viewYears.map((year) => (
                         <SelectItem key={year.id} value={String(year.id)}>
                           {year.name || `Year ${year.id}`}
+                          {year.status === "active" && (
+                            <span className="ml-2 text-green-600 font-semibold">(Active)</span>
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
