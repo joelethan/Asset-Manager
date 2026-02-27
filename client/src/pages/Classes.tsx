@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useAcademicYears } from "@/hooks/use-academic-structure";
 import { useEnrollStudent, useEnrollments } from "@/hooks/use-enrollments";
@@ -49,7 +50,7 @@ export default function Classes() {
   const schoolId = selectedTenant?.id as string;
 
   // Classroom Definition states
-  const [classrooms, setClassrooms] = useState<ClassroomDefinition[]>([]);
+  const { classrooms, setClassrooms, classroomsRes, setClassroomsRes } = useStructure();
 
   // Form states
   const [classroomForm, setClassroomForm] = useState<FormState>({
@@ -116,9 +117,10 @@ export default function Classes() {
       setError(null);
 
       // Load classroom definitions
-      const classroomsRes = await classroomDefinitionsApi.list(schoolId);
-      if (!classroomsRes.ok) throw new Error("Failed to load classrooms");
-      const classroomsData = await classroomsRes.json();
+      const res = await classroomDefinitionsApi.list(schoolId);
+      setClassroomsRes(res); // Save the raw response in context
+      if (!res.ok) throw new Error("Failed to load classrooms");
+      const classroomsData = await res.json();
       setClassrooms(Array.isArray(classroomsData) ? classroomsData : []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
@@ -246,15 +248,15 @@ export default function Classes() {
     }
   }
 
-  if (isLoadingData) {
-    return (
-      <AppLayout title="Classes" description="Manage classroom definitions">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        </div>
-      </AppLayout>
-    );
-  }
+  // if (isLoadingData) {
+  //   return (
+  //     <AppLayout title="Classes" description="Manage classroom definitions">
+  //       <div className="flex items-center justify-center min-h-[400px]">
+  //         <Loader2 className="h-8 w-8 text-primary animate-spin" />
+  //       </div>
+  //     </AppLayout>
+  //   );
+  // }
 
   const getClassroomName = (id: string) => {
     return classrooms.find((c: any) => c.id === id)?.name || "Unknown";

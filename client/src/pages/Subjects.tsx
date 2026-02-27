@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
 import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsApi, gradesApi, subjectsApi, termTemplatesApi } from "@/lib/api";
@@ -69,7 +70,7 @@ export default function Subjects() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const { subjects, setSubjects } = useStructure();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("subjects");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);

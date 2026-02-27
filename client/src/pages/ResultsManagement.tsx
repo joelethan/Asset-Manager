@@ -2,11 +2,11 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTenant } from "@/context/TenantContext";
 import { useStructure } from "@/context/StructureContext";
+import { useTenant } from "@/context/TenantContext";
+import { gradesApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { gradesApi } from "@/lib/api";
 
 interface Assessment {
     id: string;
@@ -240,8 +240,18 @@ export default function ResultsManagement() {
                                 {errors.assessment && <p className="text-sm text-red-500">{errors.assessment.message}</p>}
                             </div>
                             <div className="flex items-end h-full">
-                                <button className="w-full px-4 md:px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition">
-                                    Submit
+                                <button
+                                    type="submit"
+                                    className="w-full px-4 md:px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    disabled={isGradesLoading}
+                                >
+                                    {isGradesLoading && (
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                        </svg>
+                                    )}
+                                    {isGradesLoading ? "Loading..." : "Submit"}
                                 </button>
                             </div>
                         </div>
@@ -249,7 +259,44 @@ export default function ResultsManagement() {
                     {/* Display grades table or loading/error states here */}
                     <div className="mt-6">
                         {isGradesLoading && (!grades || grades.length === 0) ? (
-                            <div className="text-sm text-gray-600">Loading grades...</div>
+                            <div className="overflow-x-auto animate-pulse">
+                                <table className="w-full text-left table-auto border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                                            <th className="px-3 py-2 text-sm font-medium">Student</th>
+                                            <th className="px-3 py-2 text-sm font-medium">Score</th>
+                                            <th className="px-3 py-2 text-sm font-medium">%age</th>
+                                            <th className="px-3 py-2 text-sm font-medium">Grade</th>
+                                            <th className="px-3 py-2 text-sm font-medium">Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[...Array(6)].map((_, i) => (
+                                            <tr key={i} className="border-t">
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-16" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-28" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-12" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-12" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-10" />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-20" />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : gradesError ? (
                             <div className="text-sm text-red-600">{gradesError}</div>
                         ) : grades && grades.length > 0 ? (

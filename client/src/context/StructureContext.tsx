@@ -26,8 +26,13 @@ interface StructureContextProps {
     }>>;
     grades: any[] | null;
     setGrades: React.Dispatch<React.SetStateAction<any[] | null>>;
+    classrooms: any[];
+    setClassrooms: React.Dispatch<React.SetStateAction<any[]>>;
+    subjects: any[];
+    setSubjects: React.Dispatch<React.SetStateAction<any[]>>;
+    classroomsRes: any;
+    setClassroomsRes: React.Dispatch<React.SetStateAction<any>>;
 }
-
 
 const StructureContext = createContext<StructureContextProps | undefined>(undefined);
 
@@ -38,6 +43,9 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [error, setError] = useState<string | null>(null);
     const [selectValues, setSelectValues] = useState({ year: "", term: "", classroom: "", assessment: "" });
     const [grades, setGrades] = useState<any[] | null>(null);
+    const [classrooms, setClassrooms] = useState<any[]>([]);
+    const [subjects, setSubjects] = useState<any[]>([]);
+    const [classroomsRes, setClassroomsRes] = useState<any>(null);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -60,7 +68,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <StructureContext.Provider value={{ structure, isLoading, error, fetchStructure, selectValues, setSelectValues, grades, setGrades }}>
+        <StructureContext.Provider value={{ structure, isLoading, error, fetchStructure, selectValues, setSelectValues, grades, setGrades, classrooms, setClassrooms, classroomsRes, setClassroomsRes, subjects, setSubjects }}>
             {children}
         </StructureContext.Provider>
     );
