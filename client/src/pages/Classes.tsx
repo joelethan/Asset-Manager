@@ -333,7 +333,7 @@ export default function Classes() {
                         {classroomServerError && classroomServerErrorList.length === 0 && <div>{classroomServerError}</div>}
                         {classroomServerErrorList.length > 0 && (
                           <ul className="mt-2 ml-4 list-disc space-y-1">
-                            {([...new Set(classroomServerErrorList)]).map((err, idx) => (
+                            {Array.from(new Set(classroomServerErrorList)).map((err, idx) => (
                               <li key={idx}>{err}</li>
                             ))}
                           </ul>

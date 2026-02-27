@@ -270,7 +270,7 @@ function TermTemplatesSection({
                   {serverError && serverErrorList.length === 0 && <div>{serverError}</div>}
                   {serverErrorList.length > 0 && (
                     <ul className="mt-2 ml-4 list-disc space-y-1">
-                      {([...new Set(serverErrorList)]).map((err, idx) => (
+                      {Array.from(new Set(serverErrorList)).map((err, idx) => (
                         <li key={idx}>{err}</li>
                       ))}
                     </ul>
@@ -509,7 +509,7 @@ function AcademicYearsSection({
                   {yearServerError && yearServerErrorList.length === 0 && <div>{yearServerError}</div>}
                   {yearServerErrorList.length > 0 && (
                     <ul className="mt-2 ml-4 list-disc space-y-1">
-                      {([...new Set(yearServerErrorList)]).map((err, idx) => (
+                      {Array.from(new Set(yearServerErrorList)).map((err, idx) => (
                         <li key={idx}>{err}</li>
                       ))}
                     </ul>

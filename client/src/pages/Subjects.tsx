@@ -625,7 +625,6 @@ export default function Subjects() {
                       const yearId = e.target.value;
                       setSelectedAcademicYearId(yearId);
                       const year = academicYears.find((y: any) => String(y.id) === yearId);
-                      console.log("Selected year:", year);
                       const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
                       setSelectedTermId("");
                       setAssessments([]);

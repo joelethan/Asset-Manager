@@ -3,9 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTenant } from "@/context/TenantContext";
-import { gradesApi } from "@/lib/api";
+import { useStructure } from "@/context/StructureContext";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { gradesApi } from "@/lib/api";
 
 interface Assessment {
     id: string;
@@ -59,15 +60,11 @@ interface Grade {
 export default function ResultsManagement() {
     const { selectedTenant } = useTenant();
     const schoolId = selectedTenant?.id as string;
-
-    const [structure, setStructure] = useState<{ years?: Year[]; terms?: Term[]; classroomDefinitions?: ClassroomDefinition[] } | null>(null);
-    const [isStructureLoading, setIsStructureLoading] = useState(false);
-    const [structureError, setStructureError] = useState<string | null>(null);
-    const [selectedYearId, setSelectedYearId] = useState<string>("");
-    const [selectedTermId, setSelectedTermId] = useState<string>("");
-    const [selectedClassroomId, setSelectedClassroomId] = useState<string>("");
-    const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>("");
-    const [grades, setGrades] = useState<Grade[] | null>(null);
+    const { structure, isLoading: isStructureLoading, error: structureError, fetchStructure, selectValues, setSelectValues, grades, setGrades } = useStructure();
+    // Use selectValues from context for filtering
+    const selectedYearId = selectValues.year;
+    const selectedTermId = selectValues.term;
+    const selectedClassroomId = selectValues.classroom;
     const [isGradesLoading, setIsGradesLoading] = useState(false);
     const [gradesError, setGradesError] = useState<string | null>(null);
 
@@ -82,49 +79,32 @@ export default function ResultsManagement() {
     });
 
     // Keep selects in sync with react-hook-form
-    useEffect(() => { setValue("year", selectedYearId); }, [selectedYearId, setValue]);
-    useEffect(() => { setValue("term", selectedTermId); }, [selectedTermId, setValue]);
-    useEffect(() => { setValue("classroom", selectedClassroomId); }, [selectedClassroomId, setValue]);
-    useEffect(() => { setValue("assessment", selectedAssessmentId); }, [selectedAssessmentId, setValue]);
+    useEffect(() => { setValue("year", selectValues.year); }, [selectValues.year, setValue]);
+    useEffect(() => { setValue("term", selectValues.term); }, [selectValues.term, setValue]);
+    useEffect(() => { setValue("classroom", selectValues.classroom); }, [selectValues.classroom, setValue]);
+    useEffect(() => { setValue("assessment", selectValues.assessment); }, [selectValues.assessment, setValue]);
 
     useEffect(() => {
-        if (schoolId) {
-            fetchStructure();
+        if (schoolId && !structure) {
+            fetchStructure(schoolId);
         }
-    }, [schoolId]);
+    }, [schoolId, structure, fetchStructure]);
 
-    useEffect(() => {
-        console.log("Fetched Structure:", structure);
-    }, [structure]);
-
-    const fetchStructure = async () => {
-        setIsStructureLoading(true);
-        setStructureError(null);
-        try {
-            const res = await gradesApi.getStructure(schoolId);
-            if (!res.ok) throw new Error("Failed to fetch school structure");
-            const data = await res.json();
-            setStructure({
-                years: data.years || [],
-                terms: data.terms || [],
-                classroomDefinitions: data.classroomDefinitions || data.classroom_definitions || [],
-            });
-        } catch (err: any) {
-            setStructureError(err?.message || "Failed to load school structure");
-        } finally {
-            setIsStructureLoading(false);
-        }
-    };
-
+    // fetchStructure now handled by context
     const onSubmit = async (data: any) => {
         setIsGradesLoading(true);
         setGradesError(null);
-        // setGrades(null);
         try {
             const res = await gradesApi.fetchForAssessment(schoolId, data.assessment);
             if (!res.ok) throw new Error("Failed to fetch grades");
             const result = await res.json();
             setGrades(result || []);
+            setSelectValues({
+                year: data.year,
+                term: data.term,
+                classroom: data.classroom,
+                assessment: data.assessment,
+            });
         } catch (err: any) {
             setGradesError(err?.message || "Failed to load grades");
         } finally {
@@ -149,7 +129,7 @@ export default function ResultsManagement() {
                                     control={control}
                                     rules={{ required: "Select academic year" }}
                                     render={({ field }) => (
-                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectedYearId(v); }}>
+                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, year: v })); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select academic year" />
                                             </SelectTrigger>
@@ -176,7 +156,7 @@ export default function ResultsManagement() {
                                     control={control}
                                     rules={{ required: "Select term" }}
                                     render={({ field }) => (
-                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectedTermId(v); }}>
+                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, term: v })); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select term" />
                                             </SelectTrigger>
@@ -201,7 +181,7 @@ export default function ResultsManagement() {
                                     control={control}
                                     rules={{ required: "Select classroom" }}
                                     render={({ field }) => (
-                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectedClassroomId(v); }}>
+                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, classroom: v })); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select classroom" />
                                             </SelectTrigger>
@@ -228,7 +208,7 @@ export default function ResultsManagement() {
                                     control={control}
                                     rules={{ required: "Select assessment" }}
                                     render={({ field }) => (
-                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectedAssessmentId(v); }}>
+                                        <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, assessment: v })); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select assessment" />
                                             </SelectTrigger>
@@ -238,12 +218,12 @@ export default function ResultsManagement() {
                                                 ) : (() => {
                                                     const classroom = structure?.classroomDefinitions?.find(c => c.id === selectedClassroomId);
                                                     if (classroom && Array.isArray(classroom.assessments) && classroom.assessments.length > 0) {
-                                                        const filteredAssessments = classroom.assessments.filter(assessment =>
+                                                        const filteredAssessments = classroom.assessments.filter((assessment: any) =>
                                                             assessment.term_template_item_id === selectedTermId &&
                                                             assessment.academic_year_id === selectedYearId
                                                         );
                                                         if (filteredAssessments.length > 0) {
-                                                            return filteredAssessments.map(assessment => (
+                                                            return filteredAssessments.map((assessment: any) => (
                                                                 <SelectItem key={assessment.id} value={assessment.id}>{` ${assessment?.subject?.name} (${assessment.name})`}</SelectItem>
                                                             ));
                                                         } else {
