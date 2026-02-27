@@ -1085,8 +1085,19 @@ export default function Subjects() {
                         if (!res.ok) throw new Error("Failed to submit grades");
                         toast({ title: "Success", description: "Grades submitted successfully." });
                         resetGradesForm();
-                        setGradingAssessment(null);
-                        setActiveTab("assessments-list");
+
+                        // Refetch enrolled students for this assessment
+                        setLoadingGradingStudents(true);
+                        enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
+                          .then(async (res) => {
+                            const data = await res.json();
+                            setGradingStudents(Array.isArray(data) ? data : data?.data || []);
+                          })
+                          .catch(() => setGradingStudents([]))
+                          .finally(() => setLoadingGradingStudents(false));
+
+                        // setGradingAssessment(null);
+                        // setActiveTab("assessments-list");
                       } catch (error) {
                         toast({ title: "Error", description: "Failed to submit grades", variant: "destructive" });
                       }
@@ -1130,10 +1141,10 @@ export default function Subjects() {
                               min={0}
                               max={gradingAssessment?.max_score || 100}
                               {...control.register(`grades.${idx}.score`, {
-                                required: "Score is required",
+                                // required: "Score is required", // REMOVE THIS LINE
                                 min: { value: 0, message: "Score must be at least 0" },
                                 max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
-                                validate: value => !isNaN(Number(value)) || "Must be a number",
+                                validate: value => value === "" || !isNaN(Number(value)) || "Must be a number",
                               })}
                               placeholder="Score"
                               className="w-24"

@@ -1,18 +1,18 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useProfile } from "@/context/ProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
-import { useProfile } from "@/context/ProfileContext";
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useLocation } from "wouter";
 
 export default function Login() {
   const { toast } = useToast();
@@ -39,7 +39,7 @@ export default function Login() {
         // Handle authentication errors with proper UI display
         const errorMessage = data.error?.message || data.message || "Invalid email or password.";
         setServerError(errorMessage);
-        
+
         // Also show toast for additional feedback
         toast({
           title: "Login failed",
