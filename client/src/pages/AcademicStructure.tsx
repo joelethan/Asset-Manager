@@ -1,13 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import {
-  useTermTemplates,
-  useCreateTermTemplate,
-  useAcademicYears,
-  useCreateAcademicYear,
-  useUpdateAcademicYearStatus,
-  // useTerms,
-} from "@/hooks/use-academic-structure";
-import { useTenant } from "@/context/TenantContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,30 +12,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Zap, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { termTemplatesApi } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
-import { useForm, Controller } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTenant } from "@/context/TenantContext";
+import {
+  useAcademicYears,
+  useCreateAcademicYear,
+  useCreateTermTemplate,
+  useTermTemplates,
+  useUpdateAcademicYearStatus,
+} from "@/hooks/use-academic-structure";
+import { useToast } from "@/hooks/use-toast";
+import { termTemplatesApi } from "@/lib/api";
+import { AlertCircle, Calendar, Plus, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 function formatDateDMY(input?: string | Date | null) {
   if (!input) return "";
@@ -477,9 +467,9 @@ function AcademicYearsSection({
           <Zap className="h-5 w-5" />
           Academic Years
         </CardTitle>
-        <CardDescription>
+        {/* <CardDescription>
           Create and manage academic years with terms
-        </CardDescription>
+        </CardDescription> */}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

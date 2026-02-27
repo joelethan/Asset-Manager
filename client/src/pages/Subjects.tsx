@@ -93,6 +93,9 @@ export default function Subjects() {
   const [gradingStudents, setGradingStudents] = useState<any[]>([]);
   const [loadingGradingStudents, setLoadingGradingStudents] = useState(false);
 
+  const [subjectError, setSubjectError] = useState<string | null>(null);
+  const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
+
   const assessmentSubjects = subjects.filter((s) => assessments.some((a) => a.subject_id === s.id));
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
@@ -184,15 +187,36 @@ export default function Subjects() {
 
   const handleCreateSubject = async (data: SubjectFormData) => {
     setIsLoading(true);
+    setSubjectError(null);
+    setSubjectErrorList([]);
     try {
       const response = await subjectsApi.create(schoolId, data);
-      if (!response.ok) throw new Error("Failed to create subject");
+      if (!response.ok) {
+        let errorMsg = "Failed to create subject";
+        let errorList: string[] = [];
+        try {
+          const err = await response.json();
+          if (err?.error?.errors && Array.isArray(err.error.errors)) {
+            errorList = err.error.errors.map((e: any) => e.message || e).filter(Boolean);
+          }
+          if (err?.error?.message) {
+            errorMsg = err.error.message;
+          } else if (err?.message) {
+            errorMsg = err.message;
+          }
+        } catch { }
+        setSubjectError(errorMsg);
+        setSubjectErrorList(errorList);
+        toast({ title: "Error", description: errorMsg, variant: "destructive" });
+        return;
+      }
 
       reset();
       await fetchSubjects();
       toast({ title: "Success", description: "Subject created successfully" });
       setActiveTab("subjects");
     } catch (error) {
+      setSubjectError("Failed to create subject");
       toast({ title: "Error", description: "Failed to create subject", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -523,6 +547,18 @@ export default function Subjects() {
               <CardDescription>Add a new subject to the school</CardDescription>
             </CardHeader>
             <CardContent>
+              {(subjectError || subjectErrorList.length > 0) && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>
+                    {subjectError && <div>{subjectError}</div>}
+                    {subjectErrorList.length > 0 && (
+                      <ul className="list-disc pl-5 space-y-1">
+                        {subjectErrorList.map((err, i) => <li key={i}>{err}</li>)}
+                      </ul>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
               <form onSubmit={handleSubmit(handleCreateSubject)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Subject Name *</Label>
@@ -866,7 +902,7 @@ export default function Subjects() {
           <Card>
             <CardHeader>
               <CardTitle>Create New Assessment</CardTitle>
-              <CardDescription>Add a new assessment to the school</CardDescription>
+              {/* <CardDescription>Add a new assessment to the school</CardDescription> */}
             </CardHeader>
             <CardContent>
               {(assessmentError || assessmentErrorList.length > 0) && (

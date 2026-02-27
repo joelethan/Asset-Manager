@@ -942,7 +942,7 @@ export default function Students() {
           <Card>
             <CardHeader>
               <CardTitle>View Student Enrollments</CardTitle>
-              <CardDescription>View students enrolled in a specific classroom definition</CardDescription>
+              {/* <CardDescription>View students enrolled in a specific classroom definition</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Year and Definition Selection */}

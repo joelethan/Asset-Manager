@@ -182,4 +182,8 @@ export const assessmentsApi = {
 export const gradesApi = {
   bulkCreate: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/grades/bulk`, data),
+  getStructure: (schoolId: string) =>
+    apiClient.get(`/schools/${schoolId}/structure`),
+  fetchForAssessment: (schoolId: string, assessmentId: string) =>
+    apiClient.get(`/schools/${schoolId}/grades?assessmentId=${assessmentId}`),
 };
