@@ -104,6 +104,10 @@ export default function ResultsManagement() {
                 term: data.term,
                 classroom: data.classroom,
                 assessment: data.assessment,
+                gradeYear: selectValues.gradeYear,
+                gradeTerm: selectValues.gradeTerm,
+                gradeClassroom: selectValues.gradeClassroom,
+                gradeAssessment: selectValues.gradeAssessment,
             });
         } catch (err: any) {
             setGradesError(err?.message || "Failed to load grades");

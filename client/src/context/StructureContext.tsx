@@ -17,12 +17,20 @@ interface StructureContextProps {
         term: string;
         classroom: string;
         assessment: string;
+        gradeYear: string;
+        gradeTerm: string;
+        gradeClassroom: string;
+        gradeAssessment: string;
     };
     setSelectValues: React.Dispatch<React.SetStateAction<{
         year: string;
         term: string;
         classroom: string;
         assessment: string;
+        gradeYear: string;
+        gradeTerm: string;
+        gradeClassroom: string;
+        gradeAssessment: string;
     }>>;
     grades: any[] | null;
     setGrades: React.Dispatch<React.SetStateAction<any[] | null>>;
@@ -32,6 +40,8 @@ interface StructureContextProps {
     setSubjects: React.Dispatch<React.SetStateAction<any[]>>;
     classroomsRes: any;
     setClassroomsRes: React.Dispatch<React.SetStateAction<any>>;
+    classroomDefinitions: any[];
+    setClassroomDefinitions: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 const StructureContext = createContext<StructureContextProps | undefined>(undefined);
@@ -41,11 +51,21 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [structure, setStructure] = useState<Structure | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectValues, setSelectValues] = useState({ year: "", term: "", classroom: "", assessment: "" });
+    const [selectValues, setSelectValues] = useState({
+        year: "",
+        term: "",
+        classroom: "",
+        assessment: "",
+        gradeYear: "",
+        gradeTerm: "",
+        gradeClassroom: "",
+        gradeAssessment: ""
+    });
     const [grades, setGrades] = useState<any[] | null>(null);
     const [classrooms, setClassrooms] = useState<any[]>([]);
     const [subjects, setSubjects] = useState<any[]>([]);
     const [classroomsRes, setClassroomsRes] = useState<any>(null);
+    const [classroomDefinitions, setClassroomDefinitions] = useState<any[]>([]);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -60,6 +80,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
                 terms: data.terms || [],
                 classroomDefinitions: data.classroomDefinitions || data.classroom_definitions || [],
             });
+            setClassroomDefinitions(data.classroomDefinitions || data.classroom_definitions || []);
         } catch (err: any) {
             setError(err?.message || "Failed to load school structure");
         } finally {
@@ -68,7 +89,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <StructureContext.Provider value={{ structure, isLoading, error, fetchStructure, selectValues, setSelectValues, grades, setGrades, classrooms, setClassrooms, classroomsRes, setClassroomsRes, subjects, setSubjects }}>
+        <StructureContext.Provider value={{ structure, isLoading, error, fetchStructure, selectValues, setSelectValues, grades, setGrades, classrooms, setClassrooms, classroomsRes, setClassroomsRes, subjects, setSubjects, classroomDefinitions, setClassroomDefinitions }}>
             {children}
         </StructureContext.Provider>
     );

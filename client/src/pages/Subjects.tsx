@@ -50,6 +50,7 @@ interface Assessment {
 }
 
 interface AssessmentFormData {
+  academicYearId: string;
   termId: string;
   subjectId: string;
   classroomDefinitionId: string;
@@ -70,7 +71,16 @@ export default function Subjects() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
-  const { subjects, setSubjects, isLoading: isStructureLoading, structure, fetchStructure } = useStructure();
+  const {
+    selectValues: globalSelectValues,
+    setSelectValues: setGlobalSelectValues,
+    structure,
+    fetchStructure,
+    subjects,
+    setSubjects,
+    classroomDefinitions,
+    setClassroomDefinitions,
+  } = useStructure();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("assessments-list");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -80,10 +90,7 @@ export default function Subjects() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [groupedAssessments, setGroupedAssessments] = useState<any[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
-  const [selectedTermId, setSelectedTermId] = useState<string>("");
   const [academicYears, setAcademicYears] = useState<any[]>([]);
-  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>("");
-  const [classroomDefinitions, setClassroomDefinitions] = useState<any[]>([]);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
   const [isAssessmentEditModalOpen, setIsAssessmentEditModalOpen] = useState(false);
@@ -97,7 +104,7 @@ export default function Subjects() {
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
 
-  const assessmentSubjects = subjects.filter((s) => assessments.some((a) => a.subject_id === s.id));
+  const assessmentSubjects = subjects.filter((s: Subject) => assessments.some((a) => a.subject_id === s.id));
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
     defaultValues: {
@@ -123,7 +130,7 @@ export default function Subjects() {
   });
 
   useEffect(() => {
-    if (schoolId && !structure && !isStructureLoading) {
+    if (schoolId && !structure) {
       fetchStructure(schoolId);
     }
   }, [schoolId, structure, fetchStructure]);
@@ -144,7 +151,7 @@ export default function Subjects() {
     name: "grades",
   });
 
-  const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, } = useForm<AssessmentFormData>({
+  const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, control: controlAssessment } = useForm<AssessmentFormData>({
     defaultValues: {
       termId: "",
       subjectId: "",
@@ -264,52 +271,6 @@ export default function Subjects() {
     setIsEditModalOpen(true);
   };
 
-  // Assessment handlers
-  const fetchAcademicYears = async () => {
-    try {
-      const res = await academicYearsApi.list(schoolId);
-      if (!res.ok) return;
-      const data = await res.json();
-      const years = Array.isArray(data) ? data : data.data || [];
-      setAcademicYears(years);
-      if (years.length > 0) {
-        // Prefer the year with status === 'active', fallback to first.
-        const activeYear = years.find((y: any) => y.status === "active") || years[0];
-        setSelectedAcademicYearId(String(activeYear.id));
-        const templateId = activeYear.termTemplateId || activeYear.term_template_id || activeYear.term_template?.id;
-        if (templateId) await fetchTerms(String(templateId));
-      }
-    } catch (error) {
-      // silently fail
-    }
-  };
-
-  const fetchClassroomDefinitions = async () => {
-    try {
-      const res = await classroomDefinitionsApi.list(schoolId);
-      if (!res.ok) return;
-      const data = await res.json();
-      const classrooms = Array.isArray(data) ? data : data.data || [];
-      setClassroomDefinitions(classrooms);
-    } catch (error) {
-      // silently fail
-    }
-  };
-
-  const fetchTerms = async (termTemplateId: string) => {
-    try {
-      if (!termTemplateId) return;
-      const res = await termTemplatesApi.get(schoolId, termTemplateId);
-      if (!res.ok) return;
-      const data = await res.json();
-      const template = Array.isArray(data) ? data[0] : data;
-      const structure = template?.structure || template?.terms || [];
-      setTerms(Array.isArray(structure) ? structure : []);
-    } catch (error) {
-      // silently fail
-    }
-  };
-
   // Helper to extract a term's display name from various possible keys
   const getTermNameFromObj = (t: any) => {
     if (!t) return "";
@@ -385,70 +346,12 @@ export default function Subjects() {
     }
   };
 
-  const handleDeleteAssessment = async (assessmentId: string) => {
-    if (!confirm("Are you sure you want to delete this assessment?")) return;
-
-    try {
-      const response = await assessmentsApi.delete(schoolId, assessmentId);
-      if (!response.ok) throw new Error("Failed to delete assessment");
-
-      await fetchAssessments(selectedTermId);
-      toast({ title: "Success", description: "Assessment deleted successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to delete assessment", variant: "destructive" });
-    }
-  };
-
-  const handleUpdateAssessment = async (data: AssessmentFormData) => {
-    if (!editingAssessment) return;
-    setIsAssessmentLoading(true);
-    try {
-      // Parse date (date-only input) and create full UTC timestamp at 09:00
-      const dateonly = data.assessmentDate;
-      const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
-
-      const payload = {
-        name: data.name,
-        type: data.type,
-        maxScore: parseFloat(data.maxScore),
-        weight: parseFloat(data.weight),
-        assessmentDate: timestamp,
-      };
-      const response = await assessmentsApi.update(schoolId, editingAssessment.id, payload);
-      if (!response.ok) throw new Error("Failed to update assessment");
-
-      await fetchAssessments(selectedTermId);
-      resetAssessment();
-      setEditingAssessment(null);
-      setIsAssessmentEditModalOpen(false);
-      toast({ title: "Success", description: "Assessment updated successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to update assessment", variant: "destructive" });
-    } finally {
-      setIsAssessmentLoading(false);
-    }
-  };
-
-  const startEditAssessment = (assessment: Assessment) => {
-    setEditingAssessment(assessment);
-    resetAssessment({
-      termId: assessment.term_id,
-      subjectId: assessment.subject_id,
-      classroomDefinitionId: assessment.classroom_definition_id,
-      name: assessment.name,
-      type: assessment.type,
-      maxScore: String(assessment.max_score),
-      weight: String(assessment.weight),
-      assessmentDate: assessment.assessment_date ? assessment.assessment_date.split("T")[0] : new Date().toISOString().split("T")[0],
-    });
-    setIsAssessmentEditModalOpen(true);
-  };
-
   // Add these to your useForm for the assessments-list tab
   const {
     control: filterControl,
     handleSubmit: handleFilterSubmit,
     formState: { errors: filterErrors },
+    setValue,
   } = useForm({
     defaultValues: {
       academicYear: "",
@@ -458,9 +361,20 @@ export default function Subjects() {
     },
   });
 
+  // Keep selects in sync with react-hook-form
+  useEffect(() => { setValue("academicYear", globalSelectValues.gradeYear); }, [globalSelectValues.gradeYear, setValue]);
+  useEffect(() => { setValue("term", globalSelectValues.gradeTerm); }, [globalSelectValues.gradeTerm, setValue]);
+  useEffect(() => { setValue("classroom", globalSelectValues.gradeClassroom); }, [globalSelectValues.gradeClassroom, setValue]);
+  useEffect(() => { setValue("assessment", globalSelectValues.gradeAssessment); }, [globalSelectValues.gradeAssessment, setValue]);
+
   // Add these state variables near your other useState hooks:
-  const [selectedClassroomId, setSelectedClassroomId] = useState<string>("");
   const [isFilterLoading, setIsFilterLoading] = useState(false);
+
+  // Fix: Use globalSelectValues for selectedAcademicYearId, selectedTermId, selectedClassroomId
+  const selectedAcademicYearId = globalSelectValues.gradeYear || "";
+  const selectedTermId = globalSelectValues.gradeTerm || "";
+  const selectedClassroomId = globalSelectValues.gradeClassroom || "";
+  const selectedAssessmentId = globalSelectValues.gradeAssessment || "";
 
   return (
     <AppLayout
@@ -620,7 +534,7 @@ export default function Subjects() {
         <TabsContent value="assessments-list" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Grade Assessment</CardTitle>
+              <CardTitle>Grade Assessment e</CardTitle>
               {/* <CardDescription>Choose an academic term to manage assessments</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-4">
@@ -628,7 +542,16 @@ export default function Subjects() {
                 onSubmit={handleFilterSubmit(async (data) => {
                   setIsFilterLoading(true);
                   try {
-                    // Find the selected assessment object from classroomDefinitions
+                    // 1. Save selected filter values to global state
+                    setGlobalSelectValues(prev => ({
+                      ...prev,
+                      gradeYear: data.academicYear,
+                      gradeTerm: data.term,
+                      gradeClassroom: data.classroom,
+                      gradeAssessment: data.assessment,
+                    }));
+
+                    // 2. Find the selected assessment object from classroomDefinitions
                     const classroom = structure?.classroomDefinitions?.find(c => c.id === data.classroom);
                     const assessment =
                       classroom?.assessments?.find((a: any) => a.id === data.assessment);
@@ -639,20 +562,25 @@ export default function Subjects() {
                       return;
                     }
 
-                    // Fetch enrolled students for the selected assessment
+                    // 3. Fetch enrolled students for the selected assessment
                     const res = await enrollmentsApi.enrolledStudents(schoolId, assessment.id);
                     if (!res.ok) throw new Error("Failed to fetch enrolled students");
                     const students = await res.json();
+
+                    // 4. Save assessment and students to local state
                     setGradingAssessment(assessment);
                     setGradingStudents(Array.isArray(students) ? students : students?.data || []);
-                    // setActiveTab("grade-assessment");
+
+                    // 5. Save students/grades to local state (already done above)
+                    // setGlobalGrades(Array.isArray(students) ? students : students?.data || []);
+
+                    // Optionally: setActiveTab("grade-assessment");
                   } catch (error) {
                     toast({ title: "Error", description: "Failed to fetch enrolled students.", variant: "destructive" });
                   } finally {
                     setIsFilterLoading(false);
                   }
-                })}
-              >
+                })}>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 items-end px-2 md:px-0">
                   {/* Academic Year */}
                   <div className="space-y-2">
@@ -666,10 +594,12 @@ export default function Subjects() {
                           value={field.value}
                           onValueChange={(v) => {
                             field.onChange(v);
-                            setSelectedAcademicYearId(v);
+                            setGlobalSelectValues(prev => ({
+                              ...prev,
+                              gradeYear: v,
+                            }));
                             const year = academicYears.find((y: any) => String(y.id) === v);
                             const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
-                            if (templateId) fetchTerms(String(templateId));
                           }}
                         >
                           <SelectTrigger>
@@ -703,7 +633,10 @@ export default function Subjects() {
                           value={field.value}
                           onValueChange={(v) => {
                             field.onChange(v);
-                            setSelectedTermId(v);
+                            setGlobalSelectValues(prev => ({
+                              ...prev,
+                              gradeTerm: v,
+                            }));
                           }}
                         >
                           <SelectTrigger>
@@ -735,7 +668,10 @@ export default function Subjects() {
                           value={field.value}
                           onValueChange={(v) => {
                             field.onChange(v);
-                            setSelectedClassroomId(v);
+                            setGlobalSelectValues(prev => ({
+                              ...prev,
+                              gradeClassroom: v,
+                            }));
                           }}
                         >
                           <SelectTrigger>
@@ -765,7 +701,16 @@ export default function Subjects() {
                       control={filterControl}
                       rules={{ required: "Select assessment" }}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            setGlobalSelectValues(prev => ({
+                              ...prev,
+                              gradeAssessment: v,
+                            }));
+                          }}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select assessment" />
                           </SelectTrigger>
@@ -820,7 +765,7 @@ export default function Subjects() {
                   </div>
                 </div>
               </form>
-              {/* Here */}
+
               <div className="mt-6">
                 {isFilterLoading && gradingStudents.length === 0 ? (
                   <div className="overflow-x-auto animate-pulse">
@@ -938,6 +883,7 @@ export default function Subjects() {
               <CardTitle>Create New Assessment</CardTitle>
               {/* <CardDescription>Add a new assessment to the school</CardDescription> */}
             </CardHeader>
+
             <CardContent>
               {(assessmentError || assessmentErrorList.length > 0) && (
                 <Alert variant="destructive" className="mb-4">
@@ -952,83 +898,113 @@ export default function Subjects() {
                 </Alert>
               )}
               <form onSubmit={handleAssessmentSubmit(handleCreateAssessment)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="assess-year">Academic Year</Label>
-                    <select
-                      id="assess-year"
-                      value={selectedAcademicYearId}
-                      onChange={(e) => {
-                        const yearId = e.target.value;
-                        setSelectedAcademicYearId(yearId);
-                        const year = academicYears.find((y: any) => String(y.id) === yearId);
-                        const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
-                        // reset selected term when year changes
-                        resetAssessment({ name: "", type: "exam", maxScore: "100", weight: "0.4", assessmentDate: new Date().toISOString().split("T")[0] });
-                        if (templateId) fetchTerms(String(templateId));
-                      }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="">Select an academic year...</option>
-                      {academicYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          {year.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Label htmlFor="view-assess-year">Academic Year *</Label>
+                    <Controller
+                      name="academicYearId"
+                      control={controlAssessment}
+                      rules={{ required: "Select academic year" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select academic year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {academicYears.map((year) => (
+                              <SelectItem key={year.id} value={year.id}>
+                                {year.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.academicYearId && <p className="text-sm text-red-500">{assessmentErrors.academicYearId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="assess-term">Term *</Label>
-                    <select
-                      id="assess-term"
-                      {...registerAssessment("termId", { required: "Term is required" })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="">Select a term...</option>
-                      {terms.map((term: Term) => (
-                        <option key={term.id} value={term.id}>
-                          {term.name}
-                        </option>
-                      ))}
-                    </select>
-                    {assessmentErrors?.termId && <p className="text-sm text-red-600">{assessmentErrors.termId.message}</p>}
+                    <Label htmlFor="view-assess-year">Term *</Label>
+                    <Controller
+                      name="termId"
+                      control={controlAssessment}
+                      rules={{ required: "Select term" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select term" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {terms.map((term) => (
+                              <SelectItem key={term.id} value={term.id}>
+                                {term.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.termId && <p className="text-sm text-red-500">{assessmentErrors.termId.message}</p>}
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-subject">Subject *</Label>
-                    <select
-                      id="assess-subject"
-                      {...registerAssessment("subjectId", { required: "Subject is required" })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="">Select a subject...</option>
-                      {subjects.map((subject: Subject) => (
-                        <option key={subject.id} value={subject.id}>
-                          {subject.name}
-                        </option>
-                      ))}
-                    </select>
-                    {assessmentErrors?.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
+                    <Controller
+                      name="subjectId"
+                      control={controlAssessment}
+                      rules={{ required: "Subject is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a subject..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subjects.map((subject) => (
+                              <SelectItem key={subject.id} value={subject.id}>
+                                {subject.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="assess-classroom">Classroom Definition *</Label>
-                    <select
-                      id="assess-classroom"
-                      {...registerAssessment("classroomDefinitionId", { required: "Classroom definition is required" })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="">Select a classroom...</option>
-                      {classroomDefinitions.map((classroom: any) => (
-                        <option key={classroom.id} value={classroom.id}>
-                          {classroom.name}
-                        </option>
-                      ))}
-                    </select>
-                    {assessmentErrors?.classroomDefinitionId && <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
+                    <Controller
+                      name="classroomDefinitionId"
+                      control={controlAssessment}
+                      rules={{ required: "Classroom definition is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a classroom..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classroomDefinitions.map((classroom) => (
+                              <SelectItem key={classroom.id} value={classroom.id}>
+                                {classroom.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.classroomDefinitionId && <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
                   </div>
                 </div>
 
@@ -1047,18 +1023,27 @@ export default function Subjects() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-type">Type *</Label>
-                    <select
-                      id="assess-type"
-                      {...registerAssessment("type", { required: "Type is required" })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    >
-                      <option value="exam">Exam</option>
-                      <option value="test">Test</option>
-                      <option value="quiz">Quiz</option>
-                      <option value="homework">Homework</option>
-                      <option value="project">Project</option>
-                    </select>
-                    {assessmentErrors?.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
+                    <Controller
+                      name="type"
+                      control={controlAssessment}
+                      rules={{ required: "Type is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a type..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="exam">Exam</SelectItem>
+                            <SelectItem value="quiz">Quiz</SelectItem>
+                            <SelectItem value="assignment">Assignment</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="assess-maxScore">Max Score *</Label>
@@ -1127,7 +1112,7 @@ export default function Subjects() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Grade Assessment 2</CardTitle>
+                <CardTitle>Grade Assessment</CardTitle>
                 {/* Only show submit button if there are students to grade and an assessment is selected */}
                 {gradingAssessment && gradingStudents.length > 0 && (
                   <Button
