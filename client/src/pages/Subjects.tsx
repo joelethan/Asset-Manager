@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
-import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsApi, gradesApi, subjectsApi, termTemplatesApi } from "@/lib/api";
+import { assessmentsApi, enrollmentsApi, gradesApi, subjectsApi } from "@/lib/api";
 import { AlertCircle, Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -79,8 +79,8 @@ export default function Subjects() {
     subjects,
     setSubjects,
     classroomDefinitions,
-    setClassroomDefinitions,
   } = useStructure();
+
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("assessments-list");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -104,9 +104,15 @@ export default function Subjects() {
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
 
-  const assessmentSubjects = subjects.filter((s: Subject) => assessments.some((a) => a.subject_id === s.id));
+  const assessmentSubjects = subjects.filter((s: Subject) =>
+    assessments.some((a) => a.subject_id === s.id));
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<SubjectFormData>({
     defaultValues: {
       name: "",
       code: "",
@@ -151,7 +157,13 @@ export default function Subjects() {
     name: "grades",
   });
 
-  const { register: registerAssessment, handleSubmit: handleAssessmentSubmit, reset: resetAssessment, formState: { errors: assessmentErrors }, control: controlAssessment } = useForm<AssessmentFormData>({
+  const {
+    register: registerAssessment,
+    handleSubmit: handleAssessmentSubmit,
+    reset: resetAssessment,
+    formState: { errors: assessmentErrors },
+    control: controlAssessment
+  } = useForm<AssessmentFormData>({
     defaultValues: {
       termId: "",
       subjectId: "",
@@ -269,12 +281,6 @@ export default function Subjects() {
       description: subject.description || "",
     });
     setIsEditModalOpen(true);
-  };
-
-  // Helper to extract a term's display name from various possible keys
-  const getTermNameFromObj = (t: any) => {
-    if (!t) return "";
-    return t.name || t.termName || t.term_name || t.title || t.label || "";
   };
 
   const fetchAssessments = async (termId: string) => {
@@ -430,7 +436,10 @@ export default function Subjects() {
                           <TableCell>{subject.code}</TableCell>
                           <TableCell className="text-slate-600">{subject.description || "-"}</TableCell>
                           <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${subject.is_active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
+                            <span className={
+                              `px-2 py-1 rounded-full text-xs font-medium ${subject.is_active ?
+                                "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`
+                            }>
                               {subject.is_active ? "Active" : "Inactive"}
                             </span>
                           </TableCell>
@@ -488,9 +497,13 @@ export default function Subjects() {
                   <Input
                     id="name"
                     placeholder="Mathematics"
-                    {...register("name", { required: "Subject name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                    {...register("name", {
+                      required: "Subject name is required",
+                      minLength: { value: 2, message: "Name must be at least 2 characters" }
+                    })}
                   />
-                  {errors?.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                  {errors?.name &&
+                    <p className="text-sm text-red-600">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -498,9 +511,13 @@ export default function Subjects() {
                   <Input
                     id="code"
                     placeholder="MATH"
-                    {...register("code", { required: "Subject code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
+                    {...register("code", {
+                      required: "Subject code is required",
+                      minLength: { value: 2, message: "Code must be at least 2 characters" }
+                    })}
                   />
-                  {errors?.code && <p className="text-sm text-red-600">{errors.code.message}</p>}
+                  {errors?.code &&
+                    <p className="text-sm text-red-600">{errors.code.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -535,7 +552,6 @@ export default function Subjects() {
           <Card>
             <CardHeader>
               <CardTitle>Grade Assessment e</CardTitle>
-              {/* <CardDescription>Choose an academic term to manage assessments</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -571,10 +587,6 @@ export default function Subjects() {
                     setGradingAssessment(assessment);
                     setGradingStudents(Array.isArray(students) ? students : students?.data || []);
 
-                    // 5. Save students/grades to local state (already done above)
-                    // setGlobalGrades(Array.isArray(students) ? students : students?.data || []);
-
-                    // Optionally: setActiveTab("grade-assessment");
                   } catch (error) {
                     toast({ title: "Error", description: "Failed to fetch enrolled students.", variant: "destructive" });
                   } finally {
@@ -619,7 +631,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.academicYear && <p className="text-sm text-red-500">{filterErrors.academicYear.message}</p>}
+                    {filterErrors.academicYear &&
+                      <p className="text-sm text-red-500">{filterErrors.academicYear.message}</p>}
                   </div>
                   {/* Term */}
                   <div className="space-y-2">
@@ -654,7 +667,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.term && <p className="text-sm text-red-500">{filterErrors.term.message}</p>}
+                    {filterErrors.term &&
+                      <p className="text-sm text-red-500">{filterErrors.term.message}</p>}
                   </div>
                   {/* Classroom */}
                   <div className="space-y-2">
@@ -691,7 +705,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.classroom && <p className="text-sm text-red-500">{filterErrors.classroom.message}</p>}
+                    {filterErrors.classroom &&
+                      <p className="text-sm text-red-500">{filterErrors.classroom.message}</p>}
                   </div>
                   {/* Assessment */}
                   <div className="space-y-2">
@@ -741,7 +756,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.assessment && <p className="text-sm text-red-500">{filterErrors.assessment.message}</p>}
+                    {filterErrors.assessment &&
+                      <p className="text-sm text-red-500">{filterErrors.assessment.message}</p>}
                   </div>
                   {/* Submit Button */}
                   <div className="flex items-end h-full">
@@ -923,7 +939,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.academicYearId && <p className="text-sm text-red-500">{assessmentErrors.academicYearId.message}</p>}
+                    {assessmentErrors.academicYearId &&
+                      <p className="text-sm text-red-500">{assessmentErrors.academicYearId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -950,7 +967,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.termId && <p className="text-sm text-red-500">{assessmentErrors.termId.message}</p>}
+                    {assessmentErrors.termId &&
+                      <p className="text-sm text-red-500">{assessmentErrors.termId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -977,7 +995,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.subjectId && <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
+                    {assessmentErrors.subjectId &&
+                      <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -1004,7 +1023,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.classroomDefinitionId && <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
+                    {assessmentErrors.classroomDefinitionId &&
+                      <p className="text-sm text-red-600">{assessmentErrors.classroomDefinitionId.message}</p>}
                   </div>
                 </div>
 
@@ -1016,7 +1036,8 @@ export default function Subjects() {
                       placeholder="Midterm Exam"
                       {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
                     />
-                    {assessmentErrors?.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
+                    {assessmentErrors?.name &&
+                      <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
                   </div>
                 </div>
 
@@ -1043,7 +1064,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
+                    {assessmentErrors.type &&
+                      <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="assess-maxScore">Max Score *</Label>
@@ -1057,7 +1079,8 @@ export default function Subjects() {
                         validate: value => !isNaN(Number(value)) || "Must be a number"
                       })}
                     />
-                    {assessmentErrors?.maxScore && <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
+                    {assessmentErrors?.maxScore &&
+                      <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
                   </div>
                 </div>
 
@@ -1076,7 +1099,8 @@ export default function Subjects() {
                         validate: value => !isNaN(Number(value)) || "Must be a number"
                       })}
                     />
-                    {assessmentErrors?.weight && <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
+                    {assessmentErrors?.weight &&
+                      <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="assess-date">Assessment Date *</Label>
@@ -1085,7 +1109,8 @@ export default function Subjects() {
                       type="date"
                       {...registerAssessment("assessmentDate", { required: "Assessment date is required" })}
                     />
-                    {assessmentErrors?.assessmentDate && <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
+                    {assessmentErrors?.assessmentDate &&
+                      <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
                   </div>
                 </div>
 
@@ -1242,9 +1267,13 @@ export default function Subjects() {
                   <Input
                     id="edit-name"
                     placeholder="Mathematics"
-                    {...register("name", { required: "Subject name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                    {...register("name", {
+                      required: "Subject name is required",
+                      minLength: { value: 2, message: "Name must be at least 2 characters" }
+                    })}
                   />
-                  {errors?.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                  {errors?.name &&
+                    <p className="text-sm text-red-600">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -1252,9 +1281,13 @@ export default function Subjects() {
                   <Input
                     id="edit-code"
                     placeholder="MATH"
-                    {...register("code", { required: "Subject code is required", minLength: { value: 2, message: "Code must be at least 2 characters" } })}
+                    {...register("code", {
+                      required: "Subject code is required",
+                      minLength: { value: 2, message: "Code must be at least 2 characters" }
+                    })}
                   />
-                  {errors?.code && <p className="text-sm text-red-600">{errors.code.message}</p>}
+                  {errors?.code &&
+                    <p className="text-sm text-red-600">{errors.code.message}</p>}
                 </div>
 
                 <div className="space-y-2">
