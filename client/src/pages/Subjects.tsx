@@ -1,10 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStructure } from "@/context/StructureContext";
@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsApi, gradesApi, subjectsApi, termTemplatesApi } from "@/lib/api";
 import { AlertCircle, Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 
 interface Subject {
   id: string;
@@ -70,9 +70,9 @@ export default function Subjects() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
-  const { subjects, setSubjects } = useStructure();
+  const { subjects, setSubjects, isLoading: isStructureLoading, structure, fetchStructure } = useStructure();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("subjects");
+  const [activeTab, setActiveTab] = useState("assessments-list");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -123,6 +123,12 @@ export default function Subjects() {
   });
 
   useEffect(() => {
+    if (schoolId && !structure && !isStructureLoading) {
+      fetchStructure(schoolId);
+    }
+  }, [schoolId, structure, fetchStructure]);
+
+  useEffect(() => {
     // Reset form when students change
     resetGradesForm({
       grades: gradingStudents.map((student) => ({
@@ -150,15 +156,6 @@ export default function Subjects() {
       assessmentDate: new Date().toISOString().split("T")[0],
     },
   });
-
-  // Fetch subjects and academic years on mount
-  useEffect(() => {
-    if (schoolId) {
-      fetchSubjects();
-      fetchAcademicYears();
-      fetchClassroomDefinitions();
-    }
-  }, [schoolId]);
 
   useEffect(() => {
     if (gradingAssessment && schoolId) {
@@ -336,13 +333,6 @@ export default function Subjects() {
     }
   };
 
-  const handleTermChange = (termId: string) => {
-    setSelectedTermId(termId);
-    if (termId) {
-      fetchAssessments(termId);
-    }
-  };
-
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     setAssessmentError(null);
@@ -454,6 +444,24 @@ export default function Subjects() {
     setIsAssessmentEditModalOpen(true);
   };
 
+  // Add these to your useForm for the assessments-list tab
+  const {
+    control: filterControl,
+    handleSubmit: handleFilterSubmit,
+    formState: { errors: filterErrors },
+  } = useForm({
+    defaultValues: {
+      academicYear: "",
+      term: "",
+      classroom: "",
+      assessment: "",
+    },
+  });
+
+  // Add these state variables near your other useState hooks:
+  const [selectedClassroomId, setSelectedClassroomId] = useState<string>("");
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
+
   return (
     <AppLayout
       title="Subjects & Assessments"
@@ -465,10 +473,10 @@ export default function Subjects() {
           <TabsTrigger value="subjects">Subject List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
-          <TabsTrigger value="assessments-list">Assessments List</TabsTrigger>
-          {gradingAssessment && (
+          <TabsTrigger value="assessments-list">Grade Assessment</TabsTrigger>
+          {/* {gradingAssessment && (
             <TabsTrigger value="grade-assessment">Grade Assessment</TabsTrigger>
-          )}
+          )} */}
         </TabsList>
 
         {/* Subjects List Tab */}
@@ -612,287 +620,313 @@ export default function Subjects() {
         <TabsContent value="assessments-list" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Select Term to View Assessments</CardTitle>
-              <CardDescription>Choose an academic term to manage assessments</CardDescription>
+              <CardTitle>Grade Assessment</CardTitle>
+              {/* <CardDescription>Choose an academic term to manage assessments</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="view-assess-year">Academic Year</Label>
-                  <select
-                    id="view-assess-year"
-                    value={selectedAcademicYearId}
-                    onChange={(e) => {
-                      const yearId = e.target.value;
-                      setSelectedAcademicYearId(yearId);
-                      const year = academicYears.find((y: any) => String(y.id) === yearId);
-                      const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
-                      setSelectedTermId("");
-                      setAssessments([]);
-                      if (templateId) fetchTerms(String(templateId));
-                    }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  >
-                    <option value="">Select an academic year...</option>
-                    {academicYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {`${year.name} ${year.status === "active" ? "(Active)" : ""}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="term-select">Term</Label>
-                  <select
-                    id="term-select"
-                    value={selectedTermId}
-                    onChange={(e) => handleTermChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  >
-                    <option value="">Select a term...</option>
-                    {terms.map((term: Term) => (
-                      <option key={term.id} value={term.id}>
-                        {term.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <form
+                onSubmit={handleFilterSubmit(async (data) => {
+                  setIsFilterLoading(true);
+                  try {
+                    // Find the selected assessment object from classroomDefinitions
+                    const classroom = structure?.classroomDefinitions?.find(c => c.id === data.classroom);
+                    const assessment =
+                      classroom?.assessments?.find((a: any) => a.id === data.assessment);
 
-              {/* Accordions and edit panel layout */}
-              <div className="flex w-full mt-6">
-                <div className={editingAssessment ? "w-1/2 pr-4 transition-all" : "w-full transition-all"}>
-                  {selectedTermId && (
-                    groupedAssessments.length === 0 ? (
-                      <Card>
-                        <CardContent className="pt-6">
-                          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-                            <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
-                            <h3 className="text-lg font-semibold text-slate-900">No assessments</h3>
-                            <p className="text-slate-500 max-w-sm mt-2">Create an assessment to get started.</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Accordion type="multiple" className="space-y-2">
-                        {groupedAssessments.map((group: any) => {
-                          const classroom = group.classroomDefinition || group.classroom_definition || {};
-                          const items = group.assessments || [];
-                          const header = `${classroom.name || "Unknown"}${classroom.level ? ` :` : ""} [ ${items.length} ]`;
-                          return (
-                            <AccordionItem key={classroom.id || header} value={String(classroom.id || header)}>
-                              <AccordionTrigger>{header}</AccordionTrigger>
-                              <AccordionContent>
-                                <div className="overflow-x-auto">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Subject & Assessment</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Max Score</TableHead>
-                                        <TableHead>Weight</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Grade</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
+                    if (!assessment) {
+                      toast({ title: "Error", description: "Assessment not found.", variant: "destructive" });
+                      setIsFilterLoading(false);
+                      return;
+                    }
 
-                                    <TableBody>
-                                      {items.map((assessment: any) => {
-                                        const subject = assessment.subject || subjects.find((s) => s.id === assessment.subject_id) || {};
-                                        return (
-                                          <TableRow key={assessment.id}>
-                                            <TableCell className="font-medium">
-                                              <div className="flex flex-col">
-                                                <span className="text-slate-900">{subject.name || "Unknown"}</span>
-                                                <span className="text-sm text-slate-600">{assessment.name}</span>
-                                              </div>
-                                            </TableCell>
-                                            <TableCell>{assessment.type}</TableCell>
-                                            <TableCell>{assessment.max_score}</TableCell>
-                                            <TableCell>{assessment.weight}</TableCell>
-                                            <TableCell>{assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleDateString() : "-"}</TableCell>
-                                            <TableCell>
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => {
-                                                  setGradingAssessment(assessment);
-                                                  setActiveTab("grade-assessment");
-                                                }}
-                                              >
-                                                Grade
-                                              </Button>
-                                            </TableCell>
-                                            <TableCell className="text-right space-x-2 flex justify-end">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => startEditAssessment(assessment)}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                              >
-                                                <Edit className="h-4 w-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDeleteAssessment(assessment.id)}
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </TableCell>
-                                          </TableRow>
-                                        );
-                                      })}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          );
-                        })}
-                      </Accordion>
-                    )
-                  )}
-                </div>
-                {editingAssessment && (
-                  <div className="w-1/2 pl-4">
-                    <Card className="w-full">
-                      <CardHeader>
-                        <CardTitle>Edit Assessment</CardTitle>
-                        <CardDescription>Update assessment details</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <form
-                          onSubmit={handleAssessmentSubmit((formData) => {
-                            handleUpdateAssessment(formData);
-                          })}
-                          className="space-y-4"
+                    // Fetch enrolled students for the selected assessment
+                    const res = await enrollmentsApi.enrolledStudents(schoolId, assessment.id);
+                    if (!res.ok) throw new Error("Failed to fetch enrolled students");
+                    const students = await res.json();
+                    setGradingAssessment(assessment);
+                    setGradingStudents(Array.isArray(students) ? students : students?.data || []);
+                    // setActiveTab("grade-assessment");
+                  } catch (error) {
+                    toast({ title: "Error", description: "Failed to fetch enrolled students.", variant: "destructive" });
+                  } finally {
+                    setIsFilterLoading(false);
+                  }
+                })}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 items-end px-2 md:px-0">
+                  {/* Academic Year */}
+                  <div className="space-y-2">
+                    <Label htmlFor="view-assess-year">Academic Year</Label>
+                    <Controller
+                      name="academicYear"
+                      control={filterControl}
+                      rules={{ required: "Select academic year" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            setSelectedAcademicYearId(v);
+                            const year = academicYears.find((y: any) => String(y.id) === v);
+                            const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
+                            if (templateId) fetchTerms(String(templateId));
+                          }}
                         >
-                          {/* Display context info as labels */}
-                          <div className="grid grid-cols-4 gap-4">
-                            <div className="space-y-1">
-                              <Label>Academic Year</Label>
-                              <div className="text-slate-900 font-medium">
-                                {(() => {
-                                  const yearId = (editingAssessment as any)?.yearId || selectedAcademicYearId;
-                                  const year = academicYears.find((y: any) => String(y.id) === String(yearId));
-                                  return year?.name || "Unknown";
-                                })()}
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select academic year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {structure?.years && structure.years.length > 0 ? (
+                              structure.years.map(year => (
+                                <SelectItem key={year.id} value={year.id}>
+                                  {`${year.name} ${year.status === "active" ? "(Active)" : ""}`}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No academic years available</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {filterErrors.academicYear && <p className="text-sm text-red-500">{filterErrors.academicYear.message}</p>}
+                  </div>
+                  {/* Term */}
+                  <div className="space-y-2">
+                    <Label htmlFor="term-select">Term</Label>
+                    <Controller
+                      name="term"
+                      control={filterControl}
+                      rules={{ required: "Select term" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            setSelectedTermId(v);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select term" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {structure?.terms && structure.terms.length > 0 ? (
+                              structure.terms.map(term => (
+                                <SelectItem key={term.id} value={term.id}>{term.name}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No terms available</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {filterErrors.term && <p className="text-sm text-red-500">{filterErrors.term.message}</p>}
+                  </div>
+                  {/* Classroom */}
+                  <div className="space-y-2">
+                    <Label htmlFor="classroom-select">Classroom</Label>
+                    <Controller
+                      name="classroom"
+                      control={filterControl}
+                      rules={{ required: "Select classroom" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            setSelectedClassroomId(v);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select classroom" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {structure?.classroomDefinitions && structure.classroomDefinitions.length > 0 ? (
+                              structure.classroomDefinitions
+                                .filter(c => Array.isArray(c.assessments) && c.assessments.length > 0)
+                                .map(classroom => (
+                                  <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>
+                                ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No classrooms available</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {filterErrors.classroom && <p className="text-sm text-red-500">{filterErrors.classroom.message}</p>}
+                  </div>
+                  {/* Assessment */}
+                  <div className="space-y-2">
+                    <Label htmlFor="assessment-select">Assessment</Label>
+                    <Controller
+                      name="assessment"
+                      control={filterControl}
+                      rules={{ required: "Select assessment" }}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select assessment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(!selectedAcademicYearId || !selectedTermId) ? (
+                              <div className="px-4 py-2 text-sm text-gray-500">
+                                Select academic year and term first
                               </div>
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Term</Label>
-                              <div className="text-slate-900 font-medium">
-                                {(() => {
-                                  const termId = editingAssessment?.term_id || selectedTermId;
-                                  const term = terms.find((t: Term) => String(t.id) === String(termId));
-                                  return term?.name || "Unknown";
-                                })()}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Subject</Label>
-                              <div className="text-slate-900 font-medium">
-                                {subjects.find((s: Subject) => String(s.id) === editingAssessment?.subject_id)?.name || "Unknown"}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Classroom Definition</Label>
-                              <div className="text-slate-900 font-medium">
-                                {classroomDefinitions.find((c: any) => String(c.id) === editingAssessment?.classroom_definition_id)?.name || "Unknown"}
-                              </div>
-                            </div>
-                          </div>
-                          {/* Hidden fields for form data */}
-                          <input type="hidden" value={editingAssessment?.term_id || selectedTermId} {...registerAssessment("termId")} />
-                          <input type="hidden" value={editingAssessment?.subject_id} {...registerAssessment("subjectId")} />
-                          <input type="hidden" value={editingAssessment?.classroom_definition_id} {...registerAssessment("classroomDefinitionId")} />
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-assess-name">Assessment Name *</Label>
+                            ) : (() => {
+                              const classroom = structure?.classroomDefinitions?.find(c => c.id === selectedClassroomId);
+                              if (classroom && Array.isArray(classroom.assessments) && classroom.assessments.length > 0) {
+                                const filteredAssessments = classroom.assessments.filter((assessment: any) =>
+                                  assessment.term_template_item_id === selectedTermId &&
+                                  assessment.academic_year_id === selectedAcademicYearId
+                                );
+                                if (filteredAssessments.length > 0) {
+                                  return filteredAssessments.map((assessment: any) => (
+                                    <SelectItem key={assessment.id} value={assessment.id}>{` ${assessment?.subject?.name} (${assessment.name})`}</SelectItem>
+                                  ));
+                                } else {
+                                  return <div className="px-4 py-2 text-sm text-gray-500">No assessments available for selected term and year</div>;
+                                }
+                              } else {
+                                return <div className="px-4 py-2 text-sm text-gray-500">No assessments available</div>;
+                              }
+                            })()}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {filterErrors.assessment && <p className="text-sm text-red-500">{filterErrors.assessment.message}</p>}
+                  </div>
+                  {/* Submit Button */}
+                  <div className="flex items-end h-full">
+                    <Button
+                      type="submit"
+                      className="w-full px-4 md:px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                      disabled={isFilterLoading}
+                    >
+                      {isFilterLoading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                          Loading...
+                        </>
+                      ) : (
+                        <>Submit</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+              {/* Here */}
+              <div className="mt-6">
+                {isFilterLoading && gradingStudents.length === 0 ? (
+                  <div className="overflow-x-auto animate-pulse">
+                    <table className="w-full text-left table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                          <th className="px-3 py-2 text-sm font-medium">Student</th>
+                          <th className="px-3 py-2 text-sm font-medium">Score</th>
+                          <th className="px-3 py-2 text-sm font-medium">Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...Array(6)].map((_, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="px-3 py-2">
+                              <div className="h-4 bg-gray-200 rounded w-16" />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="h-4 bg-gray-200 rounded w-28" />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="h-4 bg-gray-200 rounded w-12" />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="h-4 bg-gray-200 rounded w-20" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : gradingStudents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <svg
+                      className="w-12 h-12 text-gray-300 mb-3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 17v.01M12 7v6m0 8a9 9 0 100-18 9 9 0 000 18z"
+                      />
+                    </svg>
+                    <div className="text-base font-medium text-gray-700 mb-1">
+                      No students enrolled for this assessment.
+                    </div>
+                    <div className="text-sm text-gray-500 text-center max-w-xs">
+                      There are no students for the selected assessment.<br />
+                      Please check your filters or try another assessment.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                          <th className="px-3 py-2 text-sm font-medium">Student</th>
+                          <th className="px-3 py-2 text-sm font-medium">Score</th>
+                          <th className="px-3 py-2 text-sm font-medium">Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fields.map((field, idx) => (
+                          <tr key={field.studentId} className="border-t">
+                            <td className="px-3 py-2 text-sm">
+                              {gradingStudents[idx]?.reg_no || gradingStudents[idx]?.student_no || gradingStudents[idx]?.id}
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              {`${gradingStudents[idx]?.first_name || ""} ${gradingStudents[idx]?.last_name || ""}`.trim()}
+                            </td>
+                            <td className="px-3 py-2">
                               <Input
-                                id="edit-assess-name"
-                                placeholder="Midterm Exam"
-                                {...registerAssessment("name", { required: "Assessment name is required", minLength: { value: 2, message: "Name must be at least 2 characters" } })}
+                                type="number"
+                                min={0}
+                                max={gradingAssessment?.max_score || 100}
+                                {...control.register(`grades.${idx}.score`, {
+                                  min: { value: 0, message: "Score must be at least 0" },
+                                  max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
+                                  validate: value => value === "" || !isNaN(Number(value)) || "Must be a number",
+                                })}
+                                placeholder="Score"
+                                className="w-24"
                               />
-                              {assessmentErrors?.name && <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-assess-type">Type *</Label>
-                              <select
-                                id="edit-assess-type"
-                                {...registerAssessment("type", { required: "Type is required" })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                              >
-                                <option value="exam">Exam</option>
-                                <option value="test">Test</option>
-                                <option value="quiz">Quiz</option>
-                                <option value="homework">Homework</option>
-                                <option value="project">Project</option>
-                              </select>
-                              {assessmentErrors?.type && <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-assess-maxScore">Max Score *</Label>
-                            <Input
-                              id="edit-assess-maxScore"
-                              type="number"
-                              placeholder="100"
-                              {...registerAssessment("maxScore", { required: "Max score is required", min: { value: 0, message: "Must be 0 or more" } })}
-                            />
-                            {assessmentErrors?.maxScore && <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-assess-weight">Weight *</Label>
-                            <Input
-                              id="edit-assess-weight"
-                              type="number"
-                              step="0.1"
-                              placeholder="0.4"
-                              {...registerAssessment("weight", { required: "Weight is required", min: { value: 0, message: "Must be 0 or more" } })}
-                            />
-                            {assessmentErrors?.weight && <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="edit-assess-date">Assessment Date *</Label>
-                            <Input
-                              id="edit-assess-date"
-                              type="date"
-                              {...registerAssessment("assessmentDate", { required: "Assessment date is required" })}
-                            />
-                            {assessmentErrors?.assessmentDate && <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingAssessment(null);
-                                resetAssessment();
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button type="submit" disabled={isAssessmentLoading}>
-                              {isAssessmentLoading ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Updating...
-                                </>
-                              ) : (
-                                <>Update Assessment</>
+                              {gradeErrors.grades?.[idx]?.score && (
+                                <p className="text-xs text-red-600">{gradeErrors.grades[idx].score.message}</p>
                               )}
-                            </Button>
-                          </div>
-                        </form>
-                      </CardContent>
-                    </Card>
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                {...control.register(`grades.${idx}.remarks`)}
+                                placeholder="Remarks"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -1093,7 +1127,7 @@ export default function Subjects() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Grade Assessment</CardTitle>
+                <CardTitle>Grade Assessment 2</CardTitle>
                 {/* Only show submit button if there are students to grade and an assessment is selected */}
                 {gradingAssessment && gradingStudents.length > 0 && (
                   <Button
