@@ -60,7 +60,16 @@ interface Grade {
 export default function ResultsManagement() {
     const { selectedTenant } = useTenant();
     const schoolId = selectedTenant?.id as string;
-    const { structure, isLoading: isStructureLoading, error: structureError, fetchStructure, selectValues, setSelectValues, grades, setGrades } = useStructure();
+    const {
+        structure,
+        isLoading: isStructureLoading,
+        error: structureError,
+        fetchStructure,
+        selectValues,
+        setSelectValues,
+        grades,
+        setGrades
+    } = useStructure();
     // Use selectValues from context for filtering
     const selectedYearId = selectValues.year;
     const selectedTermId = selectValues.term;
@@ -118,8 +127,8 @@ export default function ResultsManagement() {
 
     return (
         <AppLayout
-            title="Results Management"
-            description="Manage school results and grades"
+            title="Assessments & Grades"
+            description="Manage school assessments and grades"
             breadcrumbs={[{ label: "Results Management" }]}
         >
             <Card className="border-slate-200">
@@ -141,7 +150,10 @@ export default function ResultsManagement() {
                                                 {structure?.years && structure.years.length > 0 ? (
                                                     structure.years.map(year => (
                                                         <SelectItem key={year.id} value={year.id}>
-                                                            {`${year.name} ${year.status === "active" ? "(Active)" : ""}`}
+                                                            {year.name || `Year ${year.id}`}
+                                                            {year.status === "active" && (
+                                                                <span className="ml-2 text-green-600 font-semibold">(Active)</span>
+                                                            )}
                                                         </SelectItem>
                                                     ))
                                                 ) : (
@@ -190,8 +202,8 @@ export default function ResultsManagement() {
                                                 <SelectValue placeholder="Select classroom" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {structure?.classroomDefinitions && structure.classroomDefinitions.length > 0 ? (
-                                                    structure.classroomDefinitions
+                                                {structure?.definitionsOptions && structure.definitionsOptions.length > 0 ? (
+                                                    structure.definitionsOptions
                                                         .filter(c => Array.isArray(c.assessments) && c.assessments.length > 0)
                                                         .map(classroom => (
                                                             <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>
@@ -220,7 +232,7 @@ export default function ResultsManagement() {
                                                 {(!selectedYearId || !selectedTermId) ? (
                                                     <div className="px-4 py-2 text-sm text-gray-500">Select academic year and term first</div>
                                                 ) : (() => {
-                                                    const classroom = structure?.classroomDefinitions?.find(c => c.id === selectedClassroomId);
+                                                    const classroom = structure?.definitionsOptions?.find(c => c.id === selectedClassroomId);
                                                     if (classroom && Array.isArray(classroom.assessments) && classroom.assessments.length > 0) {
                                                         const filteredAssessments = classroom.assessments.filter((assessment: any) =>
                                                             assessment.term_template_item_id === selectedTermId &&
@@ -330,7 +342,7 @@ export default function ResultsManagement() {
                                     </tbody>
                                 </table>
                             </div>
-                        ) : grades && grades.length === 0 ? (
+                        ) : (
                             <div className="flex flex-col items-center justify-center py-8">
                                 <svg
                                     className="w-12 h-12 text-gray-300 mb-3"
@@ -353,7 +365,7 @@ export default function ResultsManagement() {
                                     Please check your filters or try another assessment.
                                 </div>
                             </div>
-                        ) : null}
+                        )}
                     </div>
                 </div>
             </Card>

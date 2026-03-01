@@ -11,7 +11,7 @@ import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
 import { assessmentsApi, enrollmentsApi, gradesApi, subjectsApi } from "@/lib/api";
-import { AlertCircle, Edit, Loader2, Plus, Trash2 } from "lucide-react";
+import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 
@@ -76,24 +76,23 @@ export default function Subjects() {
     setSelectValues: setGlobalSelectValues,
     structure,
     fetchStructure,
+    subjectOptions,
+    termOptions,
+    yearOptions,
     subjects,
     setSubjects,
-    classroomDefinitions,
+    definitionsOptions,
   } = useStructure();
 
+  const [fetchingSubjects, setFetchingSubjects] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("assessments-list");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Assessment state
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [groupedAssessments, setGroupedAssessments] = useState<any[]>([]);
-  const [terms, setTerms] = useState<Term[]>([]);
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
-  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null);
-  const [isAssessmentEditModalOpen, setIsAssessmentEditModalOpen] = useState(false);
   const [assessmentError, setAssessmentError] = useState<string | string[] | null>(null);
   const [assessmentErrorList, setAssessmentErrorList] = useState<string[]>([]);
 
@@ -103,9 +102,6 @@ export default function Subjects() {
 
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
-
-  const assessmentSubjects = subjects.filter((s: Subject) =>
-    assessments.some((a) => a.subject_id === s.id));
 
   const {
     register,
@@ -192,6 +188,7 @@ export default function Subjects() {
   }, [gradingAssessment, schoolId]);
 
   const fetchSubjects = async () => {
+    setFetchingSubjects(true);
     try {
       const response = await subjectsApi.list(schoolId);
       if (!response.ok) throw new Error("Failed to fetch subjects");
@@ -199,6 +196,8 @@ export default function Subjects() {
       setSubjects(Array.isArray(data) ? data : data.data || []);
     } catch (error) {
       toast({ title: "Error", description: "Failed to fetch subjects", variant: "destructive" });
+    } finally {
+      setFetchingSubjects(false);
     }
   };
 
@@ -283,23 +282,6 @@ export default function Subjects() {
     setIsEditModalOpen(true);
   };
 
-  const fetchAssessments = async (termId: string) => {
-    if (!termId) return;
-    try {
-      const response = await assessmentsApi.list(schoolId, selectedAcademicYearId, termId);
-      if (!response.ok) throw new Error("Failed to fetch assessments");
-      const data = await response.json();
-      // Backend returns grouped data: [{ classroomDefinition, assessments: [...] }]
-      const groups = Array.isArray(data) ? data : data.data || [];
-      setGroupedAssessments(groups);
-      // also set flat assessments for legacy usage
-      const flat = groups.reduce((acc: any[], g: any) => acc.concat(g.assessments || []), [] as any[]);
-      setAssessments(flat);
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to fetch assessments", variant: "destructive" });
-    }
-  };
-
   const handleCreateAssessment = async (data: AssessmentFormData) => {
     setIsAssessmentLoading(true);
     setAssessmentError(null);
@@ -340,8 +322,8 @@ export default function Subjects() {
         throw new Error("Failed to create assessment");
       }
 
+      await fetchStructure(schoolId);
       resetAssessment();
-      await fetchAssessments(selectedTermId);
       toast({ title: "Success", description: "Assessment created successfully" });
       setActiveTab("assessments-list");
     } catch (error) {
@@ -369,9 +351,17 @@ export default function Subjects() {
 
   // Keep selects in sync with react-hook-form
   useEffect(() => { setValue("academicYear", globalSelectValues.gradeYear); }, [globalSelectValues.gradeYear, setValue]);
-  useEffect(() => { setValue("term", globalSelectValues.gradeTerm); }, [globalSelectValues.gradeTerm, setValue]);
   useEffect(() => { setValue("classroom", globalSelectValues.gradeClassroom); }, [globalSelectValues.gradeClassroom, setValue]);
   useEffect(() => { setValue("assessment", globalSelectValues.gradeAssessment); }, [globalSelectValues.gradeAssessment, setValue]);
+  useEffect(() => {
+    setValue("term", globalSelectValues.gradeTerm);
+    // Clear assessment when term changes
+    setValue("assessment", "");
+    setGlobalSelectValues(prev => ({
+      ...prev,
+      gradeAssessment: ""
+    }));
+  }, [globalSelectValues.gradeTerm, setValue, setGlobalSelectValues]);
 
   // Add these state variables near your other useState hooks:
   const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -380,7 +370,6 @@ export default function Subjects() {
   const selectedAcademicYearId = globalSelectValues.gradeYear || "";
   const selectedTermId = globalSelectValues.gradeTerm || "";
   const selectedClassroomId = globalSelectValues.gradeClassroom || "";
-  const selectedAssessmentId = globalSelectValues.gradeAssessment || "";
 
   return (
     <AppLayout
@@ -401,13 +390,69 @@ export default function Subjects() {
 
         {/* Subjects List Tab */}
         <TabsContent value="subjects" className="space-y-4">
-          {subjects.length === 0 ? (
+          {fetchingSubjects ? (
+            <Card>
+              <CardContent>
+                <div className="overflow-x-auto animate-pulse">
+                  <table className="w-full text-left table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-sm font-medium">Name</th>
+                        <th className="px-3 py-2 text-sm font-medium">Code</th>
+                        <th className="px-3 py-2 text-sm font-medium">Description</th>
+                        <th className="px-3 py-2 text-sm font-medium">Status</th>
+                        <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...Array(6)].map((_, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="px-3 py-2">
+                            <div className="h-4 bg-gray-200 rounded w-16" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="h-4 bg-gray-200 rounded w-12" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="h-4 bg-gray-200 rounded w-24" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="h-4 bg-gray-200 rounded w-10" />
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <div className="h-4 bg-gray-200 rounded w-20 ml-auto" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ) : subjectOptions.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-                  <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-900">No subjects yet</h3>
-                  <p className="text-slate-500 max-w-sm mt-2">Create your first subject to get started.</p>
+                  <svg
+                    className="w-12 h-12 text-gray-300 mb-3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 17v.01M12 7v6m0 8a9 9 0 100-18 9 9 0 000 18z"
+                    />
+                  </svg>
+                  <div className="text-base font-medium text-gray-700 mb-1">
+                    No subjects found
+                  </div>
+                  <div className="text-sm text-gray-500 text-center max-w-xs">
+                    There are no subjects available.<br />
+                    Please create a subject to get started.
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -415,35 +460,35 @@ export default function Subjects() {
             <Card>
               <CardHeader>
                 <CardTitle>All Subjects</CardTitle>
-                <CardDescription>Total: {subjects.length} subjects</CardDescription>
+                <CardDescription>Total: {subjectOptions.length} subjects</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {subjects.map((subject) => (
-                        <TableRow key={subject.id}>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
-                          <TableCell>{subject.code}</TableCell>
-                          <TableCell className="text-slate-600">{subject.description || "-"}</TableCell>
-                          <TableCell>
+                  <table className="w-full text-left table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-sm font-medium">Name</th>
+                        <th className="px-3 py-2 text-sm font-medium">Code</th>
+                        <th className="px-3 py-2 text-sm font-medium">Description</th>
+                        <th className="px-3 py-2 text-sm font-medium">Status</th>
+                        <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subjectOptions.map((subject) => (
+                        <tr key={subject.id} className="border-t">
+                          <td className="px-3 py-2 font-medium">{subject.name}</td>
+                          <td className="px-3 py-2">{subject.code}</td>
+                          <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
+                          <td className="px-3 py-2">
                             <span className={
                               `px-2 py-1 rounded-full text-xs font-medium ${subject.is_active ?
                                 "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`
                             }>
                               {subject.is_active ? "Active" : "Inactive"}
                             </span>
-                          </TableCell>
-                          <TableCell className="text-right space-x-2 flex justify-end">
+                          </td>
+                          <td className="px-3 py-2 text-right space-x-2 flex justify-end">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -460,11 +505,11 @@ export default function Subjects() {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
@@ -551,7 +596,7 @@ export default function Subjects() {
         <TabsContent value="assessments-list" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Grade Assessment e</CardTitle>
+              <CardTitle>Grade Assessment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -567,8 +612,8 @@ export default function Subjects() {
                       gradeAssessment: data.assessment,
                     }));
 
-                    // 2. Find the selected assessment object from classroomDefinitions
-                    const classroom = structure?.classroomDefinitions?.find(c => c.id === data.classroom);
+                    // 2. Find the selected assessment object from definitionsOptions
+                    const classroom = structure?.definitionsOptions?.find(c => c.id === data.classroom);
                     const assessment =
                       classroom?.assessments?.find((a: any) => a.id === data.assessment);
 
@@ -596,11 +641,11 @@ export default function Subjects() {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 items-end px-2 md:px-0">
                   {/* Academic Year */}
                   <div className="space-y-2">
-                    <Label htmlFor="view-assess-year">Academic Year</Label>
+                    <Label htmlFor="view-assess-year">Academic Year *</Label>
                     <Controller
                       name="academicYear"
                       control={filterControl}
-                      rules={{ required: "Select academic year" }}
+                      rules={{ required: "Academic year is required" }}
                       render={({ field }) => (
                         <Select
                           value={field.value}
@@ -621,7 +666,10 @@ export default function Subjects() {
                             {structure?.years && structure.years.length > 0 ? (
                               structure.years.map(year => (
                                 <SelectItem key={year.id} value={year.id}>
-                                  {`${year.name} ${year.status === "active" ? "(Active)" : ""}`}
+                                  {year.name || `Year ${year.id}`}
+                                  {year.status === "active" && (
+                                    <span className="ml-2 text-green-600 font-semibold">(Active)</span>
+                                  )}
                                 </SelectItem>
                               ))
                             ) : (
@@ -631,16 +679,15 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.academicYear &&
-                      <p className="text-sm text-red-500">{filterErrors.academicYear.message}</p>}
+                    {filterErrors.academicYear && <p className="text-sm text-red-500">{filterErrors.academicYear.message}</p>}
                   </div>
                   {/* Term */}
                   <div className="space-y-2">
-                    <Label htmlFor="term-select">Term</Label>
+                    <Label htmlFor="term-select">Term *</Label>
                     <Controller
                       name="term"
                       control={filterControl}
-                      rules={{ required: "Select term" }}
+                      rules={{ required: "Term is required" }}
                       render={({ field }) => (
                         <Select
                           value={field.value}
@@ -667,16 +714,15 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.term &&
-                      <p className="text-sm text-red-500">{filterErrors.term.message}</p>}
+                    {filterErrors.term && <p className="text-sm text-red-500">{filterErrors.term.message}</p>}
                   </div>
                   {/* Classroom */}
                   <div className="space-y-2">
-                    <Label htmlFor="classroom-select">Classroom</Label>
+                    <Label htmlFor="classroom-select">Classroom *</Label>
                     <Controller
                       name="classroom"
                       control={filterControl}
-                      rules={{ required: "Select classroom" }}
+                      rules={{ required: "Classroom is required" }}
                       render={({ field }) => (
                         <Select
                           value={field.value}
@@ -692,8 +738,8 @@ export default function Subjects() {
                             <SelectValue placeholder="Select classroom" />
                           </SelectTrigger>
                           <SelectContent>
-                            {structure?.classroomDefinitions && structure.classroomDefinitions.length > 0 ? (
-                              structure.classroomDefinitions
+                            {structure?.definitionsOptions && structure.definitionsOptions.length > 0 ? (
+                              structure.definitionsOptions
                                 .filter(c => Array.isArray(c.assessments) && c.assessments.length > 0)
                                 .map(classroom => (
                                   <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>
@@ -705,16 +751,15 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.classroom &&
-                      <p className="text-sm text-red-500">{filterErrors.classroom.message}</p>}
+                    {filterErrors.classroom && <p className="text-sm text-red-500">{filterErrors.classroom.message}</p>}
                   </div>
                   {/* Assessment */}
                   <div className="space-y-2">
-                    <Label htmlFor="assessment-select">Assessment</Label>
+                    <Label htmlFor="assessment-select">Assessment *</Label>
                     <Controller
                       name="assessment"
                       control={filterControl}
-                      rules={{ required: "Select assessment" }}
+                      rules={{ required: "Assessment is required" }}
                       render={({ field }) => (
                         <Select
                           value={field.value}
@@ -735,7 +780,7 @@ export default function Subjects() {
                                 Select academic year and term first
                               </div>
                             ) : (() => {
-                              const classroom = structure?.classroomDefinitions?.find(c => c.id === selectedClassroomId);
+                              const classroom = structure?.definitionsOptions?.find(c => c.id === selectedClassroomId);
                               if (classroom && Array.isArray(classroom.assessments) && classroom.assessments.length > 0) {
                                 const filteredAssessments = classroom.assessments.filter((assessment: any) =>
                                   assessment.term_template_item_id === selectedTermId &&
@@ -756,8 +801,7 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {filterErrors.assessment &&
-                      <p className="text-sm text-red-500">{filterErrors.assessment.message}</p>}
+                    {filterErrors.assessment && <p className="text-sm text-red-500">{filterErrors.assessment.message}</p>}
                   </div>
                   {/* Submit Button */}
                   <div className="flex items-end h-full">
@@ -930,11 +974,18 @@ export default function Subjects() {
                             <SelectValue placeholder="Select academic year" />
                           </SelectTrigger>
                           <SelectContent>
-                            {academicYears.map((year) => (
-                              <SelectItem key={year.id} value={year.id}>
-                                {year.name}
-                              </SelectItem>
-                            ))}
+                            {yearOptions.length > 0 ? (
+                              yearOptions.map(year => (
+                                <SelectItem key={year.id} value={year.id}>
+                                  {year.name || `Year ${year.id}`}
+                                  {year.status === "active" && (
+                                    <span className="ml-2 text-green-600 font-semibold">(Active)</span>
+                                  )}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No years available</div>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -958,11 +1009,13 @@ export default function Subjects() {
                             <SelectValue placeholder="Select term" />
                           </SelectTrigger>
                           <SelectContent>
-                            {terms.map((term) => (
-                              <SelectItem key={term.id} value={term.id}>
-                                {term.name}
-                              </SelectItem>
-                            ))}
+                            {termOptions.length > 0 ? (
+                              termOptions.map(term => (
+                                <SelectItem key={term.id} value={term.id}>{term.name}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No terms available</div>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -986,11 +1039,13 @@ export default function Subjects() {
                             <SelectValue placeholder="Select a subject..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {subjects.map((subject) => (
-                              <SelectItem key={subject.id} value={subject.id}>
-                                {subject.name}
-                              </SelectItem>
-                            ))}
+                            {subjectOptions.length > 0 ? (
+                              subjectOptions.map(subject => (
+                                <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No subjects available</div>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -1014,11 +1069,13 @@ export default function Subjects() {
                             <SelectValue placeholder="Select a classroom..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {classroomDefinitions.map((classroom) => (
-                              <SelectItem key={classroom.id} value={classroom.id}>
-                                {classroom.name}
-                              </SelectItem>
-                            ))}
+                            {definitionsOptions.length > 0 ? (
+                              definitionsOptions.map((classroom: any) => (
+                                <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-sm text-gray-500">No classrooms available</div>
+                            )}
                           </SelectContent>
                         </Select>
                       )}
@@ -1139,6 +1196,7 @@ export default function Subjects() {
               <div className="flex items-center justify-between">
                 <CardTitle>Grade Assessment</CardTitle>
                 {/* Only show submit button if there are students to grade and an assessment is selected */}
+                {/* Next step: Implement grading logic */}
                 {gradingAssessment && gradingStudents.length > 0 && (
                   <Button
                     onClick={handleGradesSubmit(async (data) => {
@@ -1188,11 +1246,6 @@ export default function Subjects() {
                   </Button>
                 )}
               </div>
-              <CardDescription>
-                {gradingAssessment
-                  ? `Grading: ${gradingAssessment.name} (${assessmentSubjects.find(s => s.id === gradingAssessment.subject_id)?.name || "Unknown Subject"})`
-                  : "Select an assessment to grade."}
-              </CardDescription>
             </CardHeader>
             <CardContent>
               {gradingAssessment ? (

@@ -4,7 +4,8 @@ import React, { createContext, ReactNode, useContext, useState } from "react";
 export interface Structure {
     years?: any[];
     terms?: any[];
-    classroomDefinitions?: any[];
+    definitionsOptions?: any[];
+    subjects?: any[];
 }
 
 interface StructureContextProps {
@@ -32,16 +33,22 @@ interface StructureContextProps {
         gradeClassroom: string;
         gradeAssessment: string;
     }>>;
-    grades: any[] | null;
-    setGrades: React.Dispatch<React.SetStateAction<any[] | null>>;
+    grades: any[];
+    setGrades: React.Dispatch<React.SetStateAction<any[]>>;
     classrooms: any[];
     setClassrooms: React.Dispatch<React.SetStateAction<any[]>>;
     subjects: any[];
     setSubjects: React.Dispatch<React.SetStateAction<any[]>>;
     classroomsRes: any;
     setClassroomsRes: React.Dispatch<React.SetStateAction<any>>;
-    classroomDefinitions: any[];
-    setClassroomDefinitions: React.Dispatch<React.SetStateAction<any[]>>;
+    definitionsOptions: any[];
+    setDefinitionsOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    subjectOptions: any[];
+    setSubjectOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    termOptions: any[];
+    setTermOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    yearOptions: any[];
+    setYearOptions: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 const StructureContext = createContext<StructureContextProps | undefined>(undefined);
@@ -61,11 +68,14 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
         gradeClassroom: "",
         gradeAssessment: ""
     });
-    const [grades, setGrades] = useState<any[] | null>(null);
+    const [grades, setGrades] = useState<any[]>([]);
     const [classrooms, setClassrooms] = useState<any[]>([]);
+    const [termOptions, setTermOptions] = useState<any[]>([]);
     const [subjects, setSubjects] = useState<any[]>([]);
+    const [yearOptions, setYearOptions] = useState<any[]>([]);
+    const [subjectOptions, setSubjectOptions] = useState<any[]>([]);
     const [classroomsRes, setClassroomsRes] = useState<any>(null);
-    const [classroomDefinitions, setClassroomDefinitions] = useState<any[]>([]);
+    const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -78,9 +88,13 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
             setStructure({
                 years: data.years || [],
                 terms: data.terms || [],
-                classroomDefinitions: data.classroomDefinitions || data.classroom_definitions || [],
+                definitionsOptions: data.classroomDefinitions || [],
+                subjects: data.subjects || []
             });
-            setClassroomDefinitions(data.classroomDefinitions || data.classroom_definitions || []);
+            setYearOptions(data.years || []);
+            setDefinitionsOptions(data.classroomDefinitions || []);
+            setSubjectOptions(data.subjects || []);
+            setTermOptions(data.terms || []);
         } catch (err: any) {
             setError(err?.message || "Failed to load school structure");
         } finally {
@@ -89,7 +103,30 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <StructureContext.Provider value={{ structure, isLoading, error, fetchStructure, selectValues, setSelectValues, grades, setGrades, classrooms, setClassrooms, classroomsRes, setClassroomsRes, subjects, setSubjects, classroomDefinitions, setClassroomDefinitions }}>
+        <StructureContext.Provider value={{
+            structure,
+            isLoading,
+            error,
+            fetchStructure,
+            selectValues,
+            setSelectValues,
+            grades,
+            setGrades,
+            classrooms,
+            setClassrooms,
+            classroomsRes,
+            setClassroomsRes,
+            subjectOptions,
+            setSubjectOptions,
+            termOptions,
+            setTermOptions,
+            subjects,
+            setSubjects,
+            definitionsOptions,
+            setDefinitionsOptions,
+            yearOptions,
+            setYearOptions
+        }}>
             {children}
         </StructureContext.Provider>
     );
