@@ -1,11 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
@@ -86,6 +85,7 @@ export default function Subjects() {
 
   const [fetchingSubjects, setFetchingSubjects] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submittingGrades, setSubmittingGrades] = useState(false);
   const [activeTab, setActiveTab] = useState("assessments-list");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -383,15 +383,12 @@ export default function Subjects() {
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
           <TabsTrigger value="assessments-list">Grade Assessment</TabsTrigger>
-          {/* {gradingAssessment && (
-            <TabsTrigger value="grade-assessment">Grade Assessment</TabsTrigger>
-          )} */}
         </TabsList>
 
         {/* Subjects List Tab */}
         <TabsContent value="subjects" className="space-y-4">
           {fetchingSubjects ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent>
                 <div className="overflow-x-auto animate-pulse">
                   <table className="w-full text-left table-auto border-collapse">
@@ -430,7 +427,7 @@ export default function Subjects() {
               </CardContent>
             </Card>
           ) : subjectOptions.length === 0 ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                   <svg
@@ -457,7 +454,7 @@ export default function Subjects() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
+            <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle>All Subjects</CardTitle>
                 <CardDescription>Total: {subjectOptions.length} subjects</CardDescription>
@@ -518,7 +515,7 @@ export default function Subjects() {
 
         {/* Create Subject Tab */}
         <TabsContent value="create" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Subject</CardTitle>
               <CardDescription>Add a new subject to the school</CardDescription>
@@ -594,7 +591,7 @@ export default function Subjects() {
 
         {/* Assessments List Tab */}
         <TabsContent value="assessments-list" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Grade Assessment</CardTitle>
             </CardHeader>
@@ -819,7 +816,7 @@ export default function Subjects() {
                           Loading...
                         </>
                       ) : (
-                        <>Submit</>
+                        <>Load</>
                       )}
                     </Button>
                   </div>
@@ -931,17 +928,79 @@ export default function Subjects() {
                   </div>
                 )}
               </div>
-
             </CardContent>
+            <CardFooter>
+              {gradingAssessment && gradingStudents.length > 0 && (
+                <div className="flex justify-end w-full">
+                  <Button
+                    disabled={submittingGrades}
+                    onClick={handleGradesSubmit(async (data) => {
+                      setSubmittingGrades(true);
+                      try {
+                        if (!gradingAssessment) {
+                          toast({ title: "Error", description: "No assessment selected.", variant: "destructive" });
+                          return;
+                        }
+                        const payload = {
+                          assessmentId: gradingAssessment.id,
+                          grades: data.grades
+                            .filter(g => g.score !== "" && !isNaN(Number(g.score)))
+                            .map(g => ({
+                              studentId: g.studentId,
+                              score: parseFloat(g.score),
+                              remarks: g.remarks,
+                            })),
+                        };
+                        if (payload.grades.length === 0) {
+                          toast({ title: "Error", description: "Please enter at least one score.", variant: "destructive" });
+                          return;
+                        }
+                        const res = await gradesApi.bulkCreate(schoolId, payload);
+                        if (!res.ok) throw new Error("Failed to submit grades");
+                        toast({ title: "Success", description: "Grades submitted successfully." });
+                        resetGradesForm();
+
+                        // Refetch enrolled students for this assessment
+                        setLoadingGradingStudents(true);
+                        enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
+                          .then(async (res) => {
+                            const data = await res.json();
+                            setGradingStudents(Array.isArray(data) ? data : data?.data || []);
+                          })
+                          .catch(() => setGradingStudents([]))
+                          .finally(() => setLoadingGradingStudents(false));
+                      } catch (error) {
+                        toast({ title: "Error", description: "Failed to submit grades", variant: "destructive" });
+                      }
+                      finally {
+                        setSubmittingGrades(false);
+                      }
+                    })}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {submittingGrades ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        Submiting...
+                      </>
+                    ) : (
+                      "Submit Grades"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardFooter>
           </Card>
         </TabsContent>
 
         {/* Create Assessment Tab */}
         <TabsContent value="create-assessment" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Assessment</CardTitle>
-              {/* <CardDescription>Add a new assessment to the school</CardDescription> */}
             </CardHeader>
 
             <CardContent>
@@ -1185,121 +1244,6 @@ export default function Subjects() {
                   )}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Grade Assessment Tab */}
-        <TabsContent value="grade-assessment" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Grade Assessment</CardTitle>
-                {/* Only show submit button if there are students to grade and an assessment is selected */}
-                {/* Next step: Implement grading logic */}
-                {gradingAssessment && gradingStudents.length > 0 && (
-                  <Button
-                    onClick={handleGradesSubmit(async (data) => {
-                      try {
-                        if (!gradingAssessment) {
-                          toast({ title: "Error", description: "No assessment selected.", variant: "destructive" });
-                          return;
-                        }
-                        const payload = {
-                          assessmentId: gradingAssessment.id,
-                          grades: data.grades
-                            .filter(g => g.score !== "" && !isNaN(Number(g.score)))
-                            .map(g => ({
-                              studentId: g.studentId,
-                              score: parseFloat(g.score),
-                              remarks: g.remarks,
-                            })),
-                        };
-                        if (payload.grades.length === 0) {
-                          toast({ title: "Error", description: "Please enter at least one score.", variant: "destructive" });
-                          return;
-                        }
-                        const res = await gradesApi.bulkCreate(schoolId, payload);
-                        if (!res.ok) throw new Error("Failed to submit grades");
-                        toast({ title: "Success", description: "Grades submitted successfully." });
-                        resetGradesForm();
-
-                        // Refetch enrolled students for this assessment
-                        setLoadingGradingStudents(true);
-                        enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
-                          .then(async (res) => {
-                            const data = await res.json();
-                            setGradingStudents(Array.isArray(data) ? data : data?.data || []);
-                          })
-                          .catch(() => setGradingStudents([]))
-                          .finally(() => setLoadingGradingStudents(false));
-
-                        // setGradingAssessment(null);
-                        // setActiveTab("assessments-list");
-                      } catch (error) {
-                        toast({ title: "Error", description: "Failed to submit grades", variant: "destructive" });
-                      }
-                    })}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Submit Grades
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {gradingAssessment ? (
-                loadingGradingStudents ? (
-                  <p>Loading students...</p>
-                ) : gradingStudents.length === 0 ? (
-                  <p>No students enrolled for this assessment.</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student Name (Stnd No.)</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Remarks</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {fields.map((field, idx) => (
-                        <TableRow key={field.studentId}>
-                          <TableCell>
-                            {`${gradingStudents[idx]?.first_name} ${gradingStudents[idx]?.last_name} (${gradingStudents[idx]?.student_no})`}
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={gradingAssessment?.max_score || 100}
-                              {...control.register(`grades.${idx}.score`, {
-                                // required: "Score is required", // REMOVE THIS LINE
-                                min: { value: 0, message: "Score must be at least 0" },
-                                max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
-                                validate: value => value === "" || !isNaN(Number(value)) || "Must be a number",
-                              })}
-                              placeholder="Score"
-                              className="w-24"
-                            />
-                            {gradeErrors.grades?.[idx]?.score && (
-                              <p className="text-xs text-red-600">{gradeErrors.grades[idx].score.message}</p>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              {...control.register(`grades.${idx}.remarks`)}
-                              placeholder="Remarks"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )
-              ) : (
-                <p>Select an assessment from the list to begin grading.</p>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

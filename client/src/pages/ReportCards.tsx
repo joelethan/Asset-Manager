@@ -248,7 +248,7 @@ export default function ReportCards() {
         {/* Report Cards List Tab */}
         <TabsContent value="reports" className="space-y-4">
           {selectedReportCard ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -339,7 +339,7 @@ export default function ReportCards() {
               </CardContent>
             </Card>
           ) : reportCards.length === 0 ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                   <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
@@ -349,7 +349,7 @@ export default function ReportCards() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
+            <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle>All Report Cards</CardTitle>
                 <CardDescription>Total: {reportCards.length} report cards</CardDescription>
@@ -405,7 +405,7 @@ export default function ReportCards() {
 
         {/* Generate Report Tab */}
         <TabsContent value="generate" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Generate Report Card</CardTitle>
               <CardDescription>Create a new report card for a student (10.1)</CardDescription>

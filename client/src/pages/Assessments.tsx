@@ -262,7 +262,7 @@ export default function Assessments() {
         {/* Assessments List Tab */}
         <TabsContent value="assessments" className="space-y-4">
           {assessments.length === 0 ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                   <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
@@ -272,7 +272,7 @@ export default function Assessments() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
+            <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle>All Assessments</CardTitle>
                 <CardDescription>Total: {assessments.length} assessments</CardDescription>
@@ -323,7 +323,7 @@ export default function Assessments() {
 
         {/* Create Assessment Tab */}
         <TabsContent value="create" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Assessment</CardTitle>
               <CardDescription>Add a new assessment or exam (7.1)</CardDescription>

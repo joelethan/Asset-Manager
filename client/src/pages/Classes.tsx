@@ -396,7 +396,7 @@ export default function Classes() {
 
         {/* Enroll in Class Tab */}
         <TabsContent value="enrollments" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Enroll Student in Class</CardTitle>
               <CardDescription>Enroll a student into a classroom</CardDescription>

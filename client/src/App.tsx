@@ -83,7 +83,7 @@ function AppRouter() {
             <Route path="/students" component={Students} />
             <Route path="/teachers" component={Teachers} />
             <Route path="/classes" component={Classes} />
-            <Route path="/grades" component={ResultsManagement} />
+            <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
             <Route path="/settings" component={Settings} />
           </>

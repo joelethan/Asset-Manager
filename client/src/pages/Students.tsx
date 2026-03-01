@@ -617,7 +617,7 @@ export default function Students() {
             </Card>
           )}
           {students.length === 0 ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                   <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
@@ -638,7 +638,7 @@ export default function Students() {
 
         {/* Student Uploads Tab */}
         <TabsContent value="uploads" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Student Uploads</CardTitle>
               <CardDescription>Download the template and upload a filled file.</CardDescription>
@@ -682,7 +682,7 @@ export default function Students() {
 
         {/* Create Student Tab */}
         <TabsContent value="create" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Student</CardTitle>
               <CardDescription>Add a new student to the system</CardDescription>
@@ -829,7 +829,7 @@ export default function Students() {
 
         {/* Student Enrollments Tab */}
         <TabsContent value="enrollments" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Enroll Students</CardTitle>
               <CardDescription>Select the academic year and classroom definition for enrollment</CardDescription>
@@ -939,7 +939,7 @@ export default function Students() {
 
         {/* Student Enrollments View Tab */}
         <TabsContent value="student-enrollments" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>View Student Enrollments</CardTitle>
               {/* <CardDescription>View students enrolled in a specific classroom definition</CardDescription> */}
@@ -999,7 +999,7 @@ export default function Students() {
                 <div className="space-y-2">
                   <Label>Enrolled Students ({enrolledStudents.length})</Label>
                   {loadingEnrolled ? (
-                    <Card>
+                    <Card className="border-slate-200">
                       <CardContent className="pt-6 pb-6 flex justify-center">
                         <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
                       </CardContent>
@@ -1040,7 +1040,7 @@ export default function Students() {
                       </Table>
                     </div>
                   ) : (
-                    <Card>
+                    <Card className="border-slate-200">
                       <CardContent className="pt-6 pb-6">
                         <p className="text-sm text-slate-500 text-center">
                           No students enrolled in this classroom definition
@@ -1052,7 +1052,7 @@ export default function Students() {
               )}
 
               {!viewDefinition && viewYear && (
-                <Card>
+                <Card className="border-slate-200">
                   <CardContent className="pt-6 pb-6">
                     <p className="text-sm text-slate-500 text-center">
                       Select a classroom definition to view enrolled students
@@ -1099,7 +1099,7 @@ export default function Students() {
           </Card>
 
           {assessments.length === 0 ? (
-            <Card>
+            <Card className="border-slate-200">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                   <AlertCircle className="h-8 w-8 text-slate-400 mb-4" />
@@ -1109,7 +1109,7 @@ export default function Students() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
+            <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle>All Assessments</CardTitle>
                 <CardDescription>Total: {assessments.length} assessments</CardDescription>
@@ -1160,7 +1160,7 @@ export default function Students() {
 
         {/* Create Assessment Tab */}
         <TabsContent value="assessments-create" className="space-y-4">
-          <Card>
+          <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Assessment</CardTitle>
               <CardDescription>Add a new assessment or exam</CardDescription>
