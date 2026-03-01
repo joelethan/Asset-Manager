@@ -1,21 +1,22 @@
-import { useState, useEffect, FormEvent } from "react";
-import { useForm } from "react-hook-form";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
-import { classroomDefinitionsApi } from "@/lib/api";
-import { useStudents } from "@/hooks/use-students";
-import { useEnrollStudent, useEnrollments } from "@/hooks/use-enrollments";
 import { useAcademicYears } from "@/hooks/use-academic-structure";
+import { useEnrollStudent, useEnrollments } from "@/hooks/use-enrollments";
+import { useStudents } from "@/hooks/use-students";
+import { useToast } from "@/hooks/use-toast";
+import { classroomDefinitionsApi } from "@/lib/api";
+import { AlertCircle, CheckCircle2, Edit2, Loader2, Trash2 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface ClassroomDefinition {
   id: string;
@@ -49,7 +50,7 @@ export default function Classes() {
   const schoolId = selectedTenant?.id as string;
 
   // Classroom Definition states
-  const [classrooms, setClassrooms] = useState<ClassroomDefinition[]>([]);
+  const { classrooms, setClassrooms, classroomsRes, setClassroomsRes } = useStructure();
 
   // Form states
   const [classroomForm, setClassroomForm] = useState<FormState>({
@@ -116,9 +117,10 @@ export default function Classes() {
       setError(null);
 
       // Load classroom definitions
-      const classroomsRes = await classroomDefinitionsApi.list(schoolId);
-      if (!classroomsRes.ok) throw new Error("Failed to load classrooms");
-      const classroomsData = await classroomsRes.json();
+      const res = await classroomDefinitionsApi.list(schoolId);
+      setClassroomsRes(res); // Save the raw response in context
+      if (!res.ok) throw new Error("Failed to load classrooms");
+      const classroomsData = await res.json();
       setClassrooms(Array.isArray(classroomsData) ? classroomsData : []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred";
@@ -246,15 +248,15 @@ export default function Classes() {
     }
   }
 
-  if (isLoadingData) {
-    return (
-      <AppLayout title="Classes" description="Manage classroom definitions">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        </div>
-      </AppLayout>
-    );
-  }
+  // if (isLoadingData) {
+  //   return (
+  //     <AppLayout title="Classes" description="Manage classroom definitions">
+  //       <div className="flex items-center justify-center min-h-[400px]">
+  //         <Loader2 className="h-8 w-8 text-primary animate-spin" />
+  //       </div>
+  //     </AppLayout>
+  //   );
+  // }
 
   const getClassroomName = (id: string) => {
     return classrooms.find((c: any) => c.id === id)?.name || "Unknown";
@@ -279,14 +281,20 @@ export default function Classes() {
 
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Classroom Definitions</CardTitle>
-              <CardDescription>Create and manage classroom levels for your school</CardDescription>
+              {/* <CardTitle>Create and Manage Classroom Definitions</CardTitle> */}
+              {/* <CardDescription>Create and manage classroom levels for your school</CardDescription> */}
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left: List */}
                 <div>
-                  {classrooms.length === 0 ? (
+                  {isLoadingData && classrooms.length === 0 ? (
+                    <div className="space-y-2 flex flex-col items-center justify-center text-center">
+                      {/* <Loader2 className="h-4 w-4 text-primary animate-spin mb-2" /> */}
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </div>
+                  ) : classrooms.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                       <AlertCircle className="h-8 w-8 text-slate-300 mb-2" />
                       <p className="text-slate-500">No classroom definitions yet.</p>
@@ -327,7 +335,7 @@ export default function Classes() {
                         {classroomServerError && classroomServerErrorList.length === 0 && <div>{classroomServerError}</div>}
                         {classroomServerErrorList.length > 0 && (
                           <ul className="mt-2 ml-4 list-disc space-y-1">
-                            {([...new Set(classroomServerErrorList)]).map((err, idx) => (
+                            {Array.from(new Set(classroomServerErrorList)).map((err, idx) => (
                               <li key={idx}>{err}</li>
                             ))}
                           </ul>

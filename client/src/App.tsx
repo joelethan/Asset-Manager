@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
+import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
+import { queryClient } from "./lib/queryClient";
 // import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProfileProvider, useProfile } from "@/context/ProfileContext";
 import { TenantProvider } from "@/context/TenantContext";
-import { ProfileProvider } from "@/context/ProfileContext";
-import { useProfile } from "@/context/ProfileContext";
+import AcademicStructure from "@/pages/AcademicStructure";
+import Classes from "@/pages/Classes";
+import CreateSchool from "@/pages/CreateSchool";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import AcademicStructure from "@/pages/AcademicStructure";
 import Schools from "@/pages/Schools";
-import Students from "@/pages/Students";
-import Teachers from "@/pages/Teachers";
-import Classes from "@/pages/Classes";
 import Settings from "@/pages/Settings";
-import CreateSchool from "@/pages/CreateSchool";
+import Students from "@/pages/Students";
 import Subjects from "@/pages/Subjects";
+import Teachers from "@/pages/Teachers";
+import ResultsManagement from "./pages/ResultsManagement";
 
 function ProtectedRoute({ component: Component }: { component: any }) {
   const { isAuthenticated, initialized } = useProfile();
@@ -83,6 +83,7 @@ function AppRouter() {
             <Route path="/students" component={Students} />
             <Route path="/teachers" component={Teachers} />
             <Route path="/classes" component={Classes} />
+            <Route path="/grades" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
             <Route path="/settings" component={Settings} />
           </>
