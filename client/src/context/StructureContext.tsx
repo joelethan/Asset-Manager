@@ -49,6 +49,8 @@ interface StructureContextProps {
     setTermOptions: React.Dispatch<React.SetStateAction<any[]>>;
     yearOptions: any[];
     setYearOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    gradingStudents: any[];
+    setGradingStudents: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 const StructureContext = createContext<StructureContextProps | undefined>(undefined);
@@ -76,6 +78,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [subjectOptions, setSubjectOptions] = useState<any[]>([]);
     const [classroomsRes, setClassroomsRes] = useState<any>(null);
     const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
+    const [gradingStudents, setGradingStudents] = useState<any[]>([]);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -125,7 +128,9 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
             definitionsOptions,
             setDefinitionsOptions,
             yearOptions,
-            setYearOptions
+            setYearOptions,
+            gradingStudents,
+            setGradingStudents
         }}>
             {children}
         </StructureContext.Provider>

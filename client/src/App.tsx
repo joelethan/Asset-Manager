@@ -1,8 +1,3 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
-import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
-import { queryClient } from "./lib/queryClient";
-// import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProfileProvider, useProfile } from "@/context/ProfileContext";
 import { TenantProvider } from "@/context/TenantContext";
@@ -17,16 +12,11 @@ import Settings from "@/pages/Settings";
 import Students from "@/pages/Students";
 import Subjects from "@/pages/Subjects";
 import Teachers from "@/pages/Teachers";
+import { QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
+import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
+import { queryClient } from "./lib/queryClient";
 import ResultsManagement from "./pages/ResultsManagement";
-
-function ProtectedRoute({ component: Component }: { component: any }) {
-  const { isAuthenticated, initialized } = useProfile();
-
-  if (!initialized) return null;
-  if (!isAuthenticated) return <Redirect to="/login" />;
-
-  return <Component />;
-}
 
 function RootRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
@@ -94,23 +84,6 @@ function AppRouter() {
       </Switch>
     </WouterRouter>
   );
-}
-
-function useHashLocation(): [string, (to: string) => void] {
-  const getHash = () => (typeof window !== "undefined" ? (window.location.hash ? window.location.hash.slice(1) : "/") : "/");
-  const [loc, setLoc] = useState<string>(getHash);
-
-  useEffect(() => {
-    const onHashChange = () => setLoc(getHash());
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  const navigate = (to: string) => {
-    if (typeof window !== "undefined") window.location.hash = to;
-  };
-
-  return [loc, navigate];
 }
 
 function App() {

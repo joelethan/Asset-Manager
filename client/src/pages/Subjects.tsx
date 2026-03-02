@@ -11,7 +11,7 @@ import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
 import { assessmentsApi, enrollmentsApi, gradesApi, subjectsApi } from "@/lib/api";
 import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 
 interface Subject {
@@ -78,9 +78,10 @@ export default function Subjects() {
     subjectOptions,
     termOptions,
     yearOptions,
-    subjects,
     setSubjects,
     definitionsOptions,
+    gradingStudents,
+    setGradingStudents,
   } = useStructure();
 
   const [fetchingSubjects, setFetchingSubjects] = useState(false);
@@ -91,15 +92,11 @@ export default function Subjects() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Assessment state
-  const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(false);
   const [assessmentError, setAssessmentError] = useState<string | string[] | null>(null);
   const [assessmentErrorList, setAssessmentErrorList] = useState<string[]>([]);
-
   const [gradingAssessment, setGradingAssessment] = useState<Assessment | null>(null);
-  const [gradingStudents, setGradingStudents] = useState<any[]>([]);
   const [loadingGradingStudents, setLoadingGradingStudents] = useState(false);
-
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
 
@@ -185,7 +182,7 @@ export default function Subjects() {
     } else {
       setGradingStudents([]);
     }
-  }, [gradingAssessment, schoolId]);
+  }, [schoolId]);
 
   const fetchSubjects = async () => {
     setFetchingSubjects(true);
@@ -348,20 +345,39 @@ export default function Subjects() {
       assessment: "",
     },
   });
-
+  globalSelectValues.gradeAssessment
   // Keep selects in sync with react-hook-form
-  useEffect(() => { setValue("academicYear", globalSelectValues.gradeYear); }, [globalSelectValues.gradeYear, setValue]);
-  useEffect(() => { setValue("classroom", globalSelectValues.gradeClassroom); }, [globalSelectValues.gradeClassroom, setValue]);
   useEffect(() => { setValue("assessment", globalSelectValues.gradeAssessment); }, [globalSelectValues.gradeAssessment, setValue]);
+  useEffect(() => { setValue("classroom", globalSelectValues.gradeClassroom); }, [globalSelectValues.gradeClassroom, setValue]);
+  useEffect(() => { setValue("academicYear", globalSelectValues.gradeYear); }, [globalSelectValues.gradeYear, setValue]);
+  useEffect(() => { setValue("term", globalSelectValues.gradeTerm); }, [globalSelectValues.gradeTerm, setValue]);
+  const prevGradeTermRef = useRef(globalSelectValues.gradeTerm);
+  const prevGradeYearRef = useRef(globalSelectValues.gradeYear);
+
   useEffect(() => {
-    setValue("term", globalSelectValues.gradeTerm);
-    // Clear assessment when term changes
-    setValue("assessment", "");
-    setGlobalSelectValues(prev => ({
-      ...prev,
-      gradeAssessment: ""
-    }));
-  }, [globalSelectValues.gradeTerm, setValue, setGlobalSelectValues]);
+    let shouldReset = false;
+    if (
+      prevGradeTermRef.current &&
+      prevGradeTermRef.current !== globalSelectValues.gradeTerm
+    ) {
+      shouldReset = true;
+    }
+    if (
+      prevGradeYearRef.current &&
+      prevGradeYearRef.current !== globalSelectValues.gradeYear
+    ) {
+      shouldReset = true;
+    }
+    if (shouldReset) {
+      setValue("assessment", "");
+      setGlobalSelectValues(prev => ({
+        ...prev,
+        gradeAssessment: ""
+      }));
+    }
+    prevGradeTermRef.current = globalSelectValues.gradeTerm;
+    prevGradeYearRef.current = globalSelectValues.gradeYear;
+  }, [globalSelectValues.gradeTerm, globalSelectValues.gradeYear, setValue, setGlobalSelectValues]);
 
   // Add these state variables near your other useState hooks:
   const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -625,8 +641,6 @@ export default function Subjects() {
                     if (!res.ok) throw new Error("Failed to fetch enrolled students");
                     const students = await res.json();
 
-                    // 4. Save assessment and students to local state
-                    setGradingAssessment(assessment);
                     setGradingStudents(Array.isArray(students) ? students : students?.data || []);
 
                   } catch (error) {
@@ -652,8 +666,6 @@ export default function Subjects() {
                               ...prev,
                               gradeYear: v,
                             }));
-                            const year = academicYears.find((y: any) => String(y.id) === v);
-                            const templateId = year?.termTemplateId || year?.term_template_id || year?.term_template?.id;
                           }}
                         >
                           <SelectTrigger>
@@ -752,7 +764,7 @@ export default function Subjects() {
                   </div>
                   {/* Assessment */}
                   <div className="space-y-2">
-                    <Label htmlFor="assessment-select">Assessment *</Label>
+                    <Label htmlFor="assessment-select">Assessment *'</Label>
                     <Controller
                       name="assessment"
                       control={filterControl}
@@ -783,6 +795,7 @@ export default function Subjects() {
                                   assessment.term_template_item_id === selectedTermId &&
                                   assessment.academic_year_id === selectedAcademicYearId
                                 );
+                                setGradingAssessment(filteredAssessments.find((a: any) => a.id === globalSelectValues.gradeAssessment));
                                 if (filteredAssessments.length > 0) {
                                   return filteredAssessments.map((assessment: any) => (
                                     <SelectItem key={assessment.id} value={assessment.id}>{` ${assessment?.subject?.name} (${assessment.name})`}</SelectItem>
@@ -883,7 +896,7 @@ export default function Subjects() {
                     <table className="w-full text-left table-auto border-collapse">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                          <th className="px-3 py-2 text-sm font-medium">Reg No'</th>
                           <th className="px-3 py-2 text-sm font-medium">Student</th>
                           <th className="px-3 py-2 text-sm font-medium">Score</th>
                           <th className="px-3 py-2 text-sm font-medium">Remarks</th>
