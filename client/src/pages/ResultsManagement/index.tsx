@@ -1,5 +1,4 @@
 import ComingSoon from "@/components/common/ComingSoon";
-import NoDataComponent from "@/components/common/NoDataComponent";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { useTenant } from "@/context/TenantContext";
 import { gradesApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import StudentResults from "./ResultsManagement/StudentResults";
 
 interface Assessment {
     id: string;
@@ -144,7 +142,7 @@ export default function ResultsManagement() {
                 </TabsList>
                 <TabsContent value="by-assessment">
                     <Card className="border-slate-200">
-                        <div className="w-full mx-auto px-6 py-6">
+                        <div className="w-full mx-auto mt-6 px-6 py-6">
                             <form onSubmit={handleSubmit(onSubmit)}>
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 items-end px-2 md:px-0">
                                     <div className="space-y-2">
@@ -354,17 +352,36 @@ export default function ResultsManagement() {
                                             </tbody>
                                         </table>
                                     </div>
-                                ) : grades === undefined ? (
-                                    <NoDataComponent message="Select filters and submit to view grades." />
                                 ) : (
-                                    <NoDataComponent message="There are no grades available for the selected assessment. Please check your filters or try another assessment." />
+                                    <div className="flex flex-col items-center justify-center py-8">
+                                        <svg
+                                            className="w-12 h-12 text-gray-300 mb-3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.5"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M12 17v.01M12 7v6m0 8a9 9 0 100-18 9 9 0 000 18z"
+                                            />
+                                        </svg>
+                                        <div className="text-base font-medium text-gray-700 mb-1">
+                                            No grades found
+                                        </div>
+                                        <div className="text-sm text-gray-500 text-center max-w-xs">
+                                            There are no grades available for the selected assessment.<br />
+                                            Please check your filters or try another assessment.
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </Card>
                 </TabsContent>
                 <TabsContent value="by-student">
-                    <StudentResults />
+                    <ComingSoon title="Result by Student" />
                 </TabsContent>
                 <TabsContent value="by-classroom">
                     <ComingSoon title="Result by Classroom" />
@@ -373,3 +390,4 @@ export default function ResultsManagement() {
         </AppLayout>
     );
 }
+// gradesApi.resultsByIdentity

@@ -170,6 +170,7 @@ export default function Subjects() {
   });
 
   useEffect(() => {
+    console.log("Selected assessment gradingAssessment:", gradingAssessment);
     if (gradingAssessment && schoolId) {
       setLoadingGradingStudents(true);
       enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
@@ -179,10 +180,8 @@ export default function Subjects() {
         })
         .catch(() => setGradingStudents([]))
         .finally(() => setLoadingGradingStudents(false));
-    } else {
-      setGradingStudents([]);
-    }
-  }, [schoolId]);
+    } else { }
+  }, [gradingAssessment, schoolId]);
 
   const fetchSubjects = async () => {
     setFetchingSubjects(true);

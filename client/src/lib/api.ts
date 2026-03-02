@@ -186,4 +186,6 @@ export const gradesApi = {
     apiClient.get(`/schools/${schoolId}/structure`),
   fetchForAssessment: (schoolId: string, assessmentId: string) =>
     apiClient.get(`/schools/${schoolId}/grades?assessmentId=${assessmentId}`),
+  resultsByIdentity: (schoolId: string, yearId: string, termId: string, identity: string) =>
+    apiClient.get(`/schools/${schoolId}/results/by-identity?yearId=${yearId}&termId=${termId}&identity=${identity}`),
 };
