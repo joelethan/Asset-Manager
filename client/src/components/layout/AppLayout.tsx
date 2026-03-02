@@ -64,7 +64,7 @@ const navigation = [
   // { name: "Teachers", href: "/teachers", icon: Users },
   { name: "Subjects", href: "/subjects", icon: BookOpen },
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
-  { name: "Grades", href: "/grades", icon: BarChart3 },
+  { name: "Results", href: "/results", icon: BarChart3 },
   { name: "Report Cards", href: "/report-cards", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

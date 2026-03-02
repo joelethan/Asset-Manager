@@ -13,6 +13,16 @@ interface StructureContextProps {
     isLoading: boolean;
     error: string | null;
     fetchStructure: (schoolId: string) => Promise<void>;
+    byStudentSelects: {
+        yearId: string;
+        termId: string;
+        identity: string;
+    };
+    setByStudentSelects: React.Dispatch<React.SetStateAction<{
+        yearId: string;
+        termId: string;
+        identity: string;
+    }>>;
     selectValues: {
         year: string;
         term: string;
@@ -49,6 +59,10 @@ interface StructureContextProps {
     setTermOptions: React.Dispatch<React.SetStateAction<any[]>>;
     yearOptions: any[];
     setYearOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    gradingStudents: any[];
+    setGradingStudents: React.Dispatch<React.SetStateAction<any[]>>;
+    byStudentResult: any;
+    setByStudentResult: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const StructureContext = createContext<StructureContextProps | undefined>(undefined);
@@ -58,6 +72,11 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [structure, setStructure] = useState<Structure | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [byStudentSelects, setByStudentSelects] = useState({
+        yearId: "",
+        termId: "",
+        identity: "",
+    });
     const [selectValues, setSelectValues] = useState({
         year: "",
         term: "",
@@ -76,6 +95,8 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [subjectOptions, setSubjectOptions] = useState<any[]>([]);
     const [classroomsRes, setClassroomsRes] = useState<any>(null);
     const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
+    const [gradingStudents, setGradingStudents] = useState<any[]>([]);
+    const [byStudentResult, setByStudentResult] = useState<any>(null);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -108,6 +129,10 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
             isLoading,
             error,
             fetchStructure,
+            byStudentSelects,
+            setByStudentSelects,
+            byStudentResult,
+            setByStudentResult,
             selectValues,
             setSelectValues,
             grades,
@@ -125,7 +150,9 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
             definitionsOptions,
             setDefinitionsOptions,
             yearOptions,
-            setYearOptions
+            setYearOptions,
+            gradingStudents,
+            setGradingStudents
         }}>
             {children}
         </StructureContext.Provider>
