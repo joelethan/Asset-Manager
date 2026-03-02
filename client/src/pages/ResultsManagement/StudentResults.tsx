@@ -1,3 +1,4 @@
+import NoDataComponent from "@/components/common/NoDataComponent";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,30 +8,50 @@ import { useTenant } from "@/context/TenantContext";
 import { gradesApi } from "@/lib/api";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import NoDataComponent from "@/components/common/NoDataComponent";
 
 const StudentResults: React.FC = () => {
-    const { structure } = useStructure();
+    const {
+        structure,
+        byStudentSelects,
+        setByStudentSelects,
+        byStudentResult,
+        setByStudentResult
+    } = useStructure();
     const { selectedTenant } = useTenant();
     const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
     if (!selectedTenant) return null;
 
     const schoolId = selectedTenant.id;
-    const { control, handleSubmit, formState: { errors } } = useForm({
+    const { control, handleSubmit, formState: { errors }, setValue, watch } = useForm({
         defaultValues: {
-            yearId: "",
-            termId: "",
-            identity: "",
+            yearId: byStudentSelects?.yearId || "",
+            termId: byStudentSelects?.termId || "",
+            identity: byStudentSelects?.identity || "",
         },
     });
 
+    // Keep form in sync with context
+    React.useEffect(() => {
+        setValue("yearId", byStudentSelects?.yearId || "");
+        setValue("termId", byStudentSelects?.termId || "");
+        setValue("identity", byStudentSelects?.identity || "");
+    }, [byStudentSelects, setValue]);
+
+    // Update context when form changes
+    React.useEffect(() => {
+        const subscription = watch((values) => {
+            setByStudentSelects((prev: any) => ({ ...prev, ...values }));
+        });
+        return () => subscription.unsubscribe();
+    }, [watch, setByStudentSelects]);
+
     const onSubmit = async (data: any) => {
         setIsLoading(true);
-        setResult(null);
+        setByStudentResult(null);
         setError(null);
+        setByStudentSelects((prev: any) => ({ ...prev, ...data }));
         try {
             const response = await gradesApi.resultsByIdentity(
                 schoolId,
@@ -39,7 +60,7 @@ const StudentResults: React.FC = () => {
                 data.identity
             );
             const results = await response.json();
-            setResult(results);
+            setByStudentResult(results);
         } catch (error) {
             console.error("Failed to fetch results by identity:", error);
             setError("Failed to fetch results. Please try again.");
@@ -172,20 +193,20 @@ const StudentResults: React.FC = () => {
                 {error && (
                     <div className="text-sm text-red-600 mt-4">{error}</div>
                 )}
-                {result && (!result.grades || result.grades.length === 0) && (
+                {byStudentResult && (!byStudentResult.grades || byStudentResult.grades.length === 0) && (
                     <NoDataComponent message="No grades found for this student in the selected year and term." />
                 )}
-                {result && result.grades && result.grades.length > 0 && (
+                {byStudentResult && byStudentResult.grades && byStudentResult.grades.length > 0 && (
                     <div>
                         <div className="mb-4 flex flex-col md:flex-row md:items-center md:gap-8 gap-2">
                             <div>
-                                <span className="font-semibold">Student:</span> {result.student?.first_name} {result.student?.last_name} ({result.student?.reg_no || result.student?.student_no})
+                                <span className="font-semibold">Student:</span> {byStudentResult.student?.first_name} {byStudentResult.student?.last_name} ({byStudentResult.student?.reg_no || byStudentResult.student?.student_no})
                             </div>
                             <div>
-                                <span className="font-semibold">Overall Average:</span> {result.overallAverage}
+                                <span className="font-semibold">Overall Average:</span> {byStudentResult.overallAverage}
                             </div>
                             <div>
-                                <span className="font-semibold">Overall Grade:</span> {result.overallLetterGrade}
+                                <span className="font-semibold">Overall Grade:</span> {byStudentResult.overallLetterGrade}
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -201,7 +222,7 @@ const StudentResults: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {result.grades.map((g: any, i: number) => (
+                                    {byStudentResult.grades.map((g: any, i: number) => (
                                         <tr key={i} className="border-t">
                                             <td className="px-3 py-2 text-sm">{g.assessment?.subject?.name || '-'}</td>
                                             <td className="px-3 py-2 text-sm">{g.assessment?.name || '-'}</td>
@@ -216,7 +237,7 @@ const StudentResults: React.FC = () => {
                         </div>
                     </div>
                 )}
-                {result === null && !isLoading && !error && (
+                {byStudentResult === null && !isLoading && !error && (
                     <NoDataComponent message="Select filters and submit to view student results." />
                 )}
             </div>
