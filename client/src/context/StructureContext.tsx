@@ -1,5 +1,5 @@
 import { gradesApi } from "@/lib/api";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { useState } from "react";
 
 export interface Structure {
     years?: any[];
@@ -89,9 +89,9 @@ interface StructureContextProps {
     setListAssessResult: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const StructureContext = createContext<StructureContextProps | undefined>(undefined);
+const StructureContext = React.createContext<StructureContextProps | undefined>(undefined);
 
-export const StructureProvider = ({ children }: { children: ReactNode }) => {
+export const StructureProvider = ({ children }: { children: React.ReactNode }) => {
     // State is only in memory, persists across navigation but not reloads
     const [structure, setStructure] = useState<Structure | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -204,7 +204,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useStructure = () => {
-    const ctx = useContext(StructureContext);
+    const ctx = React.useContext(StructureContext);
     if (!ctx) throw new Error("useStructure must be used within a StructureProvider");
     return ctx;
 };

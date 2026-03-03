@@ -179,7 +179,7 @@ export const assessmentsApi = {
   delete: (schoolId: string, id: string) =>
     apiClient.delete(`/schools/${schoolId}/assessments/${id}`),
   getClassroomAssessments: (schoolId: string, yearId: string, termId: string, classroomDefinitionId: string) =>
-    apiClient.get(`/schools/${schoolId}/assessments?yearId=${yearId}&termItemId=${termId}`),
+    apiClient.get(`/schools/${schoolId}/assessments?yearId=${yearId}&termItemId=${termId}&definitionId=${classroomDefinitionId}`),
 };
 
 export const gradesApi = {

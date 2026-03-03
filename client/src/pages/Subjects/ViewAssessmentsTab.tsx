@@ -1,3 +1,4 @@
+import SubmitButton from "@/components/common/SubmitButton";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -32,10 +33,6 @@ const ViewAssessmentsTab: FC = () => {
             definitionId: assessSelects?.definitionId || "",
         },
     });
-
-    useEffect(() => {
-        console.log("Structure in ViewAssessmentsTab:", structure);
-    }, []);
 
     // Keep form in sync with global assessSelects
     useEffect(() => {
@@ -150,7 +147,7 @@ const ViewAssessmentsTab: FC = () => {
                         </p>
                     )}
                 </div>
-                {false && <div className="space-y-2 flex-1 min-w-0">
+                {true && <div className="space-y-2 flex-1 min-w-0">
                     <Label htmlFor="definitionId">Classroom Definition *</Label>
                     <Controller
                         name="definitionId"
@@ -187,14 +184,7 @@ const ViewAssessmentsTab: FC = () => {
                         </p>
                     )}
                 </div>}
-                <div className="flex items-end h-full">
-                    <button
-                        type="submit"
-                        className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                        Submit
-                    </button>
-                </div>
+                <SubmitButton loading={loading} text="Load" />
             </div>
             {loading && (
                 <div className="mt-6 overflow-x-auto animate-pulse">
@@ -276,6 +266,3 @@ const ViewAssessmentsTab: FC = () => {
 };
 
 export default ViewAssessmentsTab;
-
-//  - We need to add here a table showing all assessments by all students.
-//  - It should be like in a list showing how students performed such that we have students on the vertical axis & assessments on the top header bar. Then

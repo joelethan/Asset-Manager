@@ -1,3 +1,5 @@
+import NoDataComponent from "@/components/common/NoDataComponent";
+import SubmitButton from "@/components/common/SubmitButton";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -152,23 +154,103 @@ const ClassroomResults: React.FC = () => {
                         />
                         {errors.definitionId && <p className="text-sm text-red-500">{errors.definitionId.message as string}</p>}
                     </div>
-                    <div className="flex items-end h-full">
-                        <button
-                            type="submit"
-                            className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={isLoading}
-                        >
-                            {isLoading && (
-                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                </svg>
-                            )}
-                            {isLoading ? "Loading..." : "Submit"}
-                        </button>
-                    </div>
+                    <SubmitButton text="Load" loading={isLoading} />
                 </div>
             </form>
+
+            {/* Loading Skeleton Table */}
+            {isLoading && (
+                <div className="px-6 pb-6">
+                    <div className="overflow-x-auto animate-pulse">
+                        <table className="w-full text-left table-auto border-collapse">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="px-3 py-2 text-sm font-medium">Student</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                                    {[...Array(4)].map((_, i) => (
+                                        <th key={i} className="px-3 py-2 text-sm font-medium">
+                                            <div className="h-4 bg-gray-200 rounded w-24" />
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...Array(4)].map((_, rowIdx) => (
+                                    <tr key={rowIdx} className="border-t">
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-28" /></td>
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                                        {[...Array(4)].map((_, colIdx) => (
+                                            <td key={colIdx} className="px-3 py-2">
+                                                <div className="space-y-1">
+                                                    <div className="h-3 bg-gray-200 rounded w-14" />
+                                                    <div className="h-3 bg-gray-200 rounded w-10" />
+                                                    <div className="h-3 bg-gray-200 rounded w-12" />
+                                                </div>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Results Table */}
+            {!isLoading && byDefinitionResult && byDefinitionResult.assessments && Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length > 0 && (
+                <div className="px-6 pb-6">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left table-auto border-collapse">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="px-3 py-2 text-sm font-medium">Student</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                                    {byDefinitionResult.assessments.map((assessment: any) => (
+                                        <th key={assessment.id} className="px-3 py-2 text-sm font-medium">
+                                            {assessment.subject?.name || "-"} <span className="font-normal">({assessment.name})</span>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {byDefinitionResult.results.map((result: any) => (
+                                    <tr key={result.student.id} className="border-t">
+                                        <td className="px-3 py-2 text-sm font-medium">
+                                            {result.student.first_name} {result.student.last_name}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm">{result.student.reg_no || result.student.student_no || result.student.id}</td>
+                                        {byDefinitionResult.assessments.map((assessment: any) => {
+                                            // Find grade for this student and assessment
+                                            const grade = result.grades?.find((g: any) => g.assessment?.id === assessment.id);
+                                            return (
+                                                <td key={assessment.id} className="px-3 py-2 text-sm">
+                                                    {grade ? (
+                                                        <div>
+                                                            <div>Score: {grade.score}</div>
+                                                            <div>%: {grade.percentage}</div>
+                                                            <div>Grade: {grade.letter_grade}</div>
+                                                            <div className="text-xs text-gray-500">{grade.remarks ?? ""}</div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-400">N/A</span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+            {/* No Data State */}
+            {!isLoading && byDefinitionResult && Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length === 0 && (
+                <div className="px-6 pb-6">
+                    <NoDataComponent message="No results found for this classroom in the selected year and term." />
+                </div>
+            )}
+
         </Card>
     );
 };

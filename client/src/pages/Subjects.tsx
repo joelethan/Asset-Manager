@@ -88,7 +88,7 @@ export default function Subjects() {
   const [fetchingSubjects, setFetchingSubjects] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submittingGrades, setSubmittingGrades] = useState(false);
-  const [activeTab, setActiveTab] = useState("assessments-list");
+  const [activeTab, setActiveTab] = useState("subjects");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -280,7 +280,6 @@ export default function Subjects() {
   };
 
   const handleCreateAssessment = async (data: AssessmentFormData) => {
-    console.log("Creating assessment with data:", data);
     setIsAssessmentLoading(true);
     setAssessmentError(null);
     setAssessmentErrorList([]);
@@ -323,7 +322,6 @@ export default function Subjects() {
       await fetchStructure(schoolId);
       resetAssessment();
       toast({ title: "Success", description: "Assessment created successfully" });
-      // setActiveTab("assessments-list");
     } catch (error) {
       if (!assessmentError) setAssessmentError("Failed to create assessment");
       toast({ title: "Error", description: "Failed to create assessment", variant: "destructive" });
