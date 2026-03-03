@@ -13,6 +13,7 @@ import { assessmentsApi, enrollmentsApi, gradesApi, subjectsApi } from "@/lib/ap
 import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
+import ViewAssessmentsTab from "./Subjects/ViewAssessmentsTab";
 
 interface Subject {
   id: string;
@@ -49,7 +50,7 @@ interface Assessment {
 }
 
 interface AssessmentFormData {
-  academicYearId: string;
+  yearId: string;
   termId: string;
   subjectId: string;
   classroomDefinitionId: string;
@@ -78,9 +79,9 @@ export default function Subjects() {
     subjectOptions,
     termOptions,
     yearOptions,
-    setSubjects,
-    definitionsOptions,
     gradingStudents,
+    setSubjectOptions,
+    definitionsOptions,
     setGradingStudents,
   } = useStructure();
 
@@ -158,6 +159,7 @@ export default function Subjects() {
     control: controlAssessment
   } = useForm<AssessmentFormData>({
     defaultValues: {
+      yearId: "",
       termId: "",
       subjectId: "",
       classroomDefinitionId: "",
@@ -170,7 +172,6 @@ export default function Subjects() {
   });
 
   useEffect(() => {
-    console.log("Selected assessment gradingAssessment:", gradingAssessment);
     if (gradingAssessment && schoolId) {
       setLoadingGradingStudents(true);
       enrollmentsApi.enrolledStudents(schoolId, gradingAssessment.id)
@@ -181,7 +182,7 @@ export default function Subjects() {
         .catch(() => setGradingStudents([]))
         .finally(() => setLoadingGradingStudents(false));
     } else { }
-  }, [gradingAssessment, schoolId]);
+  }, [schoolId]);
 
   const fetchSubjects = async () => {
     setFetchingSubjects(true);
@@ -189,7 +190,7 @@ export default function Subjects() {
       const response = await subjectsApi.list(schoolId);
       if (!response.ok) throw new Error("Failed to fetch subjects");
       const data = await response.json();
-      setSubjects(Array.isArray(data) ? data : data.data || []);
+      setSubjectOptions(Array.isArray(data) ? data : data.data || []);
     } catch (error) {
       toast({ title: "Error", description: "Failed to fetch subjects", variant: "destructive" });
     } finally {
@@ -279,6 +280,7 @@ export default function Subjects() {
   };
 
   const handleCreateAssessment = async (data: AssessmentFormData) => {
+    console.log("Creating assessment with data:", data);
     setIsAssessmentLoading(true);
     setAssessmentError(null);
     setAssessmentErrorList([]);
@@ -288,7 +290,7 @@ export default function Subjects() {
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
-        yearId: selectedAcademicYearId,
+        yearId: data.yearId,
         termTemplateItemId: data.termId,
         classroomDefinitionId: data.classroomDefinitionId,
         subjectId: data.subjectId,
@@ -321,7 +323,7 @@ export default function Subjects() {
       await fetchStructure(schoolId);
       resetAssessment();
       toast({ title: "Success", description: "Assessment created successfully" });
-      setActiveTab("assessments-list");
+      // setActiveTab("assessments-list");
     } catch (error) {
       if (!assessmentError) setAssessmentError("Failed to create assessment");
       toast({ title: "Error", description: "Failed to create assessment", variant: "destructive" });
@@ -397,6 +399,7 @@ export default function Subjects() {
           <TabsTrigger value="subjects">Subject List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
+          <TabsTrigger value="view-assessments">View Assessments</TabsTrigger>
           <TabsTrigger value="assessments-list">Grade Assessment</TabsTrigger>
         </TabsList>
 
@@ -600,6 +603,17 @@ export default function Subjects() {
                   )}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="view-assessments" className="space-y-4">
+          <Card className="border-slate-200">
+            <CardHeader>
+              <CardTitle>View Assessments</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ViewAssessmentsTab />
             </CardContent>
           </Card>
         </TabsContent>
@@ -1033,7 +1047,7 @@ export default function Subjects() {
                   <div className="space-y-2">
                     <Label htmlFor="view-assess-year">Academic Year *</Label>
                     <Controller
-                      name="academicYearId"
+                      name="yearId"
                       control={controlAssessment}
                       rules={{ required: "Select academic year" }}
                       render={({ field }) => (
@@ -1061,8 +1075,8 @@ export default function Subjects() {
                         </Select>
                       )}
                     />
-                    {assessmentErrors.academicYearId &&
-                      <p className="text-sm text-red-500">{assessmentErrors.academicYearId.message}</p>}
+                    {assessmentErrors.yearId &&
+                      <p className="text-sm text-red-500">{assessmentErrors.yearId.message}</p>}
                   </div>
 
                   <div className="space-y-2">

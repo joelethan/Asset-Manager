@@ -29,7 +29,8 @@ export const apiClient = {
     });
   },
 
-  // Post a FormData payload (multipart/form-data). Do NOT set Content-Type header so the browser can add boundary.
+  // Post a FormData payload (multipart/form-data).
+  // Do NOT set Content-Type header so the browser can add boundary.
   async postForm(endpoint: string, formData: FormData) {
     const url = `${baseUrl}${endpoint}`;
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
@@ -177,7 +178,9 @@ export const assessmentsApi = {
     apiClient.patch(`/schools/${schoolId}/assessments/${id}`, data),
   delete: (schoolId: string, id: string) =>
     apiClient.delete(`/schools/${schoolId}/assessments/${id}`),
-}
+  getClassroomAssessments: (schoolId: string, yearId: string, termId: string, classroomDefinitionId: string) =>
+    apiClient.get(`/schools/${schoolId}/assessments?yearId=${yearId}&termItemId=${termId}`),
+};
 
 export const gradesApi = {
   bulkCreate: (schoolId: string, data: unknown) =>
@@ -188,4 +191,6 @@ export const gradesApi = {
     apiClient.get(`/schools/${schoolId}/grades?assessmentId=${assessmentId}`),
   resultsByIdentity: (schoolId: string, yearId: string, termId: string, identity: string) =>
     apiClient.get(`/schools/${schoolId}/results/by-identity?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+  resultsByClassroom: (schoolId: string, yearId: string, termId: string, definitionId: string) =>
+    apiClient.get(`/schools/${schoolId}/results/by-classroom?yearId=${yearId}&termId=${termId}&definitionId=${definitionId}`),
 };

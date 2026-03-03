@@ -1,4 +1,3 @@
-import ComingSoon from "@/components/common/ComingSoon";
 import NoDataComponent from "@/components/common/NoDataComponent";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { useTenant } from "@/context/TenantContext";
 import { gradesApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import ClassroomResults from "./ResultsManagement/ClassroomResults";
 import StudentResults from "./ResultsManagement/StudentResults";
 
 interface Assessment {
@@ -367,7 +367,8 @@ export default function ResultsManagement() {
                     <StudentResults />
                 </TabsContent>
                 <TabsContent value="by-classroom">
-                    <ComingSoon title="Result by Classroom" />
+                    {/* <ComingSoon title="Result by Classroom" /> */}
+                    <ClassroomResults />
                 </TabsContent>
             </Tabs>
         </AppLayout>
