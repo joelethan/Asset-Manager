@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useCreateStudent, useStudents } from "@/hooks/use-students";
 import { useToast } from "@/hooks/use-toast";
@@ -96,6 +97,7 @@ interface AssessmentFormData {
 export default function Students() {
   const { toast } = useToast();
   const { selectedTenant } = useTenant();
+  const { structure, fetchStructure } = useStructure();
   const schoolId = selectedTenant?.id as string;
 
   // Form setup with react-hook-form
@@ -188,6 +190,13 @@ export default function Students() {
       }
     }
   }, [selectedYearId, activeTab, academicYears]);
+
+  // Fetch structure on mount
+  useEffect(() => {
+    if (schoolId && !structure) {
+      fetchStructure(schoolId);
+    }
+  }, [schoolId, structure]);
 
   const [loadingEnrolled, setLoadingEnrolled] = useState(false);
 
@@ -942,123 +951,142 @@ export default function Students() {
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>View Student Enrollments</CardTitle>
-              {/* <CardDescription>View students enrolled in a specific classroom definition</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Year and Definition Selection */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="viewYear">Academic Year *</Label>
-                  <Select value={viewYear} onValueChange={handleViewYearChange} disabled={loadingViewYears}>
-                    <SelectTrigger id="viewYear">
-                      <SelectValue placeholder="Select academic year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {viewYears.length === 0 && !loadingViewYears && (
-                        <div className="p-2 text-sm text-slate-500">
-                          {viewYears.length === 0 ? (
-                            <span onClick={handleLoadViewYears} className="cursor-pointer text-blue-600 hover:underline">
-                              Click to load years
-                            </span>
-                          ) : (
-                            "No years available"
-                          )}
-                        </div>
+              <form onSubmit={e => { e.preventDefault(); handleLoadViewYears(); }}>
+                <div className="flex flex-row gap-4 items-end">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <Label htmlFor="viewYear">Academic Year *</Label>
+                    <Select
+                      value={viewYear}
+                      onValueChange={setViewYear}
+                      disabled={loadingViewYears}
+                    >
+                      <SelectTrigger id="viewYear">
+                        <SelectValue placeholder="Select academic year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {structure?.years && structure.years.length > 0 ? (
+                          structure.years.map(year => (
+                            <SelectItem key={year.id} value={String(year.id)}>
+                              {year.name || `Year ${year.id}`}
+                              {year.status === "active" && (
+                                <span className="ml-2 text-green-600 font-semibold">(Active)</span>
+                              )}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500">No academic years available</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <Label htmlFor="viewDefinition">Classroom Definition *</Label>
+                    <Select
+                      value={viewDefinition}
+                      onValueChange={setViewDefinition}
+                      disabled={loadingViewDefinitions}
+                    >
+                      <SelectTrigger id="viewDefinition">
+                        <SelectValue placeholder="Select classroom definition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {structure?.definitionsOptions && structure.definitionsOptions.length > 0 ? (
+                          structure.definitionsOptions.map(def => (
+                            <SelectItem key={def.id} value={String(def.id)}>
+                              {def.name || `Definition ${def.id}`}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500">No classroom definitions available</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end h-full">
+                    <Button
+                      type="button"
+                      onClick={() => handleViewDefinitionChange(viewDefinition)}
+                      disabled={!viewDefinition || loadingEnrolled}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loadingEnrolled ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>Load Enrolled Students</>
                       )}
-                      {viewYears.map((year) => (
-                        <SelectItem key={year.id} value={String(year.id)}>
-                          {year.name || `Year ${year.id}`}
-                          {year.status === "active" && (
-                            <span className="ml-2 text-green-600 font-semibold">(Active)</span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="viewDefinition">Classroom Definition *</Label>
-                  <Select value={viewDefinition} onValueChange={handleViewDefinitionChange} disabled={!viewYear || loadingViewDefinitions}>
-                    <SelectTrigger id="viewDefinition">
-                      <SelectValue placeholder={!viewYear ? "Select a year first" : loadingViewDefinitions ? "Loading..." : "Select classroom definition"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {viewDefinitions.map((def) => (
-                        <SelectItem key={def.id} value={String(def.id)}>
-                          {def.name || `Definition ${def.id}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              </form>
 
               {/* Enrolled Students Table */}
-              {viewDefinition && (
-                <div className="space-y-2">
-                  <Label>Enrolled Students ({enrolledStudents.length})</Label>
-                  {loadingEnrolled ? (
-                    <Card className="border-slate-200">
-                      <CardContent className="pt-6 pb-6 flex justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                      </CardContent>
-                    </Card>
-                  ) : enrolledStudents.length > 0 ? (
-                    <div className="overflow-x-auto border rounded-lg">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Student No</TableHead>
-                            <TableHead>Reg No</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Enrolled Date</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {enrolledStudents.map((enrollment) => (
-                            <TableRow key={enrollment.enrollmentId}>
-                              <TableCell className="font-medium">
-                                {enrollment.student?.firstName} {enrollment.student?.lastName}
-                              </TableCell>
-                              <TableCell>{enrollment.student?.studentNo || "-"}</TableCell>
-                              <TableCell>{enrollment.student?.regNo || "-"}</TableCell>
-                              <TableCell>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  {enrollment.student?.status ? enrollment.student.status.charAt(0).toUpperCase() + enrollment.student.status.slice(1) : "Active"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {enrollment.startDate
-                                  ? new Date(enrollment.startDate).toLocaleDateString()
-                                  : "-"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <Card className="border-slate-200">
-                      <CardContent className="pt-6 pb-6">
-                        <p className="text-sm text-slate-500 text-center">
-                          No students enrolled in this classroom definition
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+              {loadingEnrolled && (
+                <div className="mt-6 overflow-x-auto animate-pulse">
+                  <table className="w-full text-left table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-sm font-medium">Name</th>
+                        <th className="px-3 py-2 text-sm font-medium">Student No</th>
+                        <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                        <th className="px-3 py-2 text-sm font-medium">Status</th>
+                        <th className="px-3 py-2 text-sm font-medium">Enrolled Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...Array(6)].map((_, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32" /></td>
+                          <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24" /></td>
+                          <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16" /></td>
+                          <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                          <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20" /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
-
-              {!viewDefinition && viewYear && (
-                <Card className="border-slate-200">
-                  <CardContent className="pt-6 pb-6">
-                    <p className="text-sm text-slate-500 text-center">
-                      Select a classroom definition to view enrolled students
-                    </p>
-                  </CardContent>
-                </Card>
+              {!loadingEnrolled && enrolledStudents.length > 0 && (
+                <div className="mt-6 overflow-x-auto">
+                  <table className="w-full text-left table-auto border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-sm font-medium">Name</th>
+                        <th className="px-3 py-2 text-sm font-medium">Student No</th>
+                        <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                        <th className="px-3 py-2 text-sm font-medium">Status</th>
+                        <th className="px-3 py-2 text-sm font-medium">Enrolled Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {enrolledStudents.map((enrollment) => (
+                        <tr key={enrollment.enrollmentId} className="border-t">
+                          <td className="px-3 py-2 font-medium">{enrollment.student?.firstName} {enrollment.student?.lastName}</td>
+                          <td className="px-3 py-2">{enrollment.student?.studentNo || "-"}</td>
+                          <td className="px-3 py-2">{enrollment.student?.regNo || "-"}</td>
+                          <td className="px-3 py-2">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              {enrollment.student?.status ? enrollment.student.status.charAt(0).toUpperCase() + enrollment.student.status.slice(1) : "Active"}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">{enrollment.startDate ? new Date(enrollment.startDate).toLocaleDateString() : "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!loadingEnrolled && enrolledStudents.length === 0 && viewDefinition && (
+                <div className="mt-6 text-gray-500 text-center">
+                  <div className="mb-2 font-semibold">No students enrolled in this classroom definition.</div>
+                  <div className="text-sm">Try changing the filters or check if students have been enrolled for this classroom.</div>
+                </div>
               )}
             </CardContent>
           </Card>

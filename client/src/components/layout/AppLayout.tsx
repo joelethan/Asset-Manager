@@ -65,6 +65,7 @@ const navigation = [
   { name: "Results", href: "/results", icon: BarChart3 },
   { name: "Report Cards", href: "/report-cards", icon: FileText },
   { name: "System Users", href: "/users", icon: Users },
+  { name: "Audit Trails", href: "/audit-trails", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

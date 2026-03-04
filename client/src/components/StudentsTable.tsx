@@ -1,13 +1,9 @@
-import React, { useMemo, useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, RefreshCw, Eye, Edit2, DollarSign } from "lucide-react";
+import { DollarSign, Download, Edit2, Eye, RefreshCw } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Student = {
   id: string;
@@ -107,7 +103,7 @@ export default function StudentsTable({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `students-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `students-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -148,69 +144,74 @@ export default function StudentsTable({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={isAllPageSelected}
-                      indeterminate={isPartialSelected}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all on page"
-                    />
-                  </TableHead>
-                <TableHead>Student No</TableHead>
-                <TableHead>Reg No</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Gender</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Birth Date</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-left table-auto border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="px-3 py-2 text-sm font-medium w-12">
+                  <input
+                    type="checkbox"
+                    checked={isAllPageSelected}
+                    ref={el => {
+                      if (el) el.indeterminate = isPartialSelected;
+                    }}
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    aria-label="Select all students on page"
+                    className="form-checkbox h-4 w-4 text-blue-600 rounded"
+                  />
+                </th>
+                <th className="px-3 py-2 text-sm font-medium">Student No</th>
+                <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                <th className="px-3 py-2 text-sm font-medium">Name</th>
+                <th className="px-3 py-2 text-sm font-medium">Gender</th>
+                <th className="px-3 py-2 text-sm font-medium">Status</th>
+                <th className="px-3 py-2 text-sm font-medium">Birth Date</th>
+                <th className="px-3 py-2 text-sm font-medium">Joined</th>
+                <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
               {pageItems.map((s: Student) => (
-                  <TableRow key={s.id} className="hover:bg-slate-50">
-                  <TableCell>
-                    <Checkbox
+                <tr key={s.id} className="border-t">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
                       checked={selectedIds.has(s.id)}
-                      onCheckedChange={(checked: boolean | string) => handleSelectRow(s.id, checked as boolean)}
+                      onChange={e => handleSelectRow(s.id, e.target.checked)}
                       aria-label={`Select ${s.first_name} ${s.last_name}`}
+                      className="form-checkbox h-4 w-4 text-blue-600 rounded"
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">{s.student_no || "-"}</TableCell>
-                  <TableCell>{s.reg_no || "-"}</TableCell>
-                  <TableCell>{`${s.first_name || ""} ${s.last_name || ""}`}</TableCell>
-                  <TableCell>{s.gender || "-"}</TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      s.status === "Active"
-                        ? "bg-green-100 text-green-800"
-                        : s.status === "Inactive"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}>{s.status || "-"}</span>
-                  </TableCell>
-                  <TableCell>{s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "-"}</TableCell>
-                  <TableCell>{s.created_at ? new Date(s.created_at).toLocaleDateString() : "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost" className="hover:bg-slate-100" aria-label="View student">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="hover:bg-slate-100" aria-label="Edit student">
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="hover:bg-slate-100" aria-label="Student fees">
-                        <DollarSign className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                  <td className="px-3 py-2 font-medium">{s.student_no || "-"}</td>
+                  <td className="px-3 py-2">{s.reg_no || "-"}</td>
+                  <td className="px-3 py-2">{`${s.first_name || ""} ${s.last_name || ""}`}</td>
+                  <td className="px-3 py-2">{s.gender || "-"}</td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : s.status === "inactive"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-slate-100 text-slate-700"
+                      }`}>
+                      {s.status || "-"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">{s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "-"}</td>
+                  <td className="px-3 py-2">{s.created_at ? new Date(s.created_at).toLocaleDateString() : "-"}</td>
+                  <td className="px-3 py-2 text-right space-x-2 flex justify-end">
+                    <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-blue-600 hover:text-blue-700" aria-label="View student">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-blue-600 hover:text-blue-700" aria-label="Edit student">
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-green-600 hover:text-green-700" aria-label="Student fees">
+                      <DollarSign className="h-4 w-4" />
+                    </Button>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
 
         <div className="mt-4 flex items-center justify-between">

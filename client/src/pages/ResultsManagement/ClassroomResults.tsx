@@ -197,59 +197,67 @@ const ClassroomResults: React.FC = () => {
             )}
 
             {/* Results Table */}
-            {!isLoading && byDefinitionResult && byDefinitionResult.assessments && Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length > 0 && (
-                <div className="px-6 pb-6">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left table-auto border-collapse">
-                            <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="px-3 py-2 text-sm font-medium">Student</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Reg No</th>
-                                    {byDefinitionResult.assessments.map((assessment: any) => (
-                                        <th key={assessment.id} className="px-3 py-2 text-sm font-medium">
-                                            {assessment.subject?.name || "-"} <span className="font-normal">({assessment.name})</span>
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {byDefinitionResult.results.map((result: any) => (
-                                    <tr key={result.student.id} className="border-t">
-                                        <td className="px-3 py-2 text-sm font-medium">
-                                            {result.student.first_name} {result.student.last_name}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm">{result.student.reg_no || result.student.student_no || result.student.id}</td>
-                                        {byDefinitionResult.assessments.map((assessment: any) => {
-                                            // Find grade for this student and assessment
-                                            const grade = result.grades?.find((g: any) => g.assessment?.id === assessment.id);
-                                            return (
-                                                <td key={assessment.id} className="px-3 py-2 text-sm">
-                                                    {grade ? (
-                                                        <div>
-                                                            <div>Score: {grade.score}</div>
-                                                            <div>%: {grade.percentage}</div>
-                                                            <div>Grade: {grade.letter_grade}</div>
-                                                            <div className="text-xs text-gray-500">{grade.remarks ?? ""}</div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-400">N/A</span>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
+            {!isLoading &&
+                byDefinitionResult &&
+                Array.isArray(byDefinitionResult.assessments) &&
+                byDefinitionResult.assessments.length > 0 &&
+                Array.isArray(byDefinitionResult.results) &&
+                byDefinitionResult.results.length > 0 && (
+                    <div className="px-6 pb-6">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left table-auto border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-100">
+                                        <th className="px-3 py-2 text-sm font-medium">Student</th>
+                                        <th className="px-3 py-2 text-sm font-medium">Reg No</th>
+                                        {byDefinitionResult.assessments.map((assessment: any) => (
+                                            <th key={assessment.id} className="px-3 py-2 text-sm font-medium">
+                                                {assessment.subject?.name || "-"} <span className="font-normal">({assessment.name})</span>
+                                            </th>
+                                        ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {byDefinitionResult.results.map((result: any) => (
+                                        <tr key={result.student.id} className="border-t">
+                                            <td className="px-3 py-2 text-sm font-medium">
+                                                {result.student.first_name} {result.student.last_name}
+                                            </td>
+                                            <td className="px-3 py-2 text-sm">{result.student.reg_no || result.student.student_no || result.student.id}</td>
+                                            {byDefinitionResult.assessments.map((assessment: any) => {
+                                                // Find grade for this student and assessment
+                                                const grade = result.grades?.find((g: any) => g.assessment?.id === assessment.id);
+                                                return (
+                                                    <td key={assessment.id} className="px-3 py-2 text-sm">
+                                                        {grade ? (
+                                                            <div>
+                                                                <div>Score: {grade.score}</div>
+                                                                <div>%: {grade.percentage}</div>
+                                                                <div>Grade: {grade.letter_grade}</div>
+                                                                <div className="text-xs text-gray-500">{grade.remarks ?? ""}</div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400">N/A</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
             {/* No Data State */}
-            {!isLoading && byDefinitionResult && Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length === 0 && (
-                <div className="px-6 pb-6">
-                    <NoDataComponent message="No results found for this classroom in the selected year and term." />
-                </div>
-            )}
+            {!isLoading && byDefinitionResult && (
+                (Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length === 0) ||
+                (Array.isArray(byDefinitionResult.assessments) && byDefinitionResult.assessments.length === 0)
+            ) && (
+                    <div className="px-6 pb-6">
+                        <NoDataComponent message="No results found for this classroom in the selected year and term." />
+                    </div>
+                )}
 
         </Card>
     );
