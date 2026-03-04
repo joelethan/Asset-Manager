@@ -1,5 +1,5 @@
 import { gradesApi } from "@/lib/api";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { useState } from "react";
 
 export interface Structure {
     years?: any[];
@@ -13,6 +13,26 @@ interface StructureContextProps {
     isLoading: boolean;
     error: string | null;
     fetchStructure: (schoolId: string) => Promise<void>;
+    assessSelects: {
+        yearId: string;
+        termId: string;
+        definitionId: string;
+    };
+    setAssessSelects: React.Dispatch<React.SetStateAction<{
+        yearId: string;
+        termId: string;
+        definitionId: string;
+    }>>;
+    byDefinitionSelects: {
+        yearId: string;
+        termId: string;
+        definitionId: string;
+    };
+    setByDefinitionSelects: React.Dispatch<React.SetStateAction<{
+        yearId: string;
+        termId: string;
+        definitionId: string;
+    }>>;
     byStudentSelects: {
         yearId: string;
         termId: string;
@@ -63,15 +83,29 @@ interface StructureContextProps {
     setGradingStudents: React.Dispatch<React.SetStateAction<any[]>>;
     byStudentResult: any;
     setByStudentResult: React.Dispatch<React.SetStateAction<any>>;
+    byDefinitionResult: any;
+    setByDefinitionResult: React.Dispatch<React.SetStateAction<any>>;
+    listAssessResult: any;
+    setListAssessResult: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const StructureContext = createContext<StructureContextProps | undefined>(undefined);
+const StructureContext = React.createContext<StructureContextProps | undefined>(undefined);
 
-export const StructureProvider = ({ children }: { children: ReactNode }) => {
+export const StructureProvider = ({ children }: { children: React.ReactNode }) => {
     // State is only in memory, persists across navigation but not reloads
     const [structure, setStructure] = useState<Structure | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [assessSelects, setAssessSelects] = useState({
+        yearId: "",
+        termId: "",
+        definitionId: "",
+    });
+    const [byDefinitionSelects, setByDefinitionSelects] = useState({
+        yearId: "",
+        termId: "",
+        definitionId: "",
+    });
     const [byStudentSelects, setByStudentSelects] = useState({
         yearId: "",
         termId: "",
@@ -97,6 +131,8 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
     const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
     const [gradingStudents, setGradingStudents] = useState<any[]>([]);
     const [byStudentResult, setByStudentResult] = useState<any>(null);
+    const [byDefinitionResult, setByDefinitionResult] = useState<any>(null);
+    const [listAssessResult, setListAssessResult] = useState<any>(null);
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -133,6 +169,14 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
             setByStudentSelects,
             byStudentResult,
             setByStudentResult,
+            assessSelects,
+            setAssessSelects,
+            byDefinitionSelects,
+            setByDefinitionSelects,
+            byDefinitionResult,
+            setByDefinitionResult,
+            listAssessResult,
+            setListAssessResult,
             selectValues,
             setSelectValues,
             grades,
@@ -160,7 +204,7 @@ export const StructureProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useStructure = () => {
-    const ctx = useContext(StructureContext);
+    const ctx = React.useContext(StructureContext);
     if (!ctx) throw new Error("useStructure must be used within a StructureProvider");
     return ctx;
 };

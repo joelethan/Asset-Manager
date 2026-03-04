@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
 import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
@@ -19,6 +19,7 @@ export default function Login() {
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const { setProfile, setIsAuthenticated } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
@@ -129,7 +130,22 @@ export default function Login() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="********" {...field} />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="********"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

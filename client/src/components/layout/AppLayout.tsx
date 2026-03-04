@@ -1,48 +1,4 @@
-import { ReactNode, useState } from "react";
-import { useLocation, Link } from "wouter";
-import { useTenant } from "@/context/TenantContext";
-import { useProfile } from "@/context/ProfileContext";
-import { authApi } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-  SidebarRail,
-  SidebarFooter
-} from "@/components/ui/sidebar";
-import {
-  LayoutDashboard,
-  Building2,
-  GraduationCap,
-  Users,
-  BookOpen,
-  Settings,
-  ChevronsUpDown,
-  LogOut,
-  User as UserIcon,
-  UserPlus,
-  Calendar,
-  CheckSquare,
-  BarChart3,
-  ClipboardList,
-  FileText
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,6 +7,48 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger
+} from "@/components/ui/sidebar";
+import { useProfile } from "@/context/ProfileContext";
+import { useTenant } from "@/context/TenantContext";
+import { authApi } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import {
+  BarChart3,
+  BookOpen,
+  Building2,
+  Calendar,
+  ChevronsUpDown,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  User as UserIcon,
+  UserPlus,
+  Users
+} from "lucide-react";
+import { ReactNode, useState } from "react";
+import { Link, useLocation } from "wouter";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -66,6 +64,8 @@ const navigation = [
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
   { name: "Results", href: "/results", icon: BarChart3 },
   { name: "Report Cards", href: "/report-cards", icon: FileText },
+  { name: "System Users", href: "/users", icon: Users },
+  { name: "Audit Trails", href: "/audit-trails", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

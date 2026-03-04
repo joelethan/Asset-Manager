@@ -1,16 +1,23 @@
-import ComingSoon from "@/components/common/ComingSoon";
 import NoDataComponent from "@/components/common/NoDataComponent";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { gradesApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import ClassroomResults from "./ResultsManagement/ClassroomResults";
 import StudentResults from "./ResultsManagement/StudentResults";
+import SubmitButton from "@/components/common/SubmitButton";
 
 interface Assessment {
     id: string;
@@ -81,7 +88,13 @@ export default function ResultsManagement() {
     const [isGradesLoading, setIsGradesLoading] = useState(false);
     const [gradesError, setGradesError] = useState<string | null>(null);
 
-    const { handleSubmit, formState: { errors }, setValue, watch, control } = useForm({
+    const {
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        watch,
+        control
+    } = useForm({
         mode: "onChange",
         defaultValues: {
             year: "",
@@ -140,7 +153,6 @@ export default function ResultsManagement() {
                     <TabsTrigger value="by-assessment">By Assessment</TabsTrigger>
                     <TabsTrigger value="by-student">By Student</TabsTrigger>
                     <TabsTrigger value="by-classroom">By Classroom</TabsTrigger>
-                    {/* Add more result views as needed */}
                 </TabsList>
                 <TabsContent value="by-assessment">
                     <Card className="border-slate-200">
@@ -154,7 +166,10 @@ export default function ResultsManagement() {
                                             control={control}
                                             rules={{ required: "Select academic year" }}
                                             render={({ field }) => (
-                                                <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, year: v })); }}>
+                                                <Select value={field.value} onValueChange={(v) => {
+                                                    field.onChange(v);
+                                                    setSelectValues(prev => ({ ...prev, year: v }));
+                                                }}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select academic year" />
                                                     </SelectTrigger>
@@ -184,7 +199,10 @@ export default function ResultsManagement() {
                                             control={control}
                                             rules={{ required: "Select term" }}
                                             render={({ field }) => (
-                                                <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, term: v })); }}>
+                                                <Select value={field.value} onValueChange={(v) => {
+                                                    field.onChange(v);
+                                                    setSelectValues(prev => ({ ...prev, term: v }));
+                                                }}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select term" />
                                                     </SelectTrigger>
@@ -209,7 +227,10 @@ export default function ResultsManagement() {
                                             control={control}
                                             rules={{ required: "Select classroom" }}
                                             render={({ field }) => (
-                                                <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, classroom: v })); }}>
+                                                <Select value={field.value} onValueChange={(v) => {
+                                                    field.onChange(v);
+                                                    setSelectValues(prev => ({ ...prev, classroom: v }));
+                                                }}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select classroom" />
                                                     </SelectTrigger>
@@ -236,7 +257,10 @@ export default function ResultsManagement() {
                                             control={control}
                                             rules={{ required: "Select assessment" }}
                                             render={({ field }) => (
-                                                <Select value={field.value} onValueChange={(v) => { field.onChange(v); setSelectValues(prev => ({ ...prev, assessment: v })); }}>
+                                                <Select value={field.value} onValueChange={(v) => {
+                                                    field.onChange(v);
+                                                    setSelectValues(prev => ({ ...prev, assessment: v }));
+                                                }}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select assessment" />
                                                     </SelectTrigger>
@@ -267,21 +291,7 @@ export default function ResultsManagement() {
                                         />
                                         {errors.assessment && <p className="text-sm text-red-500">{errors.assessment.message}</p>}
                                     </div>
-                                    <div className="flex items-end h-full">
-                                        <button
-                                            type="submit"
-                                            className="w-full px-4 md:px-6 py-2 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                                            disabled={isGradesLoading}
-                                        >
-                                            {isGradesLoading && (
-                                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                                </svg>
-                                            )}
-                                            {isGradesLoading ? "Loading..." : "Submit"}
-                                        </button>
-                                    </div>
+                                    <SubmitButton loading={isGradesLoading} />
                                 </div>
                             </form>
                             {/* Display grades table or loading/error states here */}
@@ -367,7 +377,7 @@ export default function ResultsManagement() {
                     <StudentResults />
                 </TabsContent>
                 <TabsContent value="by-classroom">
-                    <ComingSoon title="Result by Classroom" />
+                    <ClassroomResults />
                 </TabsContent>
             </Tabs>
         </AppLayout>
