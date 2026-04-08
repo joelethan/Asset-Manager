@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DollarSign, Download, Edit2, Eye, RefreshCw } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { useStructure } from "@/context/StructureContext";
+import { useTenant } from "@/context/TenantContext";
+import { studentsApi } from "@/lib/api";
 
 type Student = {
   id: string;
@@ -110,8 +113,29 @@ export default function StudentsTable({
     URL.revokeObjectURL(url);
   };
 
+  const { studentDetails, setStudentDetails, setActiveStudentTab } = useStructure();
+  const { selectedTenant } = useTenant();
+  const schoolId = selectedTenant?.id as string;
+
+  const handleViewStudent = async (studentNo: string) => {
+    setActiveStudentTab && setActiveStudentTab("view-student");
+    setStudentDetails && setStudentDetails({ identity: studentNo, details: studentDetails.details, loading: true });
+    if (schoolId && studentNo) {
+      try {
+        const response = await studentsApi.studentDetails(schoolId, studentNo);
+        const data = await response.json();
+        if (data) {
+          setStudentDetails({ identity: studentNo, details: data, loading: false });
+        } else {
+          setStudentDetails({ identity: studentNo, details: {}, loading: false });
+        }
+      } catch {
+        setStudentDetails({ identity: studentNo, details: {}, loading: false });
+      }
+    }
+  };
   return (
-    <Card className="border-slate-200">
+    <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <CardTitle>All Students</CardTitle>
@@ -161,7 +185,7 @@ export default function StudentsTable({
                 </th>
                 <th className="px-3 py-2 text-sm font-medium">Student No</th>
                 <th className="px-3 py-2 text-sm font-medium">Reg No</th>
-                <th className="px-3 py-2 text-sm font-medium">Name</th>
+                <th className="px-3 py-2 text-sm font-medium">Student Name</th>
                 <th className="px-3 py-2 text-sm font-medium">Gender</th>
                 <th className="px-3 py-2 text-sm font-medium">Status</th>
                 <th className="px-3 py-2 text-sm font-medium">Birth Date</th>
@@ -181,12 +205,26 @@ export default function StudentsTable({
                       className="form-checkbox h-4 w-4 text-blue-600 rounded"
                     />
                   </td>
-                  <td className="px-3 py-2 font-medium">{s.student_no || "-"}</td>
-                  <td className="px-3 py-2">{s.reg_no || "-"}</td>
-                  <td className="px-3 py-2">{`${s.first_name || ""} ${s.last_name || ""}`}</td>
-                  <td className="px-3 py-2">{s.gender || "-"}</td>
-                  <td className="px-3 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.status === "active"
+                  <td className="px-3 text-sm font-medium">{s.student_no || "-"}</td>
+                  <td className="px-3 text-sm font-medium">{s.reg_no || "-"}</td>
+                  <td className="px-3 text-sm font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                        {s.avatar_url ? (
+                          <img src={s.avatar_url} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          <span className="text-slate-400 font-bold">
+                            {s.first_name?.charAt(0)}
+                            {s.last_name?.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <span>{`${s.first_name || ""} ${s.last_name || ""}`}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 text-sm font-medium">{s.gender || "-"}</td>
+                  <td className="px-3 text-sm font-medium">
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${s.status === "active"
                       ? "bg-green-100 text-green-700"
                       : s.status === "inactive"
                         ? "bg-red-100 text-red-700"
@@ -195,10 +233,16 @@ export default function StudentsTable({
                       {s.status || "-"}
                     </span>
                   </td>
-                  <td className="px-3 py-2">{s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "-"}</td>
-                  <td className="px-3 py-2">{s.created_at ? new Date(s.created_at).toLocaleDateString() : "-"}</td>
-                  <td className="px-3 py-2 text-right space-x-2 flex justify-end">
-                    <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-blue-600 hover:text-blue-700" aria-label="View student">
+                  <td className="px-3 text-sm font-medium">{s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString() : "-"}</td>
+                  <td className="px-3 text-sm font-medium">{s.created_at ? new Date(s.created_at).toLocaleDateString() : "-"}</td>
+                  <td className="px-3 text-right space-x-2 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="hover:bg-slate-100 text-blue-600 hover:text-blue-700"
+                      aria-label="View student"
+                      onClick={() => handleViewStudent(s.student_no || "")}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-blue-600 hover:text-blue-700" aria-label="Edit student">

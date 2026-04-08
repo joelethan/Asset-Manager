@@ -346,7 +346,7 @@ export default function Classes() {
                   <form onSubmit={handleSubmit(handleSaveClassroom)} className="space-y-4">
                     <div>
                       <Label htmlFor="class-name">Classroom Name *</Label>
-                      <Input id="class-name" placeholder="e.g., Primary 7" {...register("name", {
+                      <Input id="class-name" placeholder="e.g., Senior 1" {...register("name", {
                         required: "Classroom name is required",
                         minLength: { value: 3, message: "Name must be at least 3 characters" },
                         validate: value => value.trim().length > 0 || "Name cannot be empty"
@@ -355,7 +355,7 @@ export default function Classes() {
                     </div>
                     <div>
                       <Label htmlFor="class-level">Level *</Label>
-                      <Input id="class-level" placeholder="e.g., Primary" {...register("level", {
+                      <Input id="class-level" placeholder="e.g., Senior" {...register("level", {
                         required: "Level is required",
                         minLength: { value: 2, message: "Level must be at least 2 characters" },
                         validate: value => value.trim().length > 0 || "Level cannot be empty"

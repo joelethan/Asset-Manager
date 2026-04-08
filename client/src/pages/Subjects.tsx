@@ -393,7 +393,7 @@ export default function Subjects() {
       breadcrumbs={[{ label: "Subjects & Assessments" }]}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-5 border-b">
           <TabsTrigger value="subjects">Subject List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
@@ -1138,7 +1138,7 @@ export default function Subjects() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="assess-classroom">Classroom Definition *</Label>
+                    <Label htmlFor="assess-classroom">Classroom *</Label>
                     <Controller
                       name="classroomDefinitionId"
                       control={controlAssessment}

@@ -47,7 +47,7 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 
 const navigation = [
@@ -59,6 +59,7 @@ const navigation = [
   { name: "Schools", href: "/schools", icon: Building2, roles: ["platform_admin"] },
   { name: "Create School", href: "/schools-create", icon: Building2 },
   { name: "Students", href: "/students", icon: GraduationCap },
+  { name: "Guardians", href: "/guardians", icon: Users },
   // { name: "Teachers", href: "/teachers", icon: Users },
   { name: "Subjects", href: "/subjects", icon: BookOpen },
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
@@ -83,6 +84,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
   const { isAuthenticated, profile, logout } = useProfile();
   const hasMemberships = !!profile?.memberships?.length;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -111,11 +113,74 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
     email: "",
   };
 
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location]);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-slate-50/50">
+        {/* Mobile sidebar overlay */}
+        <div className={`fixed inset-0 z-40 md:hidden ${mobileSidebarOpen ? "" : "pointer-events-none"}`}>
+          <div
+            className={`absolute inset-0 bg-black/30 transition-opacity ${mobileSidebarOpen ? "opacity-100" : "opacity-0"}`}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <Sidebar
+            collapsible="none"
+            className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 shadow-lg transition-transform duration-300 z-50 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          >
+            <SidebarHeader>
+              <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
+                <span className="truncate">EduPlatform</span>
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="overflow-y-auto pb-4">
+              <SidebarMenu>
+                {navigation.map((item) => {
+                  // Show Login/Register only when not authenticated
+                  if ((item.name === "Login" || item.name === "Register") && isAuthenticated) return null;
+
+                  // Show other items only when authenticated
+                  if (item.name !== "Login" && item.name !== "Register" && !isAuthenticated) return null;
+
+                  // If authenticated but has no school memberships, only show Create School and Settings
+                  if (isAuthenticated && !hasMemberships) {
+                    if (item.href !== "/schools-create" && item.href !== "/settings") return null;
+                  }
+
+                  // Check role visibility
+                  if (item.roles && !item.roles.includes(user.role)) return null;
+
+                  // Hide "Create School" link when user already has memberships
+                  if (item.href === "/schools-create" && hasMemberships) return null;
+
+                  const isActive = location === item.href;
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.name}
+                        className={`flex items-center gap-3 px-4 py-3 text-base rounded-lg ${isActive ? "bg-primary/10 text-primary font-medium" : "text-slate-700 hover:bg-slate-100"}`}
+                        onClick={() => setMobileSidebarOpen(false)}
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="size-5" />
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarContent>
+          </Sidebar>
+        </div>
+        {/* Desktop sidebar */}
         {isAuthenticated && (
-          <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white">
+          <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white hidden md:flex">
             <SidebarHeader>
               <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
                 <span className="truncate">EduPlatform</span>
@@ -219,7 +284,15 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
         <div className="flex flex-1 flex-col">
           {/* Top Header */}
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/80 px-4 backdrop-blur transition-all">
-            <SidebarTrigger className="-ml-1 text-slate-500 hover:text-slate-900" />
+            {/* Mobile sidebar trigger */}
+            <button
+              className="md:hidden mr-2 p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              aria-label="Open menu"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+            <SidebarTrigger className="-ml-1 text-slate-500 hover:text-slate-900 hidden md:inline-flex" />
             <Separator orientation="vertical" className="mr-2 h-4" />
 
             {isAuthenticated && (

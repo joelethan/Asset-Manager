@@ -149,7 +149,7 @@ export default function ResultsManagement() {
             breadcrumbs={[{ label: "Results Management" }]}
         >
             <Tabs defaultValue="by-assessment" className="w-full">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-3 border-b">
                     <TabsTrigger value="by-assessment">By Assessment</TabsTrigger>
                     <TabsTrigger value="by-student">By Student</TabsTrigger>
                     <TabsTrigger value="by-classroom">By Classroom</TabsTrigger>

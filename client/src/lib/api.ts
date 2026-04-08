@@ -147,6 +147,10 @@ export const studentsApi = {
   importStudents: (schoolId: string, formData: FormData) =>
     // Use postForm so multipart/form-data is sent correctly
     apiClient.postForm(`/students/import/validate?schoolId=${schoolId}`, formData),
+  studentDetails: (schoolId: string, studentNoOrRegNo: string) =>
+    apiClient.get(`/students/identity/${studentNoOrRegNo}?schoolId=${schoolId}`),
+  addGuardian: (studentId: string, data: unknown) =>
+    apiClient.post(`/students/${studentId}/guardians`, data),
 };
 
 export const subjectsApi = {

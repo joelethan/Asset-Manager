@@ -17,6 +17,7 @@ import { academicYearsApi, assessmentsApi, classroomDefinitionsApi, enrollmentsA
 import { AlertCircle, ArrowRight, CheckCircle2, DownloadCloud, Loader2, Plus, Trash2, UploadCloud, Users } from "lucide-react";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import ViewStudent from "./Students/ViewStudent";
 
 interface Student {
   id: string;
@@ -98,6 +99,7 @@ export default function Students() {
   const { toast } = useToast();
   const { selectedTenant } = useTenant();
   const { structure, fetchStructure } = useStructure();
+  const { activeStudentTab, setActiveStudentTab } = useStructure();
   const schoolId = selectedTenant?.id as string;
 
   // Form setup with react-hook-form
@@ -132,7 +134,6 @@ export default function Students() {
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [enrollmentStartDate, setEnrollmentStartDate] = useState<string>("");
   const [bulkEnrolling, setBulkEnrolling] = useState(false);
-  const [activeTab, setActiveTab] = useState("students");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedDefinition, setSelectedDefinition] = useState<string>("");
   const [years, setYears] = useState<any[]>([]);
@@ -168,10 +169,10 @@ export default function Students() {
 
   // Fetch academic years and subjects on mount for assessments tab
   useEffect(() => {
-    if (schoolId && activeTab === "assessments-view") {
+    if (schoolId && activeStudentTab === "assessments-view") {
       fetchAcademicYears();
     }
-  }, [schoolId, activeTab]);
+  }, [schoolId, activeStudentTab]);
 
   // Fetch assessment subjects on mount
   useEffect(() => {
@@ -182,14 +183,14 @@ export default function Students() {
 
   // Fetch terms when academic year is selected
   useEffect(() => {
-    if (selectedYearId && activeTab === "assessments-create") {
+    if (selectedYearId && activeStudentTab === "assessments-create") {
       const selectedYear = academicYears.find((y: AcademicYear) => y.id === selectedYearId);
       if (selectedYear) {
         fetchTerms(selectedYear.termTemplateId);
         fetchAssessments();
       }
     }
-  }, [selectedYearId, activeTab, academicYears]);
+  }, [selectedYearId, activeStudentTab, academicYears]);
 
   // Fetch structure on mount
   useEffect(() => {
@@ -276,7 +277,7 @@ export default function Students() {
       const res = await academicYearsApi.list(schoolId);
       const data = await res.json();
       setYears(Array.isArray(data) ? data : data?.data || []);
-      setActiveTab("enrollments");
+      setActiveStudentTab("enrollments");
     } catch (error: any) {
       toast({ title: "Error", description: "Failed to load academic years", variant: "destructive" });
     } finally {
@@ -329,7 +330,7 @@ export default function Students() {
       setSelectedYear("");
       setSelectedDefinition("");
       refetchStudents();
-      setActiveTab("students");
+      setActiveStudentTab("students");
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to enroll students", variant: "destructive" });
     } finally {
@@ -560,15 +561,20 @@ export default function Students() {
       description="Manage students and their enrollments"
       breadcrumbs={[{ label: "Students" }]}
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
+      <Tabs value={activeStudentTab} onValueChange={setActiveStudentTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 border-b">
           <TabsTrigger value="students">Student Directory</TabsTrigger>
           {/* <TabsTrigger value="create">Create Student</TabsTrigger> */}
-          <TabsTrigger value="uploads">Student Uploads</TabsTrigger>
+          <TabsTrigger value="student-uploads">Student Uploads</TabsTrigger>
           <TabsTrigger value="student-enrollments">Student Enrollments</TabsTrigger>
+          <TabsTrigger value="view-student">Student Details</TabsTrigger>
           {/* <TabsTrigger value="assessments-view">Assessments</TabsTrigger>
           <TabsTrigger value="assessments-create">Create Assessment</TabsTrigger> */}
         </TabsList>
+
+        <TabsContent value="view-student" className="space-y-4">
+          <ViewStudent />
+        </TabsContent>
 
         {/* Students Directory Tab */}
         <TabsContent value="students" className="space-y-4">
@@ -646,7 +652,7 @@ export default function Students() {
         </TabsContent>
 
         {/* Student Uploads Tab */}
-        <TabsContent value="uploads" className="space-y-4">
+        <TabsContent value="student-uploads" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Student Uploads</CardTitle>
@@ -877,7 +883,7 @@ export default function Students() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="definition">Classroom Definition *</Label>
+                  <Label htmlFor="definition">Classroom *</Label>
                   <Select value={selectedDefinition} onValueChange={setSelectedDefinition} disabled={!selectedYear || loadingDefinitions}>
                     <SelectTrigger id="definition">
                       <SelectValue placeholder={!selectedYear ? "Select a year first" : loadingDefinitions ? "Loading..." : "Select classroom definition"} />
@@ -917,7 +923,7 @@ export default function Students() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setActiveTab("students");
+                    setActiveStudentTab("students");
                     setSelectedYear("");
                     setSelectedDefinition("");
                   }}
@@ -950,7 +956,7 @@ export default function Students() {
         <TabsContent value="student-enrollments" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>View Student Enrollments</CardTitle>
+              <CardTitle>Student Enrollments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Year and Definition Selection */}
@@ -983,7 +989,7 @@ export default function Students() {
                     </Select>
                   </div>
                   <div className="space-y-2 flex-1 min-w-0">
-                    <Label htmlFor="viewDefinition">Classroom Definition *</Label>
+                    <Label htmlFor="viewDefinition">Classroom *</Label>
                     <Select
                       value={viewDefinition}
                       onValueChange={setViewDefinition}

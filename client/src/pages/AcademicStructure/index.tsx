@@ -90,7 +90,7 @@ export default function AcademicStructure() {
       breadcrumbs={[{ label: "Academic Structure" }]}
     >
       <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 border-b">
           <TabsTrigger value="templates">Term Templates</TabsTrigger>
           <TabsTrigger value="years">Academic Years</TabsTrigger>
         </TabsList>

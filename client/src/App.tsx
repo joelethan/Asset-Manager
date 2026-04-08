@@ -60,7 +60,7 @@ function AppRouter() {
         {isAuthenticated && !hasMemberships && (
           <>
             <Route path="/schools-create" component={CreateSchool} />
-            <Route path="/settings" component={Settings} />
+            {/* <Route path="/settings" component={Settings} /> */}
           </>
         )}
 
@@ -75,7 +75,7 @@ function AppRouter() {
             <Route path="/classes" component={Classes} />
             <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
-            <Route path="/settings" component={Settings} />
+            {/* <Route path="/settings" component={Settings} /> */}
           </>
         )}
 

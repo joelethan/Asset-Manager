@@ -13,6 +13,16 @@ interface StructureContextProps {
     isLoading: boolean;
     error: string | null;
     fetchStructure: (schoolId: string) => Promise<void>;
+    studentDetails: {
+        loading: boolean;
+        identity: string;
+        details: any;
+    };
+    setStudentDetails: React.Dispatch<React.SetStateAction<{
+        loading: boolean;
+        identity: string;
+        details: any;
+    }>>;
     assessSelects: {
         yearId: string;
         termId: string;
@@ -79,6 +89,8 @@ interface StructureContextProps {
     setTermOptions: React.Dispatch<React.SetStateAction<any[]>>;
     yearOptions: any[];
     setYearOptions: React.Dispatch<React.SetStateAction<any[]>>;
+    activeStudentTab: string;
+    setActiveStudentTab: React.Dispatch<React.SetStateAction<string>>;
     gradingStudents: any[];
     setGradingStudents: React.Dispatch<React.SetStateAction<any[]>>;
     byStudentResult: any;
@@ -96,6 +108,11 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
     const [structure, setStructure] = useState<Structure | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [studentDetails, setStudentDetails] = useState({
+        identity: "",
+        loading: false,
+        details: {},
+    });
     const [assessSelects, setAssessSelects] = useState({
         yearId: "",
         termId: "",
@@ -133,6 +150,7 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
     const [byStudentResult, setByStudentResult] = useState<any>(null);
     const [byDefinitionResult, setByDefinitionResult] = useState<any>(null);
     const [listAssessResult, setListAssessResult] = useState<any>(null);
+    const [activeStudentTab, setActiveStudentTab] = useState<string>("student-uploads");
 
     const fetchStructure = async (schoolId: string) => {
         if (!schoolId) return;
@@ -169,6 +187,8 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
             setByStudentSelects,
             byStudentResult,
             setByStudentResult,
+            studentDetails,
+            setStudentDetails,
             assessSelects,
             setAssessSelects,
             byDefinitionSelects,
@@ -196,7 +216,9 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
             yearOptions,
             setYearOptions,
             gradingStudents,
-            setGradingStudents
+            setGradingStudents,
+            activeStudentTab,
+            setActiveStudentTab
         }}>
             {children}
         </StructureContext.Provider>

@@ -161,7 +161,7 @@ const ViewAssessmentsTab: FC = () => {
                         )}
                     </div>
                     <div className="space-y-2 flex-1 min-w-0">
-                        <Label htmlFor="definitionId">Classroom Definition *</Label>
+                        <Label htmlFor="definitionId">Classroom *</Label>
                         <Controller
                             name="definitionId"
                             control={control}
