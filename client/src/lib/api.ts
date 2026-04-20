@@ -22,6 +22,18 @@ export const apiClient = {
     return this.request(endpoint, { method: "GET" });
   },
 
+  async download(endpoint: string) {
+    const url = `${baseUrl}${endpoint}`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    return fetch(url, {
+      method: "GET",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+    });
+  },
+
   async post(endpoint: string, data?: unknown) {
     return this.request(endpoint, {
       method: "POST",
@@ -197,4 +209,39 @@ export const gradesApi = {
     apiClient.get(`/schools/${schoolId}/results/by-identity?yearId=${yearId}&termId=${termId}&identity=${identity}`),
   resultsByClassroom: (schoolId: string, yearId: string, termId: string, definitionId: string) =>
     apiClient.get(`/schools/${schoolId}/results/by-classroom?yearId=${yearId}&termId=${termId}&definitionId=${definitionId}`),
+};
+
+export const reportCardsApi = {
+  // Generate report cards (single, multiple, or classroom)
+  generate: (schoolId: string, data: {
+    academicYearId: string;
+    termTemplateItemId: string;
+    studentId?: string;
+    studentIds?: string[];
+    classroomDefinitionId?: string;
+    includeRank?: boolean;
+    autoPublish?: boolean;
+  }) => apiClient.post(`/schools/${schoolId}/report-cards`, data),
+
+  // Fetch list of report cards
+  list: (schoolId: string) => apiClient.get(`/schools/${schoolId}/report-cards`),
+
+  // Fetch specific report card details
+  get: (schoolId: string, reportCardId: string) =>
+    apiClient.get(`/schools/${schoolId}/report-cards/${reportCardId}`),
+
+  // Publish a report card
+  publish: (schoolId: string, reportCardId: string) =>
+    apiClient.patch(`/schools/${schoolId}/report-cards/${reportCardId}/publish`),
+
+  // Download PDF
+  downloadPDF: (schoolId: string, reportCardId: string) =>
+    apiClient.download(`/schools/${schoolId}/report-cards/${reportCardId}/pdf`),
+
+  // Generate and download PDF in a single request
+  downloadDirectly: (schoolId: string, data: {
+    studentId: string;
+    academicYearId: string;
+    termTemplateItemId: string;
+  }) => apiClient.post(`/schools/${schoolId}/report-cards/download`, data),
 };
