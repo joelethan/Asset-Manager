@@ -86,11 +86,12 @@ const StudentResults: React.FC = () => {
 
         try {
             // Call the new direct download endpoint
-            const response = await reportCardsApi.downloadDirectly(schoolId, {
-                studentId: byStudentResult.student.id,
-                academicYearId: byStudentSelects.yearId,
-                termTemplateItemId: byStudentSelects.termId,
-            });
+            const response = await reportCardsApi.downloadByIdentity(
+                schoolId,
+                byStudentSelects.yearId,
+                byStudentSelects.termId,
+                byStudentSelects.identity,
+            );
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: "Failed to generate report card" }));
@@ -112,19 +113,18 @@ const StudentResults: React.FC = () => {
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
 
-            // Download automatically
-            const link = document.createElement("a");
+            // Open PDF preview in a new tab using a link element for better compatibility
+            const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = fileName;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            // Open preview in a new tab
-            window.open(blobUrl, "_blank");
-
-            // Revoke after a short delay to allow the preview to load
-            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+            // Keep URL in memory for longer to ensure preview loads and persists
+            // The user can download from the preview tab if needed
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
         } catch (error) {
             console.error("Failed to generate report card:", error);
             toast({
@@ -281,7 +281,7 @@ const StudentResults: React.FC = () => {
                                 disabled={isGeneratingReport}
                                 className="px-4 py-2 rounded-md bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                {isGeneratingReport ? "Generating..." : "Generate Report"}
+                                {isGeneratingReport ? "Generating..." : "Generate Report Card"}
                             </button>
                         </div>
                         <div className="overflow-x-auto">

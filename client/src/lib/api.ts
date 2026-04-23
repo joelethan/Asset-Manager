@@ -244,4 +244,12 @@ export const reportCardsApi = {
     academicYearId: string;
     termTemplateItemId: string;
   }) => apiClient.post(`/schools/${schoolId}/report-cards/download`, data),
+
+  // Download PDF by student identity using the results endpoint
+  downloadByIdentity: (
+    schoolId: string,
+    yearId: string,
+    termId: string,
+    identity: string,
+  ) => apiClient.download(`/schools/${schoolId}/results/report-cards/by-identity/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
 };
