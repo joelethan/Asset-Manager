@@ -910,7 +910,7 @@ export default function Subjects() {
                           <th className="px-3 py-2 text-sm font-medium">Reg No'</th>
                           <th className="px-3 py-2 text-sm font-medium">Student</th>
                           <th className="px-3 py-2 text-sm font-medium">Score</th>
-                          <th className="px-3 py-2 text-sm font-medium">Remarks</th>
+                          {/* <th className="px-3 py-2 text-sm font-medium">Remarks</th> */}
                         </tr>
                       </thead>
                       <tbody>
@@ -939,12 +939,12 @@ export default function Subjects() {
                                 <p className="text-xs text-red-600">{gradeErrors.grades[idx].score.message}</p>
                               )}
                             </td>
-                            <td className="px-3 py-2">
+                            {/* <td className="px-3 py-2">
                               <Input
                                 {...control.register(`grades.${idx}.remarks`)}
                                 placeholder="Remarks"
                               />
-                            </td>
+                            </td> */}
                           </tr>
                         ))}
                       </tbody>

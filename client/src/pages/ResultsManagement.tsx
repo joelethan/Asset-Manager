@@ -1,6 +1,6 @@
 import NoDataComponent from "@/components/common/NoDataComponent";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -18,6 +18,7 @@ import { Controller, useForm } from "react-hook-form";
 import ClassroomResults from "./ResultsManagement/ClassroomResults";
 import StudentResults from "./ResultsManagement/StudentResults";
 import SubmitButton from "@/components/common/SubmitButton";
+import ReportCard, { exampleData, exampleConfig } from "@/components/ReportCard";
 
 interface Assessment {
     id: string;
@@ -149,10 +150,11 @@ export default function ResultsManagement() {
             breadcrumbs={[{ label: "Results Management" }]}
         >
             <Tabs defaultValue="by-assessment" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 border-b">
+                <TabsList className="grid w-full grid-cols-4 border-b">
                     <TabsTrigger value="by-assessment">By Assessment</TabsTrigger>
                     <TabsTrigger value="by-student">By Student</TabsTrigger>
                     <TabsTrigger value="by-classroom">By Classroom</TabsTrigger>
+                    <TabsTrigger value="view-report">View Report</TabsTrigger>
                 </TabsList>
                 <TabsContent value="by-assessment">
                     <Card className="border-slate-200">
@@ -378,6 +380,19 @@ export default function ResultsManagement() {
                 </TabsContent>
                 <TabsContent value="by-classroom">
                     <ClassroomResults />
+                </TabsContent>
+
+                {/* View Report Tab */}
+                <TabsContent value="view-report" className="space-y-4">
+                    <Card className="border-slate-200 pt-4">
+                        <CardContent>
+                            <div className="flex justify-center">
+                                <div className="shadow print:shadow-none border print:border-0 bg-white">
+                                    <ReportCard data={exampleData} config={exampleConfig} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
         </AppLayout>

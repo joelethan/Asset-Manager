@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
-import { gradesApi } from "@/lib/api";
+import { gradesApi, reportCardsApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -18,7 +19,9 @@ const StudentResults: React.FC = () => {
         setByStudentResult
     } = useStructure();
     const { selectedTenant } = useTenant();
+    const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     if (!selectedTenant) return null;
@@ -66,6 +69,71 @@ const StudentResults: React.FC = () => {
             setError("Failed to fetch results. Please try again.");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGenerateReport = async () => {
+        if (!byStudentResult?.student?.id || !byStudentSelects?.yearId || !byStudentSelects?.termId) {
+            toast({
+                title: "Error",
+                description: "Missing required data to generate report",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsGeneratingReport(true);
+
+        try {
+            // Call the new direct download endpoint
+            const response = await reportCardsApi.downloadByIdentity(
+                schoolId,
+                byStudentSelects.yearId,
+                byStudentSelects.termId,
+                byStudentSelects.identity,
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: "Failed to generate report card" }));
+                throw new Error(errorData.message || "Failed to generate report card");
+            }
+
+            toast({
+                title: "Success",
+                description: `Report card generated successfully for ${byStudentResult.student.first_name} ${byStudentResult.student.last_name}`,
+            });
+
+            const contentDisposition = response.headers.get("content-disposition");
+            let fileName = "report-card.pdf";
+            if (contentDisposition) {
+                const matches = contentDisposition.match(/filename="([^"]+)"/);
+                if (matches) fileName = matches[1];
+            }
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            // Open PDF preview in a new tab using a link element for better compatibility
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Keep URL in memory for longer to ensure preview loads and persists
+            // The user can download from the preview tab if needed
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+        } catch (error) {
+            console.error("Failed to generate report card:", error);
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to generate report card",
+                variant: "destructive"
+            });
+        } finally {
+            setIsGeneratingReport(false);
         }
     };
 
@@ -208,6 +276,13 @@ const StudentResults: React.FC = () => {
                             <div>
                                 <span className="font-semibold">Overall Grade:</span> {byStudentResult.overallLetterGrade}
                             </div>
+                            <button
+                                onClick={handleGenerateReport}
+                                disabled={isGeneratingReport}
+                                className="px-4 py-2 rounded-md bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isGeneratingReport ? "Generating..." : "Generate Report Card"}
+                            </button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left table-auto border-collapse">

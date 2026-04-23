@@ -6,21 +6,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertCircle, Loader2, FileText, CheckCircle2 } from "lucide-react";
+import { Plus, AlertCircle, Loader2, FileText, CheckCircle2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/context/TenantContext";
+import { gradesApi, reportCardsApi } from "@/lib/api";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Controller, useForm } from "react-hook-form";
 
 interface AcademicYear {
   id: string;
   name: string;
   status: string;
+  start_date: string;
+  end_date: string;
+  school_id: string;
+  term_template_id: string;
+  created_at?: string;
+  updated_at?: string;
+  term_template?: {
+    id: string;
+    name: string;
+    is_locked: boolean;
+  };
 }
 
 interface Term {
   id: string;
   name: string;
   ordinal: number;
+  term_template_id: string;
 }
 
 interface Student {
@@ -33,30 +47,53 @@ interface Student {
 interface ReportCard {
   id: string;
   student_id: string;
+  school_id: string;
   academic_year_id: string;
-  term_id: string;
-  overall_average: string;
+  term_template_item_id: string;
+  overall_average: string | number;
   total_subjects: number;
-  rank?: number;
-  total_students?: number;
-  status: string;
+  rank?: number | null;
+  total_students?: number | null;
+  remarks?: string | null;
+  status: 'draft' | 'published' | 'archived';
   generated_at: string;
+  published_at?: string | null;
+  generated_by: string;
+  pdf_url?: string | null;
+  student?: Student;
 }
 
-interface ReportCardSummary {
+interface ClassroomDefinition {
+  id: string;
+  name: string;
+  level: string;
+  school_id: string;
+  assessments?: any[];
+}
+
+interface SchoolStructure {
+  years: AcademicYear[];
+  terms: Term[];
+  classroomDefinitions: ClassroomDefinition[];
+  subjects: any[];
+}
+
+interface ReportCardSubjectSummary {
   subject: {
     name: string;
   };
-  average: string;
+  average: string | number;
   letterGrade: string;
 }
 
+interface ReportCardSummary {
+  overallAverage?: string | number;
+  overallLetterGrade?: string;
+  subjects?: ReportCardSubjectSummary[];
+}
+
 interface ReportCardDetail extends ReportCard {
-  summary?: {
-    overallAverage: string;
-    overallLetterGrade: string;
-    subjects: ReportCardSummary[];
-  };
+  summary?: ReportCardSummary;
 }
 
 export default function ReportCards() {
@@ -64,57 +101,56 @@ export default function ReportCards() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
 
+  // Structure data from gradesApi.getStructure
+  const [structure, setStructure] = useState<SchoolStructure | null>(null);
+  const [structureLoading, setStructureLoading] = useState(false);
+
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [terms, setTerms] = useState<Term[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedTerm, setSelectedTerm] = useState<string>("");
-  const [selectedStudent, setSelectedStudent] = useState<string>("");
-  const [includeRank, setIncludeRank] = useState(true);
-  const [autoPublish, setAutoPublish] = useState(false);
   const [selectedReportCard, setSelectedReportCard] = useState<ReportCardDetail | null>(null);
+  const [downloadingPDFId, setDownloadingPDFId] = useState<string | null>(null);
+
+  // Form setup with react-hook-form
+  const { control, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+    defaultValues: {
+      selectedYear: "",
+      selectedTerm: "",
+      selectedStudent: "",
+      selectedStudents: [] as string[],
+      selectedClassroom: "",
+      generationMode: 'single' as 'single' | 'multiple' | 'classroom',
+      includeRank: true,
+      autoPublish: false,
+    },
+  });
 
   // Fetch data on mount
   useEffect(() => {
     if (schoolId) {
-      fetchAcademicYears();
+      fetchStructure();
       fetchStudents();
       fetchReportCards();
     }
   }, [schoolId]);
 
-  // Fetch terms when year changes
-  useEffect(() => {
-    if (selectedYear) {
-      fetchTerms(selectedYear);
-    }
-  }, [selectedYear]);
-
-  const fetchAcademicYears = async () => {
+  const fetchStructure = async () => {
+    if (!schoolId) return;
+    setStructureLoading(true);
     try {
-      const response = await fetch(`/api/schools/${schoolId}/years`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+      const res = await gradesApi.getStructure(schoolId);
+      if (!res.ok) throw new Error("Failed to fetch school structure");
+      const data = await res.json();
+      setStructure({
+        years: data.years || [],
+        terms: data.terms || [],
+        classroomDefinitions: data.classroomDefinitions || [],
+        subjects: data.subjects || []
       });
-      if (!response.ok) throw new Error("Failed to fetch academic years");
-      const data = await response.json();
-      setAcademicYears(Array.isArray(data) ? data : data.data || []);
     } catch (error) {
-      console.warn("Failed to fetch academic years");
-    }
-  };
-
-  const fetchTerms = async (yearId: string) => {
-    try {
-      const response = await fetch(`/api/years/${yearId}/terms`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
-      if (!response.ok) throw new Error("Failed to fetch terms");
-      const data = await response.json();
-      setTerms(Array.isArray(data) ? data : data.data || []);
-    } catch (error) {
-      console.warn("Failed to fetch terms");
+      console.warn("Failed to fetch school structure:", error);
+    } finally {
+      setStructureLoading(false);
     }
   };
 
@@ -133,9 +169,7 @@ export default function ReportCards() {
 
   const fetchReportCards = async () => {
     try {
-      const response = await fetch(`/api/schools/${schoolId}/report-cards`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await reportCardsApi.list(schoolId);
       if (!response.ok) throw new Error("Failed to fetch report cards");
       const data = await response.json();
       setReportCards(Array.isArray(data) ? data : data.data || []);
@@ -144,38 +178,74 @@ export default function ReportCards() {
     }
   };
 
-  const handleGenerateReportCard = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGenerateReportCard = async (data: any) => {
+    const { selectedYear, selectedTerm, selectedStudent, selectedStudents, selectedClassroom, generationMode, includeRank, autoPublish } = data;
 
-    if (!selectedYear || !selectedTerm || !selectedStudent) {
-      toast({ title: "Error", description: "Please select all required fields", variant: "destructive" });
+    if (!selectedYear || !selectedTerm) {
+      toast({ title: "Error", description: "Please select academic year and term", variant: "destructive" });
       return;
+    }
+
+    let payload: any = {
+      academicYearId: selectedYear,
+      termTemplateItemId: selectedTerm,
+      includeRank,
+      autoPublish,
+    };
+
+    if (generationMode === 'single') {
+      if (!selectedStudent) {
+        toast({ title: "Error", description: "Please select a student", variant: "destructive" });
+        return;
+      }
+      payload.studentId = selectedStudent;
+    } else if (generationMode === 'multiple') {
+      if (selectedStudents.length === 0) {
+        toast({ title: "Error", description: "Please select at least one student", variant: "destructive" });
+        return;
+      }
+      payload.studentIds = selectedStudents;
+    } else if (generationMode === 'classroom') {
+      if (!selectedClassroom) {
+        toast({ title: "Error", description: "Please select a classroom", variant: "destructive" });
+        return;
+      }
+      payload.classroomDefinitionId = selectedClassroom;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/report-cards`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-        body: JSON.stringify({
-          studentId: selectedStudent,
-          academicYearId: selectedYear,
-          termId: selectedTerm,
-          includeRank,
-          autoPublish,
-        }),
-      });
+      const response = await reportCardsApi.generate(schoolId, payload);
 
       if (!response.ok) throw new Error("Failed to generate report card");
 
-      const newReportCard = await response.json();
-      setReportCards([...reportCards, newReportCard]);
-      setSelectedStudent("");
-      toast({ title: "Success", description: "Report card generated successfully" });
+      const result = await response.json();
+
+      // Refresh the report cards list
+      await fetchReportCards();
+
+      // Reset selections
+      setValue("selectedStudent", "");
+      setValue("selectedStudents", []);
+      setValue("selectedClassroom", "");
+
+      if (result.generated > 0) {
+        toast({
+          title: "Success",
+          description: `Generated ${result.generated} report card${result.generated > 1 ? 's' : ''}${result.errors > 0 ? ` (${result.errors} failed)` : ''}`
+        });
+      } else {
+        toast({
+          title: "Warning",
+          description: "No report cards were generated",
+          variant: "destructive"
+        });
+      }
+
+      if (result.errors > 0) {
+        console.warn("Generation errors:", result.failed);
+      }
     } catch (error) {
       toast({ title: "Error", description: "Failed to generate report card", variant: "destructive" });
     } finally {
@@ -185,10 +255,7 @@ export default function ReportCards() {
 
   const handlePublishReportCard = async (reportCardId: string) => {
     try {
-      const response = await fetch(`/api/schools/${schoolId}/report-cards/${reportCardId}/publish`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await reportCardsApi.publish(schoolId, reportCardId);
 
       if (!response.ok) throw new Error("Failed to publish report card");
 
@@ -205,9 +272,7 @@ export default function ReportCards() {
 
   const handleViewReportCard = async (reportCardId: string) => {
     try {
-      const response = await fetch(`/api/schools/${schoolId}/report-cards/${reportCardId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      });
+      const response = await reportCardsApi.get(schoolId, reportCardId);
 
       if (!response.ok) throw new Error("Failed to fetch report card details");
 
@@ -218,18 +283,60 @@ export default function ReportCards() {
     }
   };
 
+  const handleDownloadPDF = async (reportCardId: string) => {
+    setDownloadingPDFId(reportCardId);
+    try {
+      const response = await reportCardsApi.downloadPDF(schoolId, reportCardId);
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error("PDF has not been generated yet. Please wait a moment and try again.");
+        }
+        throw new Error("Failed to download PDF");
+      }
+
+      // Get filename from content-disposition header or create one
+      const contentDisposition = response.headers.get("content-disposition");
+      let fileName = "report-card.pdf";
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename="([^"]+)"/);
+        if (matches) fileName = matches[1];
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast({ title: "Success", description: "Report card PDF downloaded successfully" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingPDFId(null);
+    }
+  };
+
   const getStudentName = (studentId: string) => {
     const student = students.find((s) => s.id === studentId);
     return student ? `${student.first_name} ${student.last_name}` : "-";
   };
 
   const getTermName = (termId: string) => {
-    const term = terms.find((t) => t.id === termId);
+    const term = structure?.terms.find((t) => t.id === termId);
     return term ? term.name : "-";
   };
 
   const getYearName = (yearId: string) => {
-    const year = academicYears.find((y) => y.id === yearId);
+    const year = structure?.years.find((y) => y.id === yearId);
     return year ? year.name : "-";
   };
 
@@ -254,7 +361,7 @@ export default function ReportCards() {
                   <div>
                     <CardTitle>{getStudentName(selectedReportCard.student_id)}</CardTitle>
                     <CardDescription>
-                      {getTermName(selectedReportCard.term_id)} {getYearName(selectedReportCard.academic_year_id)}
+                      {getTermName(selectedReportCard.term_template_item_id)} {getYearName(selectedReportCard.academic_year_id)}
                     </CardDescription>
                   </div>
                   <Button variant="outline" onClick={() => setSelectedReportCard(null)}>
@@ -335,6 +442,23 @@ export default function ReportCards() {
                       Published
                     </span>
                   )}
+                  <Button
+                    onClick={() => handleDownloadPDF(selectedReportCard.id)}
+                    variant="outline"
+                    disabled={downloadingPDFId === selectedReportCard.id}
+                  >
+                    {downloadingPDFId === selectedReportCard.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -372,26 +496,42 @@ export default function ReportCards() {
                         <TableRow key={rc.id}>
                           <TableCell className="font-medium">{getStudentName(rc.student_id)}</TableCell>
                           <TableCell>{getYearName(rc.academic_year_id)}</TableCell>
-                          <TableCell>{getTermName(rc.term_id)}</TableCell>
+                          <TableCell>{getTermName(rc.term_template_item_id)}</TableCell>
                           <TableCell>{rc.overall_average}</TableCell>
                           <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              rc.status === "published"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${rc.status === "published"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                              }`}>
                               {rc.status.charAt(0).toUpperCase() + rc.status.slice(1)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewReportCard(rc.id)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewReportCard(rc.id)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="View details"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadPDF(rc.id)}
+                                disabled={downloadingPDFId === rc.id}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Download PDF"
+                              >
+                                {downloadingPDFId === rc.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -408,10 +548,10 @@ export default function ReportCards() {
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Generate Report Card</CardTitle>
-              <CardDescription>Create a new report card for a student (10.1)</CardDescription>
+              <CardDescription>Generate report cards for students (10.1)</CardDescription>
             </CardHeader>
             <CardContent>
-              {academicYears.length === 0 || students.length === 0 ? (
+              {(structure?.years.length === 0) ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -419,83 +559,229 @@ export default function ReportCards() {
                   </AlertDescription>
                 </Alert>
               ) : (
-                <form onSubmit={handleGenerateReportCard} className="space-y-4">
+                <form onSubmit={handleSubmit(handleGenerateReportCard)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label>Academic Year *</label>
-                      <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select academic year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {academicYears.map((year) => (
-                            <SelectItem key={year.id} value={year.id}>
-                              {year.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Controller
+                        name="selectedYear"
+                        control={control}
+                        rules={{ required: "Select academic year" }}
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select academic year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {structure?.years.map((year) => (
+                                <SelectItem key={year.id} value={year.id}>
+                                  {year.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.selectedYear && <p className="text-sm text-red-500">{errors.selectedYear.message as string}</p>}
                     </div>
                     <div className="space-y-2">
                       <label>Term *</label>
-                      <Select value={selectedTerm} onValueChange={setSelectedTerm} disabled={!selectedYear}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select term" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {terms.map((term) => (
-                            <SelectItem key={term.id} value={term.id}>
-                              {term.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Controller
+                        name="selectedTerm"
+                        control={control}
+                        rules={{ required: "Select term" }}
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange} disabled={!watch("selectedYear")}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select term" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {structure?.terms.map((term) => (
+                                <SelectItem key={term.id} value={term.id}>
+                                  {term.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.selectedTerm && <p className="text-sm text-red-500">{errors.selectedTerm.message as string}</p>}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label>Student *</label>
-                    <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select student" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {students.map((student) => (
-                          <SelectItem key={student.id} value={student.id}>
-                            {student.student_no} - {student.first_name} {student.last_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Generation Mode Selection */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">Generation Mode *</label>
+                    <Controller
+                      name="generationMode"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex gap-6">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="generationMode"
+                              value="single"
+                              checked={field.value === 'single'}
+                              onChange={() => field.onChange('single')}
+                            />
+                            <span>Single Student</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="generationMode"
+                              value="multiple"
+                              checked={field.value === 'multiple'}
+                              onChange={() => field.onChange('multiple')}
+                            />
+                            <span>Multiple Students</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="generationMode"
+                              value="classroom"
+                              checked={field.value === 'classroom'}
+                              onChange={() => field.onChange('classroom')}
+                            />
+                            <span>Entire Classroom</span>
+                          </label>
+                        </div>
+                      )}
+                    />
                   </div>
+
+                  {/* Conditional Selection Fields */}
+                  {watch("generationMode") === 'single' && (
+                    <div className="space-y-2">
+                      <label>Student *</label>
+                      <Controller
+                        name="selectedStudent"
+                        control={control}
+                        rules={{ required: "Select a student" }}
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select student" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {students.map((student) => (
+                                <SelectItem key={student.id} value={student.id}>
+                                  {student.student_no} - {student.first_name} {student.last_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.selectedStudent && <p className="text-sm text-red-500">{errors.selectedStudent.message as string}</p>}
+                    </div>
+                  )}
+
+                  {watch("generationMode") === 'multiple' && (
+                    <div className="space-y-2">
+                      <label>Students *</label>
+                      <Controller
+                        name="selectedStudents"
+                        control={control}
+                        rules={{ validate: (value) => value.length > 0 || "Select at least one student" }}
+                        render={({ field }) => (
+                          <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                            {students.map((student) => (
+                              <label key={student.id} className="flex items-center gap-2 py-1 cursor-pointer">
+                                <Checkbox
+                                  checked={field.value.includes(student.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, student.id]);
+                                    } else {
+                                      field.onChange(field.value.filter((id: string) => id !== student.id));
+                                    }
+                                  }}
+                                />
+                                <span className="text-sm">
+                                  {student.student_no} - {student.first_name} {student.last_name}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      />
+                      {watch("selectedStudents")?.length > 0 && (
+                        <p className="text-sm text-slate-600">
+                          {watch("selectedStudents").length} student{watch("selectedStudents").length > 1 ? 's' : ''} selected
+                        </p>
+                      )}
+                      {errors.selectedStudents && <p className="text-sm text-red-500">{errors.selectedStudents.message as string}</p>}
+                    </div>
+                  )}
+
+                  {watch("generationMode") === 'classroom' && (
+                    <div className="space-y-2">
+                      <label>Classroom *</label>
+                      <Controller
+                        name="selectedClassroom"
+                        control={control}
+                        rules={{ required: "Select a classroom" }}
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select classroom" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {structure?.classroomDefinitions.map((classroom) => (
+                                <SelectItem key={classroom.id} value={classroom.id}>
+                                  {classroom.name} {classroom.level ? `(${classroom.level})` : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.selectedClassroom && <p className="text-sm text-red-500">{errors.selectedClassroom.message as string}</p>}
+                    </div>
+                  )}
 
                   <div className="space-y-3 pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="includeRank"
-                        checked={includeRank}
-                        onCheckedChange={(checked) => setIncludeRank(checked as boolean)}
-                      />
-                      <label htmlFor="includeRank" className="cursor-pointer">
-                        Include Rank (if enrolled in classroom with other students)
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="autoPublish"
-                        checked={autoPublish}
-                        onCheckedChange={(checked) => setAutoPublish(checked as boolean)}
-                      />
-                      <label htmlFor="autoPublish" className="cursor-pointer">
-                        Auto Publish
-                      </label>
-                    </div>
+                    <Controller
+                      name="includeRank"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="includeRank"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                          <label htmlFor="includeRank" className="cursor-pointer">
+                            Include Rank (if enrolled in classroom with other students)
+                          </label>
+                        </div>
+                      )}
+                    />
+                    <Controller
+                      name="autoPublish"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="autoPublish"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                          <label htmlFor="autoPublish" className="cursor-pointer">
+                            Auto Publish
+                          </label>
+                        </div>
+                      )}
+                    />
                   </div>
 
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Endpoint: POST /schools/{schoolId}/report-cards
+                      Endpoint: POST /schools/{"{schoolId}"}/report-cards
                     </AlertDescription>
                   </Alert>
 
@@ -508,7 +794,7 @@ export default function ReportCards() {
                     ) : (
                       <>
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate Report Card
+                        Generate Report Card{watch("generationMode") === 'multiple' && watch("selectedStudents")?.length > 1 ? 's' : watch("generationMode") === 'classroom' ? 's' : ''}
                       </>
                     )}
                   </Button>
