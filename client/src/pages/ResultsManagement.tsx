@@ -154,7 +154,7 @@ export default function ResultsManagement() {
                     <TabsTrigger value="by-assessment">By Assessment</TabsTrigger>
                     <TabsTrigger value="by-student">By Student</TabsTrigger>
                     <TabsTrigger value="by-classroom">By Classroom</TabsTrigger>
-                    <TabsTrigger value="view-report">View Report</TabsTrigger>
+                    <TabsTrigger value="view-report">Report Template</TabsTrigger>
                 </TabsList>
                 <TabsContent value="by-assessment">
                     <Card className="border-slate-200">

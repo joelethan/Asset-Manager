@@ -64,7 +64,7 @@ const navigation = [
   { name: "Subjects", href: "/subjects", icon: BookOpen },
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
   { name: "Results", href: "/results", icon: BarChart3 },
-  { name: "Report Cards", href: "/report-cards", icon: FileText },
+  // { name: "Report Cards", href: "/report-cards", icon: FileText },
   { name: "System Users", href: "/users", icon: Users },
   { name: "Audit Trails", href: "/audit-trails", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -133,7 +133,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
           >
             <SidebarHeader>
               <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
-                <span className="truncate">EduPlatform</span>
+                <span className="truncate">AtomSoftware</span>
               </div>
             </SidebarHeader>
             <SidebarContent className="overflow-y-auto pb-4">
@@ -183,7 +183,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
           <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white hidden md:flex">
             <SidebarHeader>
               <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
-                <span className="truncate">EduPlatform</span>
+                <span className="truncate">AtomSoftware</span>
               </div>
             </SidebarHeader>
             <SidebarContent>
