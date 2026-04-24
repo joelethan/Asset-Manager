@@ -76,7 +76,7 @@ function AppRouter() {
             <Route path="/classes" component={Classes} />
             <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
-            <Route path="/report-cards" component={ReportCards} />
+            {/* <Route path="/report-cards" component={ReportCards} /> */}
             {/* <Route path="/settings" component={Settings} /> */}
           </>
         )}
