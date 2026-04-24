@@ -18,6 +18,7 @@ import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import ResultsManagement from "./pages/ResultsManagement";
 import ReportCards from "./pages/ReportCards";
+import Guardians from "./pages/Guardians";
 
 function RootRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
@@ -76,6 +77,7 @@ function AppRouter() {
             <Route path="/classes" component={Classes} />
             <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
+            <Route path="/guardians" component={Guardians} />
             {/* <Route path="/report-cards" component={ReportCards} /> */}
             {/* <Route path="/settings" component={Settings} /> */}
           </>

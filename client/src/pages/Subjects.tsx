@@ -394,7 +394,7 @@ export default function Subjects() {
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 border-b">
-          <TabsTrigger value="subjects">Subject List</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
           <TabsTrigger value="view-assessments">View Assessments</TabsTrigger>

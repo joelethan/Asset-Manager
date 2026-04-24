@@ -211,6 +211,10 @@ export const gradesApi = {
     apiClient.get(`/schools/${schoolId}/results/by-classroom?yearId=${yearId}&termId=${termId}&definitionId=${definitionId}`),
 };
 
+export const guardiansApi = {
+  create: (data: unknown) => apiClient.post(`/guardians`, data),
+};
+
 export const reportCardsApi = {
   // Generate report cards (single, multiple, or classroom)
   generate: (schoolId: string, data: {
