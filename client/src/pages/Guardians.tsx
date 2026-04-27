@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { guardiansApi } from "@/lib/api";
 import { useTenant } from "@/context/TenantContext";
 import { useStudents } from "@/hooks/use-students";
-import Select from "react-select";
+import Select, { MultiValue } from "react-select";
 import { Label } from "@/components/ui/label";
 
 interface GuardianFormData {
@@ -35,14 +35,17 @@ export default function Guardians() {
     const [apiSuccess, setApiSuccess] = useState<string | null>(null);
     const [selectedStudents, setSelectedStudents] = useState<{ id: string; relation?: string }[]>([]);
 
-    const studentOptions = (students || []).map((s: any) => ({
+    type StudentOption = { value: string; label: string };
+
+    const studentOptions: StudentOption[] = (students || []).map((s: any) => ({
         value: s.id,
         label: `${s.first_name} ${s.last_name} (${s.student_no})`,
     }));
 
-    const handleStudentsChange = (opts: any[]) => {
+    const handleStudentsChange = (opts: MultiValue<StudentOption>) => {
+        const arr = Array.isArray(opts) ? [...opts] : [];
         setSelectedStudents(prev =>
-            opts.map(opt => {
+            arr.map(opt => {
                 const existing = prev.find(s => s.id === opt.value);
                 return { id: opt.value, relation: existing?.relation || "" };
             })
@@ -120,8 +123,8 @@ export default function Guardians() {
                                 isMulti
                                 isLoading={studentsLoading}
                                 options={studentOptions}
-                                value={studentOptions.filter(opt => selectedStudents.some(s => s.id === opt.value))}
-                                onChange={opts => handleStudentsChange(opts)}
+                                value={studentOptions.filter((opt: StudentOption) => selectedStudents.some(s => s.id === opt.value))}
+                                onChange={handleStudentsChange}
                                 placeholder="Search and select students..."
                                 className="mb-2"
                                 classNamePrefix="react-select"
