@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "dist"), // <-- Vercel expects 'dist', not 'dist/public'
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
   },
 });

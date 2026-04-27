@@ -213,6 +213,7 @@ export const gradesApi = {
 
 export const guardiansApi = {
   create: (data: unknown) => apiClient.post(`/guardians`, data),
+  getGuardians: (schoolId: string) => apiClient.get(`/guardians?schoolId=${schoolId}`),
 };
 
 export const reportCardsApi = {
