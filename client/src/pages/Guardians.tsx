@@ -66,7 +66,6 @@ export default function Guardians() {
     const setPrimaryMutation = useSetPrimaryGuardian();
 
     const [apiError, setApiError] = useState<string | null>(null);
-    const [apiSuccess, setApiSuccess] = useState<string | null>(null);
     const [selectedStudent, setSelectedStudent] = useState<{ id: string; relation?: string; is_primary?: boolean } | null>(null);
     const [activeTab, setActiveTab] = useState("guardians");
 
@@ -108,7 +107,6 @@ export default function Guardians() {
     };
 
     const onSubmit = async (data: Omit<GuardianFormData, "students">) => {
-        setApiSuccess(null);
         setApiError(null);
         if (!selectedStudent) {
             setApiError("A student must be selected");
@@ -120,7 +118,6 @@ export default function Guardians() {
         };
         try {
             await createGuardianMutation.mutateAsync({ data: payload });
-            setApiSuccess("Guardian created successfully!");
             reset();
             setSelectedStudent(null);
             setActiveTab("guardians"); // Switch to guardians tab
@@ -167,10 +164,8 @@ export default function Guardians() {
     const handleDeleteGuardian = async (guardianId: string) => {
         if (!window.confirm("Are you sure you want to delete this guardian?")) return;
         setApiError(null);
-        setApiSuccess(null);
         try {
             await deleteGuardianMutation.mutateAsync({ guardianId });
-            setApiSuccess("Guardian deleted successfully!");
         } catch (e) {
             setApiError((e as Error).message || "Failed to delete guardian");
         }
@@ -180,10 +175,8 @@ export default function Guardians() {
         const key = `${studentId}-${guardianId}`;
         setSetPrimaryLoading(prev => new Set(prev).add(key));
         setApiError(null);
-        setApiSuccess(null);
         try {
             await setPrimaryMutation.mutateAsync({ studentId, guardianId });
-            setApiSuccess("Primary guardian set successfully!");
         } catch (e) {
             setApiError((e as Error).message || "Failed to set primary guardian");
         } finally {
@@ -282,7 +275,6 @@ export default function Guardians() {
                             {errors.students && <div className="text-red-500 text-xs">At least one student is required</div>}
                         </div>
                         {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
-                        {apiSuccess && <div className="text-green-600 text-xs">{apiSuccess}</div>}
                         <SubmitButton
                             loading={createGuardianMutation.isPending}
                             disabled={createGuardianMutation.isPending}
