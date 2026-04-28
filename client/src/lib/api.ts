@@ -214,6 +214,8 @@ export const gradesApi = {
 export const guardiansApi = {
   create: (data: unknown) => apiClient.post(`/guardians`, data),
   getGuardians: (schoolId: string) => apiClient.get(`/guardians?schoolId=${schoolId}`),
+  delete: (guardianId: string) => apiClient.delete(`/guardians/${guardianId}`),
+  update: (guardianId: string, data: unknown) => apiClient.patch(`/guardians/${guardianId}`, data),
 };
 
 export const reportCardsApi = {
