@@ -1,17 +1,17 @@
 import SubmitButton from "@/components/common/SubmitButton";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useTenant } from "@/context/TenantContext";
 import { useStudents } from "@/hooks/use-students";
 import { guardiansApi } from "@/lib/api";
 import { Edit, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import Select, { MultiValue } from "react-select";
+import Select from "react-select";
 
 // Guardian and StudentGuardian types for type safety
 interface StudentGuardian {
@@ -61,7 +61,7 @@ export default function Guardians() {
     });
     const [apiError, setApiError] = useState<string | null>(null);
     const [apiSuccess, setApiSuccess] = useState<string | null>(null);
-    const [selectedStudents, setSelectedStudents] = useState<{ id: string; relation?: string; is_primary?: boolean }[]>([]);
+    const [selectedStudent, setSelectedStudent] = useState<{ id: string; relation?: string; is_primary?: boolean } | null>(null);
     const [guardians, setGuardians] = useState<Guardian[]>([]);
     const [guardiansLoading, setGuardiansLoading] = useState(false);
     const [guardiansError, setGuardiansError] = useState<string | null>(null);
@@ -71,7 +71,6 @@ export default function Guardians() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingGuardian, setEditingGuardian] = useState<Guardian | null>(null);
     const [editForm, setEditForm] = useState<GuardianFormData | null>(null);
-    const [editStudents, setEditStudents] = useState<{ id: string; relation?: string; is_primary?: boolean }[]>([]);
     const [editSubmitting, setEditSubmitting] = useState(false);
     const [editError, setEditError] = useState<string | null>(null);
     const [editSuccess, setEditSuccess] = useState<string | null>(null);
@@ -83,27 +82,27 @@ export default function Guardians() {
         label: `${s.first_name} ${s.last_name} (${s.student_no})`,
     }));
 
-    const handleStudentsChange = (opts: MultiValue<StudentOption>) => {
-        const arr = Array.isArray(opts) ? [...opts] : [];
-        setSelectedStudents(prev =>
-            arr.map(opt => {
-                const existing = prev.find(s => s.id === opt.value);
-                return { id: opt.value, relation: existing?.relation || "", is_primary: existing?.is_primary || false };
-            })
-        );
+    const handleStudentChange = (opt: StudentOption | null) => {
+        if (!opt) {
+            setSelectedStudent(null);
+            return;
+        }
+        const student = {
+            id: opt.value,
+            relation: "",
+            is_primary: false,
+        };
+        setSelectedStudent(student);
     };
 
-    const handleRelationChange = (studentId: string, relation: string) => {
-        setSelectedStudents(prev =>
-            prev.map(s => s.id === studentId ? { ...s, relation } : s)
-        );
+    const handleStudentRelationChange = (relation: string) => {
+        if (!selectedStudent) return;
+        setSelectedStudent(prev => prev ? { ...prev, relation } : null);
     };
 
-    // Update handlePrimaryChange to accept checked value
-    const handlePrimaryChange = (studentId: string, checked: boolean) => {
-        setSelectedStudents(prev =>
-            prev.map(s => s.id === studentId ? { ...s, is_primary: checked } : s)
-        );
+    const handleStudentPrimaryChange = (is_primary: boolean) => {
+        if (!selectedStudent) return;
+        setSelectedStudent(prev => prev ? { ...prev, is_primary } : null);
     };
 
     // Refetch guardians
@@ -136,13 +135,13 @@ export default function Guardians() {
     const onSubmit = async (data: Omit<GuardianFormData, "students">) => {
         setApiSuccess(null);
         setApiError(null);
-        if (!selectedStudents.length) {
-            setApiError("At least one student is required");
+        if (!selectedStudent) {
+            setApiError("A student must be selected");
             return;
         }
         const payload: GuardianFormData = {
             ...data,
-            students: selectedStudents,
+            students: [selectedStudent],
         };
         try {
             const res = await guardiansApi.create(payload);
@@ -153,7 +152,7 @@ export default function Guardians() {
             }
             setApiSuccess("Guardian created successfully!");
             reset();
-            setSelectedStudents([]);
+            setSelectedStudent(null);
             fetchGuardians(); // Refetch guardians
             setActiveTab("guardians"); // Switch to guardians tab
         } catch (e) {
@@ -164,44 +163,15 @@ export default function Guardians() {
     const handleEditGuardian = (guardian: Guardian) => {
         setEditingGuardian(guardian);
         setEditForm({
-            firstName: guardian.first_name,
-            lastName: guardian.last_name,
+            firstName: guardian.first_name || "",
+            lastName: guardian.last_name || "",
             email: guardian.email || "",
             phone: guardian.phone || "",
-            students: guardian.students.map(sg => ({
-                id: sg.student?.id || sg.id,
-                relation: sg.relation,
-                is_primary: sg.is_primary,
-            })),
+            students: [],
         });
-        setEditStudents(guardian.students.map(sg => ({
-            id: sg.student?.id || sg.id,
-            relation: sg.relation,
-            is_primary: sg.is_primary,
-        })));
         setEditModalOpen(true);
         setEditError(null);
         setEditSuccess(null);
-    };
-
-    const handleEditStudentsChange = (opts: MultiValue<StudentOption>) => {
-        const arr = Array.isArray(opts) ? [...opts] : [];
-        setEditStudents(prev =>
-            arr.map(opt => {
-                const existing = prev.find(s => s.id === opt.value);
-                return { id: opt.value, relation: existing?.relation || "", is_primary: existing?.is_primary || false };
-            })
-        );
-    };
-    const handleEditRelationChange = (studentId: string, relation: string) => {
-        setEditStudents(prev =>
-            prev.map(s => s.id === studentId ? { ...s, relation } : s)
-        );
-    };
-    const handleEditPrimaryChange = (studentId: string, checked: boolean) => {
-        setEditStudents(prev =>
-            prev.map(s => s.id === studentId ? { ...s, is_primary: checked } : s)
-        );
     };
 
     const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,16 +185,9 @@ export default function Guardians() {
         setEditSubmitting(true);
         setEditError(null);
         setEditSuccess(null);
-        if (!editStudents.length) {
-            setEditError("At least one student is required");
-            setEditSubmitting(false);
-            return;
-        }
         try {
-            const payload = {
-                ...editForm,
-                students: editStudents,
-            };
+            // Exclude students from the update payload - student assignments are not edited here
+            const { students: _students, ...payload } = editForm;
             const res = await guardiansApi.update(editingGuardian.id, payload);
             if (!res.ok) {
                 const err = await res.json();
@@ -259,6 +222,46 @@ export default function Guardians() {
             setApiError("Failed to delete guardian");
         }
     };
+
+    const handleSetPrimary = async (studentId: string, guardianId: string) => {
+        const key = `${studentId}-${guardianId}`;
+        setSetPrimaryLoading(prev => new Set(prev).add(key));
+        setApiError(null);
+        setApiSuccess(null);
+        try {
+            const res = await guardiansApi.setPrimary(studentId, guardianId);
+            if (!res.ok) {
+                const err = await res.json();
+                setApiError(err?.error?.message || "Failed to set primary guardian");
+                return;
+            }
+            setApiSuccess("Primary guardian set successfully!");
+            fetchGuardians();
+        } catch (e) {
+            setApiError("Failed to set primary guardian");
+        } finally {
+            setSetPrimaryLoading(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(key);
+                return newSet;
+            });
+        }
+    };
+
+    const [setPrimaryLoading, setSetPrimaryLoading] = useState<Set<string>>(new Set());
+
+    const [search, setSearch] = useState("");
+
+    const filteredGuardians = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return guardians;
+        return guardians.filter(g => {
+            const studentNames = (g.students || []).map((sg: any) => `${sg.student?.first_name || ""} ${sg.student?.last_name || ""}`).join(" ");
+            return [g.first_name, g.last_name, g.email, g.phone, studentNames]
+                .filter(Boolean)
+                .some(v => v!.toLowerCase().includes(q));
+        });
+    }, [guardians, search]);
 
     return (
         <AppLayout
@@ -295,41 +298,40 @@ export default function Guardians() {
                             {errors.phone && <div className="text-red-500 text-xs">{errors.phone.message}</div>}
                         </div>
                         <div>
-                            <Label htmlFor="students">Students *</Label>
+                            <Label htmlFor="students">Student *</Label>
                             <Select
                                 inputId="students"
-                                isMulti
                                 isLoading={studentsLoading}
                                 options={studentOptions}
-                                value={studentOptions.filter((opt: StudentOption) => selectedStudents.some(s => s.id === opt.value))}
-                                onChange={handleStudentsChange}
-                                placeholder="Search and select students..."
+                                value={studentOptions.find((opt: StudentOption) => selectedStudent?.id === opt.value) || null}
+                                onChange={opt => handleStudentChange(opt as StudentOption)}
+                                placeholder="Search and select a student..."
                                 className="mb-2"
                                 classNamePrefix="react-select"
                                 isDisabled={!students}
                                 noOptionsMessage={() => studentsLoading ? "Loading students..." : "No students found"}
                             />
-                            {selectedStudents.map((student, idx) => (
-                                <div key={student.id} className="flex items-center gap-2 mb-2">
+                            {selectedStudent && (
+                                <div className="flex items-center gap-2 mb-2">
                                     <span>
-                                        {studentOptions.find(opt => opt.value === student.id)?.label}
+                                        {studentOptions.find(opt => opt.value === selectedStudent.id)?.label}
                                     </span>
                                     <Input
                                         placeholder="Relation (e.g. Father, Mother)"
-                                        value={student.relation || ""}
-                                        onChange={e => handleRelationChange(student.id, e.target.value)}
+                                        value={selectedStudent.relation || ""}
+                                        onChange={e => handleStudentRelationChange(e.target.value)}
                                         className="w-48"
                                     />
                                     <input
                                         type="checkbox"
-                                        checked={student.is_primary === true}
-                                        onChange={e => handlePrimaryChange(student.id, e.target.checked)}
+                                        checked={selectedStudent.is_primary === true}
+                                        onChange={e => handleStudentPrimaryChange(e.target.checked)}
                                         className="ml-2"
                                         title="Set as primary guardian for this student"
                                     />
                                     <span className="text-xs ml-1">Primary</span>
                                 </div>
-                            ))}
+                            )}
                             {errors.students && <div className="text-red-500 text-xs">At least one student is required</div>}
                         </div>
                         {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
@@ -345,6 +347,20 @@ export default function Guardians() {
 
                 <TabsContent value="guardians">
                     <Card className="border-slate-200">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <CardTitle>All Guardians</CardTitle>
+                                <CardDescription>Total: {guardians.length} guardians</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    placeholder="Search by name, email, phone or student"
+                                    value={search}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSearch(e.target.value); }}
+                                    className="max-w-sm"
+                                />
+                            </div>
+                        </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left table-auto border-collapse">
@@ -383,7 +399,7 @@ export default function Guardians() {
                                             <tr>
                                                 <td colSpan={5} className="text-red-500 text-xs py-4">{guardiansError}</td>
                                             </tr>
-                                        ) : guardians.length === 0 ? (
+                                        ) : filteredGuardians.length === 0 ? (
                                             <tr>
                                                 <td colSpan={5} className="py-8">
                                                     <div className="flex flex-col items-center justify-center text-center">
@@ -411,7 +427,7 @@ export default function Guardians() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            guardians.map(g => (
+                                            filteredGuardians.map(g => (
                                                 <tr key={g.id} className="border-t">
                                                     <td className="px-3 py-2">{g.first_name} {g.last_name}</td>
                                                     <td className="px-3 py-2">{g.email}</td>
@@ -421,9 +437,19 @@ export default function Guardians() {
                                                             {g.students.map((sg: any) => (
                                                                 <li key={sg.id} className="flex items-center gap-2">
                                                                     {sg.student?.first_name} {sg.student?.last_name}
-                                                                    {sg.relation && <> (<span className="italic">{sg.relation}</span>)</>}
+                                                                    {sg.relation && <> (<span className="italic px-0">{sg.relation}</span>)</>}
                                                                     {sg.is_primary && (
                                                                         <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold border border-green-300">Primary</span>
+                                                                    )}
+                                                                    {!sg.is_primary && (
+                                                                        <button
+                                                                            className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-300 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                            onClick={() => handleSetPrimary(sg.student?.id, g.id)}
+                                                                            disabled={setPrimaryLoading.has(`${sg.student?.id}-${g.id}`)}
+                                                                            title="Set as Primary Guardian"
+                                                                        >
+                                                                            {setPrimaryLoading.has(`${sg.student?.id}-${g.id}`) ? "Setting..." : "Set Primary"}
+                                                                        </button>
                                                                     )}
                                                                 </li>
                                                             ))}
@@ -477,41 +503,7 @@ export default function Guardians() {
                             <Input id="editPhone" name="phone" value={editForm?.phone || ""} onChange={handleEditFormChange} required />
                         </div>
                         <div>
-                            <Label htmlFor="editStudents">Students *</Label>
-                            <Select
-                                inputId="editStudents"
-                                isMulti
-                                isLoading={studentsLoading}
-                                options={studentOptions}
-                                value={studentOptions.filter((opt: StudentOption) => editStudents.some(s => s.id === opt.value))}
-                                onChange={handleEditStudentsChange}
-                                placeholder="Search and select students..."
-                                className="mb-2"
-                                classNamePrefix="react-select"
-                                isDisabled={!students}
-                                noOptionsMessage={() => studentsLoading ? "Loading students..." : "No students found"}
-                            />
-                            {editStudents.map((student, idx) => (
-                                <div key={student.id} className="flex items-center gap-2 mb-2">
-                                    <span>
-                                        {studentOptions.find(opt => opt.value === student.id)?.label}
-                                    </span>
-                                    <Input
-                                        placeholder="Relation (e.g. Father, Mother)"
-                                        value={student.relation || ""}
-                                        onChange={e => handleEditRelationChange(student.id, e.target.value)}
-                                        className="w-48"
-                                    />
-                                    <input
-                                        type="checkbox"
-                                        checked={student.is_primary === true}
-                                        onChange={e => handleEditPrimaryChange(student.id, e.target.checked)}
-                                        className="ml-2"
-                                        title="Set as primary guardian for this student"
-                                    />
-                                    <span className="text-xs ml-1">Primary</span>
-                                </div>
-                            ))}
+                            <div className="text-sm text-gray-600">Only guardian details can be edited here.</div>
                             {editError && <div className="text-red-500 text-xs">{editError}</div>}
                             {editSuccess && <div className="text-green-600 text-xs">{editSuccess}</div>}
                         </div>

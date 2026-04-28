@@ -216,6 +216,8 @@ export const guardiansApi = {
   getGuardians: (schoolId: string) => apiClient.get(`/guardians?schoolId=${schoolId}`),
   delete: (guardianId: string) => apiClient.delete(`/guardians/${guardianId}`),
   update: (guardianId: string, data: unknown) => apiClient.patch(`/guardians/${guardianId}`, data),
+  setPrimary: (studentId: string, guardianId: string) =>
+    apiClient.patch(`/guardians/${studentId}/guardians/${guardianId}/set-primary`),
 };
 
 export const reportCardsApi = {

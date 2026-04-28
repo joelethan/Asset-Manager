@@ -135,7 +135,7 @@ export default function StudentsTable({
     }
   };
   return (
-    <Card>
+    <Card className="border-slate-200">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <CardTitle>All Students</CardTitle>
