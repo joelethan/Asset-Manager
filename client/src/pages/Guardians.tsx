@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/TenantContext";
+import { useCreateGuardian, useDeleteGuardian, useGuardians, useSetPrimaryGuardian, useUpdateGuardian } from "@/hooks/use-guardians";
 import { useStudents } from "@/hooks/use-students";
-import { guardiansApi } from "@/lib/api";
 import { Edit, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import Select from "react-select";
 
@@ -59,19 +59,21 @@ export default function Guardians() {
             students: []
         }
     });
+    const { data: guardians = [], isLoading: guardiansLoading, error: guardiansError } = useGuardians(schoolId);
+    const createGuardianMutation = useCreateGuardian();
+    const updateGuardianMutation = useUpdateGuardian();
+    const deleteGuardianMutation = useDeleteGuardian();
+    const setPrimaryMutation = useSetPrimaryGuardian();
+
     const [apiError, setApiError] = useState<string | null>(null);
     const [apiSuccess, setApiSuccess] = useState<string | null>(null);
     const [selectedStudent, setSelectedStudent] = useState<{ id: string; relation?: string; is_primary?: boolean } | null>(null);
-    const [guardians, setGuardians] = useState<Guardian[]>([]);
-    const [guardiansLoading, setGuardiansLoading] = useState(false);
-    const [guardiansError, setGuardiansError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("guardians");
 
     // Edit modal state
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingGuardian, setEditingGuardian] = useState<Guardian | null>(null);
     const [editForm, setEditForm] = useState<GuardianFormData | null>(null);
-    const [editSubmitting, setEditSubmitting] = useState(false);
     const [editError, setEditError] = useState<string | null>(null);
     const [editSuccess, setEditSuccess] = useState<string | null>(null);
 
@@ -105,33 +107,6 @@ export default function Guardians() {
         setSelectedStudent(prev => prev ? { ...prev, is_primary } : null);
     };
 
-    // Refetch guardians
-    const fetchGuardians = () => {
-        if (!schoolId) return;
-        setGuardiansLoading(true);
-        setGuardiansError(null);
-        guardiansApi.getGuardians(schoolId)
-            .then(async res => {
-                if (!res.ok) {
-                    const err = await res.json();
-                    setGuardiansError(err?.error?.message || "Failed to fetch guardians");
-                    setGuardians([]);
-                } else {
-                    const data = await res.json();
-                    setGuardians(data);
-                }
-            })
-            .catch(() => {
-                setGuardiansError("Failed to fetch guardians");
-                setGuardians([]);
-            })
-            .finally(() => setGuardiansLoading(false));
-    };
-
-    useEffect(() => {
-        fetchGuardians();
-    }, [schoolId]);
-
     const onSubmit = async (data: Omit<GuardianFormData, "students">) => {
         setApiSuccess(null);
         setApiError(null);
@@ -144,19 +119,13 @@ export default function Guardians() {
             students: [selectedStudent],
         };
         try {
-            const res = await guardiansApi.create(payload);
-            if (!res.ok) {
-                const err = await res.json();
-                setApiError(err?.error?.message || "Failed to create guardian");
-                return;
-            }
+            await createGuardianMutation.mutateAsync({ data: payload });
             setApiSuccess("Guardian created successfully!");
             reset();
             setSelectedStudent(null);
-            fetchGuardians(); // Refetch guardians
             setActiveTab("guardians"); // Switch to guardians tab
         } catch (e) {
-            setApiError("Failed to create guardian");
+            setApiError((e as Error).message || "Failed to create guardian");
         }
     };
 
@@ -182,26 +151,16 @@ export default function Guardians() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingGuardian || !editForm) return;
-        setEditSubmitting(true);
         setEditError(null);
         setEditSuccess(null);
         try {
             // Exclude students from the update payload - student assignments are not edited here
             const { students: _students, ...payload } = editForm;
-            const res = await guardiansApi.update(editingGuardian.id, payload);
-            if (!res.ok) {
-                const err = await res.json();
-                setEditError(err?.error?.message || "Failed to update guardian");
-                setEditSubmitting(false);
-                return;
-            }
+            await updateGuardianMutation.mutateAsync({ guardianId: editingGuardian.id, data: payload });
             setEditSuccess("Guardian updated successfully!");
             setEditModalOpen(false);
-            fetchGuardians();
         } catch (e) {
-            setEditError("Failed to update guardian");
-        } finally {
-            setEditSubmitting(false);
+            setEditError((e as Error).message || "Failed to update guardian");
         }
     };
 
@@ -210,16 +169,10 @@ export default function Guardians() {
         setApiError(null);
         setApiSuccess(null);
         try {
-            const res = await guardiansApi.delete(guardianId);
-            if (!res.ok) {
-                const err = await res.json();
-                setApiError(err?.error?.message || "Failed to delete guardian");
-                return;
-            }
+            await deleteGuardianMutation.mutateAsync({ guardianId });
             setApiSuccess("Guardian deleted successfully!");
-            fetchGuardians();
         } catch (e) {
-            setApiError("Failed to delete guardian");
+            setApiError((e as Error).message || "Failed to delete guardian");
         }
     };
 
@@ -229,16 +182,10 @@ export default function Guardians() {
         setApiError(null);
         setApiSuccess(null);
         try {
-            const res = await guardiansApi.setPrimary(studentId, guardianId);
-            if (!res.ok) {
-                const err = await res.json();
-                setApiError(err?.error?.message || "Failed to set primary guardian");
-                return;
-            }
+            await setPrimaryMutation.mutateAsync({ studentId, guardianId });
             setApiSuccess("Primary guardian set successfully!");
-            fetchGuardians();
         } catch (e) {
-            setApiError("Failed to set primary guardian");
+            setApiError((e as Error).message || "Failed to set primary guardian");
         } finally {
             setSetPrimaryLoading(prev => {
                 const newSet = new Set(prev);
@@ -255,7 +202,7 @@ export default function Guardians() {
     const filteredGuardians = useMemo(() => {
         const q = search.trim().toLowerCase();
         if (!q) return guardians;
-        return guardians.filter(g => {
+        return guardians.filter((g: any) => {
             const studentNames = (g.students || []).map((sg: any) => `${sg.student?.first_name || ""} ${sg.student?.last_name || ""}`).join(" ");
             return [g.first_name, g.last_name, g.email, g.phone, studentNames]
                 .filter(Boolean)
@@ -337,8 +284,8 @@ export default function Guardians() {
                         {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
                         {apiSuccess && <div className="text-green-600 text-xs">{apiSuccess}</div>}
                         <SubmitButton
-                            loading={isSubmitting}
-                            disabled={isSubmitting}
+                            loading={createGuardianMutation.isPending}
+                            disabled={createGuardianMutation.isPending}
                             text="Create Guardian"
                             className="w-full"
                         />
@@ -374,7 +321,7 @@ export default function Guardians() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {guardiansLoading ? (
+                                        {guardiansLoading && filteredGuardians.length === 0 ? (
                                             // Skeleton rows
                                             [...Array(6)].map((_, i) => (
                                                 <tr key={i} className="border-t">
@@ -397,7 +344,7 @@ export default function Guardians() {
                                             ))
                                         ) : guardiansError ? (
                                             <tr>
-                                                <td colSpan={5} className="text-red-500 text-xs py-4">{guardiansError}</td>
+                                                <td colSpan={5} className="text-red-500 text-xs py-4">{guardiansError?.message}</td>
                                             </tr>
                                         ) : filteredGuardians.length === 0 ? (
                                             <tr>
@@ -427,7 +374,7 @@ export default function Guardians() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredGuardians.map(g => (
+                                            filteredGuardians.map((g: any) => (
                                                 <tr key={g.id} className="border-t">
                                                     <td className="px-3 py-2">{g.first_name} {g.last_name}</td>
                                                     <td className="px-3 py-2">{g.email}</td>
@@ -507,7 +454,7 @@ export default function Guardians() {
                             {editError && <div className="text-red-500 text-xs">{editError}</div>}
                             {editSuccess && <div className="text-green-600 text-xs">{editSuccess}</div>}
                         </div>
-                        <SubmitButton loading={editSubmitting} disabled={editSubmitting} text="Save Changes" className="w-full" />
+                        <SubmitButton loading={updateGuardianMutation.isPending} disabled={updateGuardianMutation.isPending} text="Save Changes" className="w-full" />
                     </form>
                 </DialogContent>
             </Dialog>
