@@ -218,6 +218,8 @@ export const guardiansApi = {
   update: (guardianId: string, data: unknown) => apiClient.patch(`/guardians/${guardianId}`, data),
   setPrimary: (studentId: string, guardianId: string) =>
     apiClient.patch(`/guardians/${studentId}/guardians/${guardianId}/set-primary`),
+  sendMessageToStudentGuardians: (studentId: string, data: unknown) =>
+    apiClient.post(`/students/${studentId}/guardians/messages`, data),
 };
 
 export const reportCardsApi = {

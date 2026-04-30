@@ -4,13 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    Select as ShadSelect,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/TenantContext";
 import { useCreateGuardian, useDeleteGuardian, useGuardians, useSetPrimaryGuardian, useUpdateGuardian } from "@/hooks/use-guardians";
 import { useStudents } from "@/hooks/use-students";
+import { guardiansApi } from "@/lib/api"; // Make sure this import exists
 import { Edit, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import Select from "react-select";
 
 // Guardian and StudentGuardian types for type safety
@@ -46,6 +54,14 @@ interface GuardianFormData {
     students: { id: string; relation?: string; is_primary?: boolean }[];
 }
 
+interface MessageFormData {
+    studentId: string;
+    type: string;
+    category?: string;
+    subject?: string;
+    message: string;
+}
+
 export default function Guardians() {
     const { selectedTenant } = useTenant();
     const schoolId = selectedTenant?.id;
@@ -75,6 +91,18 @@ export default function Guardians() {
     const [editForm, setEditForm] = useState<GuardianFormData | null>(null);
     const [editError, setEditError] = useState<string | null>(null);
     const [editSuccess, setEditSuccess] = useState<string | null>(null);
+
+    // State for send message form
+    const [messageForm, setMessageForm] = useState({
+        studentId: "",
+        type: "Email",
+        category: "",
+        subject: "",
+        message: "",
+    });
+    const [messageLoading, setMessageLoading] = useState(false);
+    const [messageSuccess, setMessageSuccess] = useState<string | null>(null);
+    const [messageError, setMessageError] = useState<string | null>(null);
 
     type StudentOption = { value: string; label: string };
 
@@ -203,6 +231,80 @@ export default function Guardians() {
         });
     }, [guardians, search]);
 
+    // Handler for form changes
+    const handleMessageFormChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+        setMessageForm({ ...messageForm, [e.target.name]: e.target.value });
+    };
+
+    // Handler for student select
+    const handleMessageStudentChange = (opt: { value: string } | null) => {
+        setMessageForm({ ...messageForm, studentId: opt?.value || "" });
+    };
+
+    // Use react-hook-form for the message form
+    const {
+        control,
+        handleSubmit: handleMessageSubmit,
+        reset: resetMessageForm,
+        formState: { errors: messageErrors, isSubmitting: messageIsSubmitting }
+    } = useForm<MessageFormData>({
+        defaultValues: {
+            studentId: "",
+            type: "Email",
+            category: "",
+            subject: "",
+            message: "",
+        }
+    });
+
+    const onSendMessage = async (data: MessageFormData) => {
+        setMessageSuccess(null);
+        setMessageError(null);
+        try {
+            const response = await guardiansApi.sendMessageToStudentGuardians(
+                data.studentId,
+                {
+                    type: data.type,
+                    category: data.category,
+                    subject: data.subject,
+                    message: data.message,
+                }
+            );
+
+            // If your API client returns a Response object, check status here
+            if (response?.status && response.status >= 400) {
+                // Try to extract error message from response body
+                let errorMsg = "Failed to send message 1";
+                try {
+                    const errorBody = await response.json();
+                    errorMsg = errorBody.error.message || errorMsg;
+                } catch {
+                    // fallback if json parsing fails
+                }
+                setMessageError(errorMsg);
+                return; // Do not reset the form
+            }
+
+            setMessageSuccess("Message sent to primary guardian!");
+            resetMessageForm();
+        } catch (err: any) {
+            let errorMsg = "Failed to send message 2";
+            if (err instanceof Response) {
+                try {
+                    const errorBody = await err.json();
+                    errorMsg = errorBody?.message || errorMsg;
+                } catch {
+                    // fallback if json parsing fails
+                }
+            } else if (err?.message) {
+                errorMsg = err.message;
+            }
+            setMessageError(errorMsg);
+        }
+    };
+
     return (
         <AppLayout
             title="Guardians"
@@ -210,78 +312,83 @@ export default function Guardians() {
             breadcrumbs={[{ label: "Guardians" }]}
         >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 border-b">
-                    <TabsTrigger value="guardians">Guardians List</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 border-b">
                     <TabsTrigger value="create">Create Guardian</TabsTrigger>
+                    <TabsTrigger value="guardians">Guardians List</TabsTrigger>
+                    <TabsTrigger value="messages">Guardian Messages</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="create">
-                    <form onSubmit={handleSubmit(onSubmit)} className=" space-y-4 mt-6">
-                        <div>
-                            <Label htmlFor="firstName">First Name *</Label>
-                            <Input id="firstName" placeholder="First Name" {...register("firstName", { required: true })} />
-                            {errors.firstName && <div className="text-red-500 text-xs">First name is required</div>}
-                        </div>
-                        <div>
-                            <Label htmlFor="lastName">Last Name *</Label>
-                            <Input id="lastName" placeholder="Last Name" {...register("lastName", { required: true })} />
-                            {errors.lastName && <div className="text-red-500 text-xs">Last name is required</div>}
-                        </div>
-                        <div>
-                            <Label htmlFor="email">Email *</Label>
-                            <Input id="email" placeholder="Email" type="email" {...register("email", { required: "Email is required" })} />
-                            {errors.email && <div className="text-red-500 text-xs">{errors.email.message}</div>}
-                        </div>
-                        <div>
-                            <Label htmlFor="phone">Phone *</Label>
-                            <Input id="phone" placeholder="Phone" {...register("phone", { required: "Phone is required" })} />
-                            {errors.phone && <div className="text-red-500 text-xs">{errors.phone.message}</div>}
-                        </div>
-                        <div>
-                            <Label htmlFor="students">Student *</Label>
-                            <Select
-                                inputId="students"
-                                isLoading={studentsLoading}
-                                options={studentOptions}
-                                value={studentOptions.find((opt: StudentOption) => selectedStudent?.id === opt.value) || null}
-                                onChange={opt => handleStudentChange(opt as StudentOption)}
-                                placeholder="Search and select a student..."
-                                className="mb-2"
-                                classNamePrefix="react-select"
-                                isDisabled={!students}
-                                noOptionsMessage={() => studentsLoading ? "Loading students..." : "No students found"}
-                            />
-                            {selectedStudent && (
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span>
-                                        {studentOptions.find(opt => opt.value === selectedStudent.id)?.label}
-                                    </span>
-                                    <Input
-                                        placeholder="Relation (e.g. Father, Mother)"
-                                        value={selectedStudent.relation || ""}
-                                        onChange={e => handleStudentRelationChange(e.target.value)}
-                                        className="w-48"
-                                    />
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedStudent.is_primary === true}
-                                        onChange={e => handleStudentPrimaryChange(e.target.checked)}
-                                        className="ml-2"
-                                        title="Set as primary guardian for this student"
-                                    />
-                                    <span className="text-xs ml-1">Primary</span>
+                    <Card className="border-slate-200">
+                        <CardContent>
+                            <form onSubmit={handleSubmit(onSubmit)} className=" space-y-4 mt-6">
+                                <div>
+                                    <Label htmlFor="firstName">First Name *</Label>
+                                    <Input id="firstName" placeholder="First Name" {...register("firstName", { required: true })} />
+                                    {errors.firstName && <div className="text-red-500 text-xs">First name is required</div>}
                                 </div>
-                            )}
-                            {errors.students && <div className="text-red-500 text-xs">At least one student is required</div>}
-                        </div>
-                        {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
-                        <SubmitButton
-                            loading={createGuardianMutation.isPending}
-                            disabled={createGuardianMutation.isPending}
-                            text="Create Guardian"
-                            className="w-full"
-                        />
-                    </form>
+                                <div>
+                                    <Label htmlFor="lastName">Last Name *</Label>
+                                    <Input id="lastName" placeholder="Last Name" {...register("lastName", { required: true })} />
+                                    {errors.lastName && <div className="text-red-500 text-xs">Last name is required</div>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="email">Email *</Label>
+                                    <Input id="email" placeholder="Email" type="email" {...register("email", { required: "Email is required" })} />
+                                    {errors.email && <div className="text-red-500 text-xs">{errors.email.message}</div>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="phone">Phone *</Label>
+                                    <Input id="phone" placeholder="Phone" {...register("phone", { required: "Phone is required" })} />
+                                    {errors.phone && <div className="text-red-500 text-xs">{errors.phone.message}</div>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="students">Student *</Label>
+                                    <Select
+                                        inputId="students"
+                                        isLoading={studentsLoading}
+                                        options={studentOptions}
+                                        value={studentOptions.find((opt: StudentOption) => selectedStudent?.id === opt.value) || null}
+                                        onChange={opt => handleStudentChange(opt as StudentOption)}
+                                        placeholder="Search and select a student..."
+                                        className="mb-2"
+                                        classNamePrefix="react-select"
+                                        isDisabled={!students}
+                                        noOptionsMessage={() => studentsLoading ? "Loading students..." : "No students found"}
+                                    />
+                                    {selectedStudent && (
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span>
+                                                {studentOptions.find(opt => opt.value === selectedStudent.id)?.label}
+                                            </span>
+                                            <Input
+                                                placeholder="Relation (e.g. Father, Mother)"
+                                                value={selectedStudent.relation || ""}
+                                                onChange={e => handleStudentRelationChange(e.target.value)}
+                                                className="w-48"
+                                            />
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedStudent.is_primary === true}
+                                                onChange={e => handleStudentPrimaryChange(e.target.checked)}
+                                                className="ml-2"
+                                                title="Set as primary guardian for this student"
+                                            />
+                                            <span className="text-xs ml-1">Primary</span>
+                                        </div>
+                                    )}
+                                    {errors.students && <div className="text-red-500 text-xs">At least one student is required</div>}
+                                </div>
+                                {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
+                                <SubmitButton
+                                    loading={createGuardianMutation.isPending}
+                                    disabled={createGuardianMutation.isPending}
+                                    text="Create Guardian"
+                                    className="w-full"
+                                />
+                            </form>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="guardians">
@@ -416,6 +523,135 @@ export default function Guardians() {
                                     </tbody>
                                 </table>
                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="messages">
+                    <Card className="border-slate-200">
+                        <CardHeader>
+                            <CardTitle>Send Message to Primary Guardian</CardTitle>
+                            <CardDescription>
+                                Select a student and send a message to their primary guardian.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form
+                                onSubmit={handleMessageSubmit(onSendMessage)}
+                                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                            >
+                                {/* Left column */}
+                                <div className="flex flex-col gap-4">
+                                    <div>
+                                        <Label>Student *</Label>
+                                        <Controller
+                                            name="studentId"
+                                            control={control}
+                                            rules={{ required: "Student is required" }}
+                                            render={({ field }) => (
+                                                <Select
+                                                    inputId="sendMessageStudent"
+                                                    options={studentOptions}
+                                                    value={studentOptions.find(opt => opt.value === field.value) || null}
+                                                    onChange={opt => field.onChange(opt?.value || "")}
+                                                    placeholder="Select student..."
+                                                    isDisabled={studentsLoading}
+                                                />
+                                            )}
+                                        />
+                                        {messageErrors.studentId && (
+                                            <div className="text-red-500 text-xs">{messageErrors.studentId.message}</div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <Label>Type *</Label>
+                                        <Controller
+                                            name="type"
+                                            control={control}
+                                            rules={{ required: "Type is required" }}
+                                            render={({ field }) => (
+                                                <ShadSelect value={field.value} onValueChange={field.onChange}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select type..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Email">Email</SelectItem>
+                                                        {/* <SelectItem value="SMS">SMS</SelectItem>
+                                                        <SelectItem value="WhatsApp">WhatsApp</SelectItem> */}
+                                                    </SelectContent>
+                                                </ShadSelect>
+                                            )}
+                                        />
+                                        {messageErrors.type && (
+                                            <div className="text-red-500 text-xs mt-1">{messageErrors.type.message}</div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <Label>Category *</Label>
+                                        <Controller
+                                            name="category"
+                                            control={control}
+                                            rules={{ required: "Category is required" }}
+                                            render={({ field }) => (
+                                                <Input {...field} />
+                                            )}
+                                        />
+                                        {messageErrors.category && (
+                                            <div className="text-red-500 text-xs">{messageErrors.category.message}</div>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Right column */}
+                                <div className="flex flex-col gap-4">
+                                    <div>
+                                        <Label>Subject *</Label>
+                                        <Controller
+                                            name="subject"
+                                            control={control}
+                                            rules={{ required: "Subject is required" }}
+                                            render={({ field }) => (
+                                                <Input {...field} />
+                                            )}
+                                        />
+                                        {messageErrors.subject && (
+                                            <div className="text-red-500 text-xs">{messageErrors.subject.message}</div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 flex flex-col">
+                                        <Label>Message *</Label>
+                                        <Controller
+                                            name="message"
+                                            control={control}
+                                            rules={{ required: "Message is required" }}
+                                            render={({ field }) => (
+                                                <textarea
+                                                    {...field}
+                                                    className="w-full border rounded p-2 min-h-[120px] flex-1"
+                                                    rows={6}
+                                                />
+                                            )}
+                                        />
+                                        {messageErrors.message && (
+                                            <div className="text-red-500 text-xs">{messageErrors.message.message}</div>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Feedback and submit button - full width below */}
+                                <div className="md:col-span-2 flex flex-col gap-2">
+                                    {messageError && (
+                                        <div className="text-red-500 text-xs">{messageError}</div>
+                                    )}
+                                    {messageSuccess && (
+                                        <div className="text-green-600 text-xs">{messageSuccess}</div>
+                                    )}
+                                    <SubmitButton
+                                        loading={messageIsSubmitting}
+                                        disabled={messageIsSubmitting}
+                                        text="Send Message"
+                                        className="w-full"
+                                    />
+                                </div>
+                            </form>
                         </CardContent>
                     </Card>
                 </TabsContent>
