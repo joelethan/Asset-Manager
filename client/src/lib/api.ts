@@ -222,6 +222,11 @@ export const guardiansApi = {
     apiClient.post(`/students/${studentId}/guardians/messages`, data),
 };
 
+export const dashboardApi = {
+  getSchoolDashboard: (schoolId: string) =>
+    apiClient.get(`/dashboard/school/${schoolId}`),
+};
+
 export const reportCardsApi = {
   // Generate report cards (single, multiple, or classroom)
   generate: (schoolId: string, data: {

@@ -8,7 +8,6 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Schools from "@/pages/Schools";
-import Settings from "@/pages/Settings";
 import Students from "@/pages/Students";
 import Subjects from "@/pages/Subjects";
 import Teachers from "@/pages/Teachers";
@@ -16,9 +15,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import ResultsManagement from "./pages/ResultsManagement";
-import ReportCards from "./pages/ReportCards";
+import ComingSoon from "./pages/ComingSoon";
 import Guardians from "./pages/Guardians";
+import ResultsManagement from "./pages/ResultsManagement";
 
 function RootRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
@@ -38,7 +37,7 @@ function CatchAllRedirect() {
   if (!initialized) return null;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (!profile?.memberships?.length) return <Redirect to="/schools-create" />;
-  return <Redirect to="/dashboard" />;
+  return <Redirect to="/coming-soon" />;
 }
 
 function AppRouter() {
@@ -78,6 +77,7 @@ function AppRouter() {
             <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
             <Route path="/guardians" component={Guardians} />
+            <Route path="/coming-soon" component={ComingSoon} />
             {/* <Route path="/report-cards" component={ReportCards} /> */}
             {/* <Route path="/settings" component={Settings} /> */}
           </>
