@@ -247,9 +247,26 @@ const ViewAssessmentsTab: FC = () => {
                     </div>
                 )}
                 {!loading && !error && listAssessResult?.length === 0 && (
-                    <div className="mt-6 text-gray-500 text-center">
-                        <div className="mb-2 font-semibold">No assessments found for selected filters.</div>
-                        <div className="text-sm">Try changing the filters or check if assessments have been created for this classroom.</div>
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <svg
+                            className="w-12 h-12 text-gray-300 mb-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 17v.01M12 7v6m0 8a9 9 0 100-18 9 9 0 000 18z"
+                            />
+                        </svg>
+                        <div className="text-base font-medium text-gray-700 mb-1">
+                            No assessments found for selected filters.
+                        </div>
+                        <div className="text-sm text-gray-500 text-center max-w-xs">
+                            Try changing the filters or check if assessments have been created for this classroom.
+                        </div>
                     </div>
                 )}
             </form>

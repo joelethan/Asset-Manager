@@ -250,14 +250,11 @@ const ClassroomResults: React.FC = () => {
                     </div>
                 )}
             {/* No Data State */}
-            {!isLoading && byDefinitionResult && (
-                (Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length === 0) ||
-                (Array.isArray(byDefinitionResult.assessments) && byDefinitionResult.assessments.length === 0)
-            ) && (
-                    <div className="px-6 pb-6">
-                        <NoDataComponent message="No results found for this classroom in the selected year and term." />
-                    </div>
-                )}
+            {!isLoading && Object.keys(byDefinitionResult).length === 0 && (
+                <div className="px-6 pb-6">
+                    <NoDataComponent message="No results found for this classroom in the selected year and term." />
+                </div>
+            )}
 
         </Card>
     );

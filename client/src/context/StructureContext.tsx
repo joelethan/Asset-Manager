@@ -148,8 +148,8 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
     const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
     const [gradingStudents, setGradingStudents] = useState<any[]>([]);
     const [byStudentResult, setByStudentResult] = useState<any>(null);
-    const [byDefinitionResult, setByDefinitionResult] = useState<any>(null);
-    const [listAssessResult, setListAssessResult] = useState<any>(null);
+    const [byDefinitionResult, setByDefinitionResult] = useState<any>({});
+    const [listAssessResult, setListAssessResult] = useState<any[]>([]);
     const [activeStudentTab, setActiveStudentTab] = useState<string>("student-uploads");
 
     const fetchStructure = async (schoolId: string) => {
