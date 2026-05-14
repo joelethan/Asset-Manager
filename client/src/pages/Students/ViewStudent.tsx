@@ -6,7 +6,7 @@ import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { studentsApi } from "@/lib/api";
 import React from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 const ViewStudent: React.FC = () => {
     const { selectedTenant } = useTenant();
@@ -30,6 +30,7 @@ const ViewStudent: React.FC = () => {
         register,
         handleSubmit: handleGuardianSubmit,
         reset,
+        control,
         formState: { errors, isSubmitting, touchedFields, submitCount }
     } = useForm({
         mode: "onTouched",
@@ -226,21 +227,28 @@ const ViewStudent: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="col-span-1 md:col-span-2">
-                                        <Select
-                                            value={typeof register("relation").value === "string" ? register("relation").value : ""}
-                                            onValueChange={val => register("relation").onChange({ target: { value: val, name: "relation" } })}
-                                            disabled={isSubmitting}
-                                        >
-                                            <SelectTrigger id="relation">
-                                                <SelectValue placeholder="Select Relation" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Mother">Mother</SelectItem>
-                                                <SelectItem value="Father">Father</SelectItem>
-                                                <SelectItem value="Guardian">Guardian</SelectItem>
-                                                <SelectItem value="Other">Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Controller
+                                            name="relation"
+                                            control={control}
+                                            rules={{ required: "Relation is required" }}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || ""}
+                                                    onValueChange={field.onChange}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    <SelectTrigger id="relation">
+                                                        <SelectValue placeholder="Select Relation" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Mother">Mother</SelectItem>
+                                                        <SelectItem value="Father">Father</SelectItem>
+                                                        <SelectItem value="Guardian">Guardian</SelectItem>
+                                                        <SelectItem value="Other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
                                         {errors.relation && (touchedFields.relation || submitCount > 0) && typeof errors.relation.message === 'string' && (
                                             <span className="text-xs text-red-600">{errors.relation.message}</span>
                                         )}

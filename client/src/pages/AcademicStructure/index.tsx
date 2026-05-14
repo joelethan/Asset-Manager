@@ -220,7 +220,7 @@ function TermTemplatesSection({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Left: Existing Templates */}
           <div>
             {isLoading ? (
@@ -261,7 +261,7 @@ function TermTemplatesSection({
           </div>
 
           {/* Right: Create Form */}
-          <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+          {false && <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
             <h3 className="font-semibold text-slate-900 mb-4">Create New Template</h3>
             {(serverError || serverErrorList.length > 0) && (
               <Alert variant="destructive" className="mb-4">
@@ -289,7 +289,7 @@ function TermTemplatesSection({
                     minLength: { value: 1, message: "Name cannot be empty" }
                   })}
                 />
-                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
+                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name?.message)}</p>}
               </div>
 
               <div>
@@ -335,7 +335,7 @@ function TermTemplatesSection({
                 {isPending ? "Creating..." : "Create Template"}
               </Button>
             </form>
-          </div>
+          </div>}
         </div>
       </CardContent>
     </Card>
@@ -450,9 +450,15 @@ function AcademicYearsSection({
           });
         },
         onError: (error: any) => {
+          let msg = "Failed to activate academic year";
+          if (error?.error?.message) {
+            msg = error.error.message;
+          } else if (error?.message) {
+            msg = error.message;
+          }
           toast({
             title: "Error",
-            description: error.message,
+            description: msg,
             variant: "destructive",
           });
         },
