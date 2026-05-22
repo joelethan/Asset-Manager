@@ -222,11 +222,9 @@ function TermTemplatesSection({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${!showCreateForm ? "lg:grid-cols-1" : ""}`}
-        >
+        <div className={`grid gap-6 ${showCreateForm ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
           {/* Left: Existing Templates */}
-          <div>
+          <div className={showCreateForm ? "" : "col-span-1 lg:col-span-2"}>
             {false && <Button
               size="sm"
               variant="outline"
