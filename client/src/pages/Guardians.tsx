@@ -66,7 +66,7 @@ export default function Guardians() {
     const { selectedTenant } = useTenant();
     const schoolId = selectedTenant?.id;
     const { data: students, isLoading: studentsLoading } = useStudents(schoolId);
-    const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<GuardianFormData>({
+    const { register, handleSubmit, reset, formState: { errors, isSubmitting }, setError, clearErrors } = useForm<GuardianFormData>({
         defaultValues: {
             firstName: "",
             lastName: "",
@@ -136,8 +136,13 @@ export default function Guardians() {
 
     const onSubmit = async (data: Omit<GuardianFormData, "students">) => {
         setApiError(null);
+        clearErrors("students");
         if (!selectedStudent) {
-            setApiError("A student must be selected");
+            setError("students", { type: "manual", message: "A student must be selected" });
+            return;
+        }
+        if (!selectedStudent.relation || selectedStudent.relation.trim() === "") {
+            setError("students", { type: "manual", message: "Relation is required" });
             return;
         }
         const payload: GuardianFormData = {
@@ -312,8 +317,8 @@ export default function Guardians() {
             breadcrumbs={[{ label: "Guardians" }]}
         >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 border-b">
-                    <TabsTrigger value="create">Create Guardian</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 border-b">
+                    {/* <TabsTrigger value="create">Create Guardian</TabsTrigger> */}
                     <TabsTrigger value="guardians">Guardians List</TabsTrigger>
                     <TabsTrigger value="messages">Guardian Messages</TabsTrigger>
                 </TabsList>
@@ -377,7 +382,7 @@ export default function Guardians() {
                                             <span className="text-xs ml-1">Primary</span>
                                         </div>
                                     )}
-                                    {errors.students && <div className="text-red-500 text-xs">At least one student is required</div>}
+                                    {errors.students && <div className="text-red-500 text-xs">{errors.students.message}</div>}
                                 </div>
                                 {apiError && <div className="text-red-500 text-xs">{apiError}</div>}
                                 <SubmitButton
