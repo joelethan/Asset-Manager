@@ -18,6 +18,7 @@ import { queryClient } from "./lib/queryClient";
 import ComingSoon from "./pages/ComingSoon";
 import Guardians from "./pages/Guardians";
 import ResultsManagement from "./pages/ResultsManagement";
+import SystemUsers from "./pages/SystemUsers";
 
 function RootRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
@@ -77,6 +78,7 @@ function AppRouter() {
             <Route path="/results" component={ResultsManagement} />
             <Route path="/subjects" component={Subjects} />
             <Route path="/guardians" component={Guardians} />
+            <Route path="/system-users" component={SystemUsers} />
             <Route path="/coming-soon" component={ComingSoon} />
             {/* <Route path="/report-cards" component={ReportCards} /> */}
             {/* <Route path="/settings" component={Settings} /> */}

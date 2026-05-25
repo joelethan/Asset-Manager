@@ -169,6 +169,7 @@ const ViewStudent: React.FC = () => {
                                                     <th className="px-3 py-2 text-sm font-medium">Relation</th>
                                                     <th className="px-3 py-2 text-sm font-medium">Email</th>
                                                     <th className="px-3 py-2 text-sm font-medium">Phone</th>
+                                                    <th className="px-3 py-2 text-sm font-medium">Is Primary?</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -178,6 +179,13 @@ const ViewStudent: React.FC = () => {
                                                         <td className="px-3 py-2 text-sm">{g.relation}</td>
                                                         <td className="px-3 py-2 text-sm">{g.email}</td>
                                                         <td className="px-3 py-2 text-sm">{g.phone}</td>
+                                                        <td className="px-3 py-2 text-sm">
+                                                            {g.is_primary ? (
+                                                                <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold border border-green-300">Primary</span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-300">Not_Primary</span>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

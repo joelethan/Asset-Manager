@@ -227,6 +227,13 @@ export const dashboardApi = {
     apiClient.get(`/dashboard/school/${schoolId}`),
 };
 
+export const adminApi = {
+  createSchoolAdmin: (data: unknown) => apiClient.post("/admins/school", data),
+  listSchoolAdmins: (schoolId?: string) =>
+    apiClient.get(`/admins/school${schoolId ? `?schoolId=${schoolId}` : ""}`),
+  listSuperAdmins: () => apiClient.get("/admins/super"),
+};
+
 export const reportCardsApi = {
   // Generate report cards (single, multiple, or classroom)
   generate: (schoolId: string, data: {
