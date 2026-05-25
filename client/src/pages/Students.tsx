@@ -397,7 +397,11 @@ export default function Students() {
     }
   };
 
+  // Add loading state for template download
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+
   const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true);
     try {
       const res = await studentsApi.templateDownload();
       if (!res.ok) throw new Error("Failed to download template");
@@ -413,6 +417,8 @@ export default function Students() {
       toast({ title: "Downloaded", description: "Template downloaded" });
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to download template", variant: "destructive" });
+    } finally {
+      setDownloadingTemplate(false);
     }
   };
 
@@ -686,9 +692,19 @@ export default function Students() {
                 variant="outline"
                 onClick={handleDownloadTemplate}
                 className="w-full mb-4"
+                disabled={downloadingTemplate}
               >
-                <DownloadCloud className="mr-2 h-4 w-4" />
-                Download Template
+                {downloadingTemplate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="mr-2 h-4 w-4" />
+                    Download Template
+                  </>
+                )}
               </Button>
 
               <label
