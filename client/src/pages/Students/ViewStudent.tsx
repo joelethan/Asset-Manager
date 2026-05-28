@@ -13,16 +13,24 @@ const ViewStudent: React.FC = () => {
     const schoolId = selectedTenant?.id as string;
     const { studentDetails, setStudentDetails } = useStructure();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStudentDetails({ identity: studentDetails.identity, details: studentDetails.details, loading: true });
+    const fetchStudentDetails = async (identity: string) => {
+        setStudentDetails({ identity, details: studentDetails.details, loading: true });
         try {
-            const response = await studentsApi.studentDetails(schoolId, studentDetails.identity);
+            const response = await studentsApi.studentDetails(schoolId, identity);
             const data = await response.json();
             if (data) {
-                setStudentDetails({ identity: studentDetails.identity, details: data, loading: false });
+                setStudentDetails({ identity, details: data, loading: false });
+            } else {
+                setStudentDetails({ identity, details: studentDetails.details, loading: false });
             }
-        } catch (err: any) { }
+        } catch (err: any) {
+            setStudentDetails({ identity, details: studentDetails.details, loading: false });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await fetchStudentDetails(studentDetails.identity);
     };
 
     // Guardian form state with react-hook-form
@@ -37,11 +45,11 @@ const ViewStudent: React.FC = () => {
         reValidateMode: "onChange"
     });
     const [guardianError, setGuardianError] = React.useState<string | null>(null);
-    const [guardianSuccess, setGuardianSuccess] = React.useState<string | null>(null);
+    // const [guardianSuccess, setGuardianSuccess] = React.useState<string | null>(null);
 
     const onGuardianSubmit = async (data: any) => {
         setGuardianError(null);
-        setGuardianSuccess(null);
+        // setGuardianSuccess(null);
         try {
             const studentId = studentDetails.details?.id;
             if (!studentId) {
@@ -56,8 +64,9 @@ const ViewStudent: React.FC = () => {
                 relation: data.relation
             });
             if (response.ok) {
-                setGuardianSuccess("Guardian added successfully!");
+                // setGuardianSuccess("Guardian added successfully!");
                 reset();
+                await fetchStudentDetails(studentDetails.identity);
             } else {
                 setGuardianError("Failed to add guardian.");
             }
@@ -266,7 +275,7 @@ const ViewStudent: React.FC = () => {
                                     </div>
                                 </form>
                                 {guardianError && <p className="text-red-600 mt-2">{guardianError}</p>}
-                                {guardianSuccess && <p className="text-green-600 mt-2">{guardianSuccess}</p>}
+                                {/* {guardianSuccess && <p className="text-green-600 mt-2">{guardianSuccess}</p>} */}
                             </div>
                         </div>
                     )}

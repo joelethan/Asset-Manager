@@ -225,7 +225,7 @@ export default function Register() {
                   }} disabled={isLoading} className="flex-1">
                     Reset
                   </Button>
-                  <Button type="submit" disabled className="flex-1">
+                  <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? "Registering..." : "Register User"}
                   </Button>
                 </div>

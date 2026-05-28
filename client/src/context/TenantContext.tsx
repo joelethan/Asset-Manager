@@ -4,6 +4,7 @@ import { useProfile } from "@/context/ProfileContext";
 interface Tenant {
   id: string;
   name: string;
+  institutionType?: string;
 }
 
 interface TenantContextType {
@@ -25,6 +26,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       const derivedTenants: Tenant[] = profile.memberships.map((m) => ({
         id: m.schoolId,
         name: m.schoolName,
+        institutionType: m.institutionType,
       }));
       setTenants(derivedTenants);
       if (derivedTenants.length > 0 && !selectedTenant) {

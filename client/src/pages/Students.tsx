@@ -48,7 +48,7 @@ interface StudentFormData {
 }
 
 interface AcademicYear {
-  id: number;
+  id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -82,7 +82,7 @@ interface Assessment {
   type: string;
   max_score: string;
   weight: string;
-  assessment_date?: string;
+  date?: string;
 }
 
 interface AssessmentFormData {
@@ -152,7 +152,7 @@ export default function Students() {
 
   // Assessment states
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+  const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [assessmentSubjects, setAssessmentSubjects] = useState<Subject[]>([]);
@@ -1195,7 +1195,7 @@ export default function Students() {
               ) : (
                 <Select
                   value={selectedYearId?.toString() || ""}
-                  onValueChange={(value: string) => setSelectedYearId(parseInt(value))}
+                  onValueChange={(value: string) => setSelectedYearId(value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select an academic year" />

@@ -34,6 +34,14 @@ interface SubjectFormData {
   name: string;
   code: string;
   description: string;
+  components: AssessmentComponentFormData[];
+}
+
+interface AssessmentComponentFormData {
+  name: string;
+  code: string;
+  type: string;
+  maxScore: string;
 }
 
 interface Assessment {
@@ -44,9 +52,9 @@ interface Assessment {
   classroom_definition_id: string;
   name: string;
   type: string;
-  max_score: string;
+  maxScore: string;
   weight: string;
-  assessment_date?: string;
+  date?: string;
 }
 
 interface AssessmentFormData {
@@ -105,13 +113,22 @@ export default function Subjects() {
     register,
     handleSubmit,
     reset,
+    control: subjectControl,
     formState: { errors },
   } = useForm<SubjectFormData>({
     defaultValues: {
       name: "",
       code: "",
       description: "",
+      components: [
+        { name: "", code: "", type: "WRITTEN", maxScore: "100" }
+      ],
     },
+  });
+
+  const { fields: componentFields, append: appendComponent, remove: removeComponent } = useFieldArray({
+    control: subjectControl,
+    name: "components",
   });
 
   const {
@@ -203,7 +220,29 @@ export default function Subjects() {
     setSubjectError(null);
     setSubjectErrorList([]);
     try {
-      const response = await subjectsApi.create(schoolId, data);
+      // Filter out empty components
+      const componentsToCreate = data.components.filter(c => c.name.trim());
+
+      if (componentsToCreate.length === 0) {
+        setSubjectError("At least one assessment component is required");
+        setSubjectErrorList(["Please add at least one assessment component"]);
+        setIsLoading(false);
+        return;
+      }
+
+      const payload = {
+        name: data.name,
+        code: data.code,
+        description: data.description,
+        components: componentsToCreate.map(c => ({
+          name: c.name,
+          code: c.code || c.name.substring(0, 3).toUpperCase(),
+          type: c.type,
+          maxScore: parseFloat(c.maxScore) || 100,
+        })),
+      };
+
+      const response = await subjectsApi.create(schoolId, payload);
       if (!response.ok) {
         let errorMsg = "Failed to create subject";
         let errorList: string[] = [];
@@ -483,24 +522,42 @@ export default function Subjects() {
                         <th className="px-3 py-2 text-sm font-medium">Name</th>
                         <th className="px-3 py-2 text-sm font-medium">Code</th>
                         <th className="px-3 py-2 text-sm font-medium">Description</th>
-                        <th className="px-3 py-2 text-sm font-medium">Status</th>
+                        <th className="px-3 py-2 text-sm font-medium">Papers / Components</th>
+                        {/* <th className="px-3 py-2 text-sm font-medium">Status</th> */}
                         <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {subjectOptions.map((subject) => (
+                      {subjectOptions.map((subject: any) => (
                         <tr key={subject.id} className="border-t">
                           <td className="px-3 py-2 font-medium">{subject.name}</td>
                           <td className="px-3 py-2">{subject.code}</td>
                           <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
                           <td className="px-3 py-2">
+                            {subject.components && subject.components.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {subject.components.map((component: any) => (
+                                  <span
+                                    key={component.id}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                                    title={`${component.name} (${component.type})`}
+                                  >
+                                    {`${component.code} - ${component.name}`}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">No components</span>
+                            )}
+                          </td>
+                          {/* <td className="px-3 py-2">
                             <span className={
                               `px-2 py-1 rounded-full text-xs font-medium ${subject.is_active ?
                                 "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`
                             }>
                               {subject.is_active ? "Active" : "Inactive"}
                             </span>
-                          </td>
+                          </td> */}
                           <td className="px-3 py-2 text-right space-x-2 flex justify-end">
                             <Button
                               variant="ghost"
@@ -534,7 +591,7 @@ export default function Subjects() {
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle>Create New Subject</CardTitle>
-              <CardDescription>Add a new subject to the school</CardDescription>
+              <CardDescription>Add a new subject with assessment components</CardDescription>
             </CardHeader>
             <CardContent>
               {(subjectError || subjectErrorList.length > 0) && (
@@ -550,56 +607,185 @@ export default function Subjects() {
                 </Alert>
               )}
               <form onSubmit={handleSubmit(handleCreateSubject)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Subject Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Mathematics"
-                    {...register("name", {
-                      required: "Subject name is required",
-                      minLength: { value: 2, message: "Name must be at least 2 characters" }
-                    })}
-                  />
-                  {errors?.name &&
-                    <p className="text-sm text-red-600">{errors.name.message}</p>}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* LEFT COLUMN: Subject Fields */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700">Subject Details</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="code">Subject Code *</Label>
-                  <Input
-                    id="code"
-                    placeholder="MATH"
-                    {...register("code", {
-                      required: "Subject code is required",
-                      minLength: { value: 2, message: "Code must be at least 2 characters" }
-                    })}
-                  />
-                  {errors?.code &&
-                    <p className="text-sm text-red-600">{errors.code.message}</p>}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Subject Name *</Label>
+                      <Input
+                        id="name"
+                        placeholder="Mathematics"
+                        {...register("name", {
+                          required: "Subject name is required",
+                          minLength: { value: 2, message: "Name must be at least 2 characters" }
+                        })}
+                      />
+                      {errors?.name &&
+                        <p className="text-sm text-red-600">{errors.name.message}</p>}
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    placeholder="Optional description of the subject"
-                    {...register("description")}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="code">Subject Code *</Label>
+                      <Input
+                        id="code"
+                        placeholder="MATH"
+                        {...register("code", {
+                          required: "Subject code is required",
+                          minLength: { value: 2, message: "Code must be at least 2 characters" }
+                        })}
+                      />
+                      {errors?.code &&
+                        <p className="text-sm text-red-600">{errors.code.message}</p>}
+                    </div>
 
-                <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Input
+                        id="description"
+                        placeholder="Optional description of the subject"
+                        {...register("description")}
+                      />
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: Assessment Components */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700">Assessment Components *</h3>
+
+                    <div className="space-y-3 max-h-96 overflow-y-auto border border-slate-200 rounded-md p-3">
+                      {componentFields.length === 0 ? (
+                        <p className="text-sm text-gray-500 italic">No components added. Add at least one.</p>
+                      ) : (
+                        componentFields.map((field, index) => (
+                          <div key={field.id} className="space-y-2 p-3 bg-slate-50 rounded-md border border-slate-100">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-medium text-gray-600">Component {index + 1}</span>
+                              {componentFields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeComponent(index)}
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`comp-name-${index}`} className="text-xs">Name *</Label>
+                              <Input
+                                id={`comp-name-${index}`}
+                                placeholder="e.g., Paper 1"
+                                size="sm"
+                                {...register(`components.${index}.name`, {
+                                  required: "Component name is required",
+                                })}
+                                className="text-sm"
+                              />
+                              {errors?.components?.[index]?.name &&
+                                <p className="text-xs text-red-600">{errors.components[index]?.name?.message}</p>}
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`comp-code-${index}`} className="text-xs">Code</Label>
+                              <Input
+                                id={`comp-code-${index}`}
+                                placeholder="e.g., P1 (auto-generated if empty)"
+                                size="sm"
+                                {...register(`components.${index}.code`)}
+                                className="text-sm"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label htmlFor={`comp-type-${index}`} className="text-xs">Type *</Label>
+                                <Controller
+                                  name={`components.${index}.type`}
+                                  control={subjectControl}
+                                  rules={{ required: "Type is required" }}
+                                  render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue placeholder="Select type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="WRITTEN">Written</SelectItem>
+                                        <SelectItem value="PRACTICAL">Practical</SelectItem>
+                                        <SelectItem value="ORAL">Oral</SelectItem>
+                                        <SelectItem value="COURSEWORK">Coursework</SelectItem>
+                                        <SelectItem value="PROJECT">Project</SelectItem>
+                                        <SelectItem value="PERFORMANCE">Performance</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                                {errors?.components?.[index]?.type &&
+                                  <p className="text-xs text-red-600">{errors.components[index]?.type?.message}</p>}
+                              </div>
+
+                              <div>
+                                <Label htmlFor={`comp-score-${index}`} className="text-xs">Max Score *</Label>
+                                <Input
+                                  id={`comp-score-${index}`}
+                                  type="number"
+                                  placeholder="100"
+                                  min="0"
+                                  step="0.01"
+                                  size="sm"
+                                  {...register(`components.${index}.maxScore`, {
+                                    required: "Max score is required",
+                                    min: { value: 0, message: "Must be >= 0" },
+                                  })}
+                                  className="text-sm"
+                                />
+                                {errors?.components?.[index]?.maxScore &&
+                                  <p className="text-xs text-red-600">{errors.components[index]?.maxScore?.message}</p>}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendComponent({
+                        name: "",
+                        code: "",
+                        type: "WRITTEN",
+                        maxScore: "100",
+                      })}
+                      className="w-full"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Subject
-                    </>
-                  )}
-                </Button>
+                      Add Component
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button type="submit" disabled={isLoading} className="flex-1">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Subject
+                      </>
+                    )}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -926,10 +1112,10 @@ export default function Subjects() {
                               <Input
                                 type="number"
                                 min={0}
-                                max={gradingAssessment?.max_score || 100}
+                                max={gradingAssessment?.maxScore || 100}
                                 {...control.register(`grades.${idx}.score`, {
                                   min: { value: 0, message: "Score must be at least 0" },
-                                  max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
+                                  max: { value: Number(gradingAssessment?.maxScore) || 100, message: `Max score is ${gradingAssessment?.maxScore}` },
                                   validate: value => value === "" || !isNaN(Number(value)) || "Must be a number",
                                 })}
                                 placeholder="Score"

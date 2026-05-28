@@ -369,6 +369,7 @@ function AcademicYearsSection({
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
     useUpdateAcademicYearStatus();
   const { toast } = useToast();
+  const [yearErrors, setYearErrors] = useState<Record<string, string>>({});
   const { register, handleSubmit, reset, formState: { errors, isValid }, control } = useForm({
     defaultValues: {
       name: "",
@@ -451,7 +452,14 @@ function AcademicYearsSection({
     );
   };
 
-  const handleActivateYear = (yearId: number) => {
+  const handleActivateYear = (yearId: string) => {
+    // Clear any previous error for this year
+    setYearErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[yearId];
+      return copy;
+    });
+
     updateStatus(
       { id: yearId, status: "active" },
       {
@@ -459,6 +467,11 @@ function AcademicYearsSection({
           toast({
             title: "Success",
             description: "Academic year activated",
+          });
+          setYearErrors((prev) => {
+            const copy = { ...prev };
+            delete copy[yearId];
+            return copy;
           });
         },
         onError: (error: any) => {
@@ -468,11 +481,22 @@ function AcademicYearsSection({
           } else if (error?.message) {
             msg = error.message;
           }
+          // keep toast for global visibility
           toast({
             title: "Error",
             description: msg,
             variant: "destructive",
           });
+          // record per-year error to show inline
+          setYearErrors((prev) => ({ ...prev, [yearId]: msg }));
+          // Auto-clear this error after a short delay
+          setTimeout(() => {
+            setYearErrors((prev) => {
+              const copy = { ...prev };
+              delete copy[yearId];
+              return copy;
+            });
+          }, 6000);
         },
       }
     );
@@ -502,12 +526,13 @@ function AcademicYearsSection({
               <div className="space-y-3">
                 {[...years].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map((year: any) => (
                   <AcademicYearCard
-                    key={year.id}
-                    year={year}
-                    onActivate={() => handleActivateYear(year.id)}
-                    isUpdatingStatus={isUpdatingStatus}
-                    schoolId={schoolId}
-                  />
+                      key={year.id}
+                      year={year}
+                      onActivate={() => handleActivateYear(year.id)}
+                      isUpdatingStatus={isUpdatingStatus}
+                      schoolId={schoolId}
+                      yearError={yearErrors?.[year.id]}
+                    />
                 ))}
               </div>
             ) : (
@@ -620,11 +645,13 @@ function AcademicYearCard({
   onActivate,
   isUpdatingStatus,
   schoolId,
+  yearError,
 }: {
   year: any;
   onActivate: () => void;
   isUpdatingStatus: boolean;
   schoolId: string;
+  yearError?: string;
 }) {
   // const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 
@@ -677,6 +704,13 @@ function AcademicYearCard({
           ))}
         </div>
       ) : null} */}
+      {yearError && (
+        <div className="mt-3">
+          <Alert variant="destructive">
+            <AlertDescription>{yearError}</AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   );
 }
