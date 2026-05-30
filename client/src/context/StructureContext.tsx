@@ -5,6 +5,7 @@ export interface Structure {
     years?: any[];
     terms?: any[];
     definitionsOptions?: any[];
+    subjectOptions?: any[];
     subjects?: any[];
 }
 
@@ -24,11 +25,17 @@ interface StructureContextProps {
         details: any;
     }>>;
     assessSelects: {
+        level: string;
+        subjectId: string;
+        componentId: string;
         yearId: string;
         termId: string;
         definitionId: string;
     };
     setAssessSelects: React.Dispatch<React.SetStateAction<{
+        level: string;
+        subjectId: string;
+        componentId: string;
         yearId: string;
         termId: string;
         definitionId: string;
@@ -114,6 +121,9 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
         details: {},
     });
     const [assessSelects, setAssessSelects] = useState({
+        level: "",
+        subjectId: "",
+        componentId: "",
         yearId: "",
         termId: "",
         definitionId: "",

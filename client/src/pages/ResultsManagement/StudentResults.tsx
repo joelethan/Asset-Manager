@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
-import { gradesApi, reportCardsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { gradesApi, reportCardsApi } from "@/lib/api";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -297,16 +297,18 @@ const StudentResults: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {byStudentResult.grades.map((g: any, i: number) => (
-                                        <tr key={i} className="border-t">
-                                            <td className="px-3 py-2 text-sm">{g.assessment?.subject?.name || '-'}</td>
-                                            <td className="px-3 py-2 text-sm">{g.assessment?.name || '-'}</td>
-                                            <td className="px-3 py-2 text-sm">{g.score}</td>
-                                            <td className="px-3 py-2 text-sm">{g.percentage}</td>
-                                            <td className="px-3 py-2 text-sm">{g.letter_grade}</td>
-                                            <td className="px-3 py-2 text-sm">{g.remarks ?? '-'}</td>
-                                        </tr>
-                                    ))}
+                                    {byStudentResult.grades.map((g: any, i: number) => {
+                                        return (
+                                            <tr key={i} className="border-t">
+                                                <td className="px-3 py-2 text-sm">{g.assessment?.component?.subject?.name} ({g.assessment?.component?.name || '-'})</td>
+                                                <td className="px-3 py-2 text-sm">{g.assessment?.name || '-'}</td>
+                                                <td className="px-3 py-2 text-sm">{g.score}</td>
+                                                <td className="px-3 py-2 text-sm">{g.percentage}</td>
+                                                <td className="px-3 py-2 text-sm">{g.letter_grade}</td>
+                                                <td className="px-3 py-2 text-sm">{g.remarks ?? '-'}</td>
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>

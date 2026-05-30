@@ -199,10 +199,12 @@ const ViewAssessmentsTab: FC = () => {
                         <table className="w-full text-left table-auto border-collapse">
                             <thead>
                                 <tr className="bg-gray-100">
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Component</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Type</th> */}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -210,8 +212,10 @@ const ViewAssessmentsTab: FC = () => {
                                     <tr key={i} className="border-t">
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32" /></td>
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24" /></td>
-                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16" /></td>
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24" /></td>
+                                        {/* <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16" /></td> */}
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-12" /></td>
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20" /></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -227,19 +231,23 @@ const ViewAssessmentsTab: FC = () => {
                         <table className="w-full text-left table-auto border-collapse">
                             <thead>
                                 <tr className="bg-gray-100">
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Component</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Type</th> */}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {listAssessResult.map((assessment: any) => (
                                     <tr key={assessment.id} className="border-t">
+                                        <td className="px-3 py-2 text-slate-600">{`${assessment.component?.subject?.name}` || '-'}</td>
                                         <td className="px-3 py-2 font-medium">{assessment.name}</td>
-                                        <td className="px-3 py-2 text-slate-600">{assessment.subject?.name || "-"}</td>
-                                        <td className="px-3 py-2">{assessment.type}</td>
-                                        <td className="px-3 py-2">{assessment.max_score}</td>
+                                        <td className="px-3 py-2">{`(${assessment.component?.code}) ${assessment.component?.name}` || '-'}</td>
+                                        {/* <td className="px-3 py-2">{`${assessment.type}` || '-'}</td> */}
+                                        <td className="px-3 py-2">{`${assessment.component?.max_score}` || '-'}</td>
+                                        <td className="px-3 py-2">{assessment.date ? new Date(assessment.date).toLocaleDateString() : '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>

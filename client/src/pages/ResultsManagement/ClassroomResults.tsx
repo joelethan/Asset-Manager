@@ -212,7 +212,7 @@ const ClassroomResults: React.FC = () => {
                                         <th className="px-3 py-2 text-sm font-medium">Reg No</th>
                                         {byDefinitionResult.assessments.map((assessment: any) => (
                                             <th key={assessment.id} className="px-3 py-2 text-sm font-medium">
-                                                {assessment.subject?.name || "-"} <span className="font-normal">({assessment.name})</span>
+                                                {`${assessment?.component?.subject?.name}: ${assessment?.component?.name}` || "-"} <span className="font-normal">({assessment.name})</span>
                                             </th>
                                         ))}
                                     </tr>
@@ -250,10 +250,14 @@ const ClassroomResults: React.FC = () => {
                     </div>
                 )}
             {/* No Data State */}
-            {!isLoading && Object.keys(byDefinitionResult).length === 0 && (
-                <div className="px-6 pb-6">
-                    <NoDataComponent message="No results found for this classroom in the selected year and term." />
-                </div>
+            {!isLoading && (
+                (Object.keys(byDefinitionResult).length === 0 ||
+                    (byDefinitionResult && Array.isArray(byDefinitionResult.assessments) && byDefinitionResult.assessments.length === 0 &&
+                        Array.isArray(byDefinitionResult.results) && byDefinitionResult.results.length === 0)) && (
+                    <div className="px-6 pb-6">
+                        <NoDataComponent message="No results found for this classroom in the selected year and term." />
+                    </div>
+                )
             )}
 
         </Card>

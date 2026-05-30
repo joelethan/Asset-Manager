@@ -92,7 +92,7 @@ interface AssessmentFormData {
   type: string;
   maxScore: string;
   weight: string;
-  assessmentDate: string;
+  date: string;
 }
 
 export default function Students() {
@@ -164,7 +164,7 @@ export default function Students() {
     type: "exam",
     maxScore: "100",
     weight: "0.4",
-    assessmentDate: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0],
   });
 
   // Fetch academic years and subjects on mount for assessments tab
@@ -545,7 +545,7 @@ export default function Students() {
         type: assessmentForm.type,
         maxScore: parseFloat(assessmentForm.maxScore),
         weight: parseFloat(assessmentForm.weight),
-        assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
+        date: new Date(assessmentForm.date).toISOString(),
       });
 
       if (!response.ok) throw new Error("Failed to create assessment");
@@ -559,7 +559,7 @@ export default function Students() {
         type: "exam",
         maxScore: "100",
         weight: "0.4",
-        assessmentDate: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split("T")[0],
       });
       toast({ title: "Success", description: "Assessment created successfully" });
     } catch (error) {
@@ -1380,8 +1380,8 @@ export default function Students() {
                       <Input
                         id="date"
                         type="date"
-                        value={assessmentForm.assessmentDate}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
+                        value={assessmentForm.date}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, date: e.target.value })}
                       />
                     </div>
                   </div>

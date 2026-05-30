@@ -49,10 +49,6 @@ export default function Dashboard() {
     fetchDashboard();
   }, [schoolId]);
 
-  useEffect(() => {
-    console.log("Dashboard data:", dashboard);
-  }, [dashboard]);
-
   // if (loading && !dashboard) {
   //   return (
   //     <AppLayout title="Dashboard" description="Loading..." breadcrumbs={[{ label: "Dashboard" }]}>
