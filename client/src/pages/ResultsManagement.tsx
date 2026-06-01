@@ -2,6 +2,7 @@ import NoDataComponent from "@/components/common/NoDataComponent";
 import SubmitButton from "@/components/common/SubmitButton";
 import { AppLayout } from "@/components/layout/AppLayout";
 import ReportCard, { exampleConfig, exampleData } from "@/components/ReportCard";
+import ReportCard2, { exampleConfig2, exampleData2 } from "@/components/ReportCard2";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -383,13 +384,26 @@ export default function ResultsManagement() {
                     <ClassroomResults />
                 </TabsContent>
 
-                {/* View Report Tab */}
+                {/* View Report 1 Tab */}
                 <TabsContent value="view-report-1" className="space-y-4">
                     <Card className="border-slate-200 pt-4">
                         <CardContent>
                             <div className="flex justify-center">
                                 <div className="shadow print:shadow-none border print:border-0 bg-white">
                                     <ReportCard data={exampleData} config={exampleConfig} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* View Report 2 Tab */}
+                <TabsContent value="view-report-2" className="space-y-4">
+                    <Card className="border-slate-200 pt-4">
+                        <CardContent>
+                            <div className="flex justify-center">
+                                <div className="shadow print:shadow-none border print:border-0 bg-white">
+                                    <ReportCard2 data={exampleData2} config={exampleConfig2} />
                                 </div>
                             </div>
                         </CardContent>
