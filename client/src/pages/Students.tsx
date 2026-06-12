@@ -1036,7 +1036,7 @@ export default function Students() {
         <TabsContent value="student-enrollments" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Student Enrollments</CardTitle>
+              {/* <CardTitle>Student Enrollments</CardTitle> */}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Year and Definition Selection */}

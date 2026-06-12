@@ -400,7 +400,7 @@ export default function Guardians() {
                     <Card className="border-slate-200">
                         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
-                                <CardTitle>All Guardians</CardTitle>
+                                {/* <CardTitle>All Guardians</CardTitle> */}
                                 <CardDescription>Total: {guardians.length} guardians</CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -535,7 +535,7 @@ export default function Guardians() {
                 <TabsContent value="messages">
                     <Card className="border-slate-200">
                         <CardHeader>
-                            <CardTitle>Send Message to Primary Guardian</CardTitle>
+                            {/* <CardTitle>Send Message to Primary Guardian</CardTitle> */}
                             <CardDescription>
                                 Select a student and send a message to their primary guardian.
                             </CardDescription>

@@ -539,102 +539,105 @@ export default function Subjects() {
           ) : (
             <Card className="border-slate-200">
               <CardHeader>
-                <CardTitle>All Subjects</CardTitle>
+                {/* <CardTitle>All Subjects</CardTitle> */}
                 <CardDescription>Total: {subjectOptions.length} subjects</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* make table scrollable internally */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left table-auto border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-3 py-2 text-sm font-medium">Name</th>
-                        <th className="px-3 py-2 text-sm font-medium">Code</th>
-                        <th className="px-3 py-2 text-sm font-medium">Description</th>
-                        <th className="px-3 py-2 text-sm font-medium">Level</th>
-                        <th className="px-3 py-2 text-sm font-medium">Papers / Components</th>
-                        {/* <th className="px-3 py-2 text-sm font-medium">Status</th> */}
-                        <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjectOptions.map((subject: any) => (
-                        <React.Fragment key={subject.id}>
-                          <tr
-                            className={`border-t cursor-pointer ${expandedSubjectId === subject.id ? "bg-blue-50/30" : ""}`}
-                            onClick={() => handleRowClick(subject.id)}
-                          >
-                            <td className="px-3 py-2 font-medium">{subject.name}</td>
-                            <td className="px-3 py-2">{subject.code}</td>
-                            <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
-                            <td className="px-3 py-2 text-sm">{subject.level || "-"}</td>
-                            <td className="px-3 py-2">
-                              {subject.components && subject.components.length > 0 ? (
-                                <span className="text-xs text-blue-700">{subject.components.length} component(s)</span>
-                              ) : (
-                                <span className="text-xs text-gray-400">No components</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-right space-x-2 flex justify-end">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  startEditSubject(subject);
-                                }}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleDeleteSubject(subject.id);
-                                }}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                          {expandedSubjectId === subject.id && (
-                            <tr>
-                              <td colSpan={6} className="bg-blue-50/20 px-3 py-2">
-                                <div>
-                                  {/* <div className="font-semibold mb-2">Assessment Components:</div> */}
-                                  {subject.components && subject.components.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                      {subject.components.map((component: any) => (
-                                        <div
-                                          key={component.id}
-                                          className="inline-flex flex-col items-start px-3 py-2 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 min-w-[160px]"
-                                          title={`${component.name} (${component.type})`}
-                                        >
-                                          <div>
-                                            <span className="font-semibold">{component.code}</span> - {component.name}
-                                          </div>
-                                          <div className="text-slate-600">
-                                            Type: <span className="font-semibold">{component.type}</span>
-                                          </div>
-                                          <div className="text-slate-600">
-                                            Max Score: <span className="font-semibold">{component.max_score}</span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">No components for this subject.</span>
-                                  )}
-                                </div>
+                  <div className="max-h-[50vh] overflow-y-auto">
+                    <table className="w-full text-left table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 text-sm font-medium">Name</th>
+                          {/* <th className="px-3 py-2 text-sm font-medium">Code</th> */}
+                          <th className="px-3 py-2 text-sm font-medium">Description</th>
+                          <th className="px-3 py-2 text-sm font-medium">Level</th>
+                          <th className="px-3 py-2 text-sm font-medium">Papers / Components</th>
+                          {/* <th className="px-3 py-2 text-sm font-medium">Status</th> */}
+                          <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subjectOptions.map((subject: any) => (
+                          <React.Fragment key={subject.id}>
+                            <tr
+                              className={`border-t cursor-pointer ${expandedSubjectId === subject.id ? "bg-blue-50/30" : ""}`}
+                              onClick={() => handleRowClick(subject.id)}
+                            >
+                              <td className="px-3 py-2 font-medium">{subject.name}</td>
+                              {/* <td className="px-3 py-2">{subject.code}</td> */}
+                              <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
+                              <td className="px-3 py-2 text-sm">{subject.level || "-"}</td>
+                              <td className="px-3 py-2">
+                                {subject.components && subject.components.length > 0 ? (
+                                  <span className="text-xs text-blue-700">{subject.components.length} component(s)</span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">No components</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right space-x-2 flex justify-end">
+                                {/* <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    startEditSubject(subject);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button> */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleDeleteSubject(subject.id);
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </td>
                             </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+                            {expandedSubjectId === subject.id && (
+                              <tr>
+                                <td colSpan={6} className="bg-blue-50/20 px-3 py-2">
+                                  <div>
+                                    {/* <div className="font-semibold mb-2">Assessment Components:</div> */}
+                                    {subject.components && subject.components.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {subject.components.map((component: any) => (
+                                          <div
+                                            key={component.id}
+                                            className="inline-flex flex-col items-start px-3 py-2 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 min-w-[160px]"
+                                            title={`${component.name} (${component.type})`}
+                                          >
+                                            <div>
+                                              <span className="font-semibold">{component.code}</span> - {component.name}
+                                            </div>
+                                            <div className="text-slate-600">
+                                              Type: <span className="font-semibold">{component.type}</span>
+                                            </div>
+                                            <div className="text-slate-600">
+                                              Max Score: <span className="font-semibold">{component.max_score}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">No components for this subject.</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -645,8 +648,8 @@ export default function Subjects() {
         <TabsContent value="create" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Create New Subject</CardTitle>
-              <CardDescription>Add a new subject with assessment components</CardDescription>
+              {/* <CardTitle>Create New Subject</CardTitle> */}
+              {/* <CardDescription>Add a new subject with assessment components</CardDescription> */}
             </CardHeader>
             <CardContent>
               {(subjectError || subjectErrorList.length > 0) && (
@@ -836,7 +839,7 @@ export default function Subjects() {
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={watch("level")?.toLowerCase() !== "a-level"}
+                      // disabled={watch("level")?.toLowerCase() !== "a-level"}
                       size="sm"
                       onClick={() => appendComponent({
                         name: "",
@@ -876,7 +879,7 @@ export default function Subjects() {
         <TabsContent value="view-assessments" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>View Assessments</CardTitle>
+              {/* <CardTitle>View Assessments</CardTitle> */}
             </CardHeader>
             <CardContent className="space-y-4">
               <ViewAssessmentsTab />
@@ -888,7 +891,7 @@ export default function Subjects() {
         <TabsContent value="assessments-list" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Grade Assessment</CardTitle>
+              {/* <CardTitle>Grade Assessment</CardTitle>  */}
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -1294,7 +1297,7 @@ export default function Subjects() {
         <TabsContent value="create-assessment" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Create New Assessment</CardTitle>
+              {/* <CardTitle>Create New Assessment</CardTitle> */}
             </CardHeader>
 
             <CardContent>

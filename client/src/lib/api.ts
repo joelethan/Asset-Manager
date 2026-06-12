@@ -274,5 +274,7 @@ export const reportCardsApi = {
     yearId: string,
     termId: string,
     identity: string,
-  ) => apiClient.download(`/schools/${schoolId}/results/report-cards/by-identity/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+  ) => apiClient.download(`/schools/${schoolId}/report-cards/by-identity/auto/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
 };
+// ) => apiClient.download(`/schools/${schoolId}/report-card-2/dummy/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+// ) => apiClient.download(`/schools/${schoolId}/report-cards/by-identity/auto/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
