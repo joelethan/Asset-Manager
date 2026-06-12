@@ -1527,7 +1527,7 @@ export default function Subjects() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="END_OF_TERM">END OF TERM</SelectItem>
-                            <SelectItem value="QUIZ">QUIZ</SelectItem>
+                            <SelectItem value="CAT">CONTINUOUS ASSESSMENT</SelectItem>
                             <SelectItem value="MIDTERM">MIDTERM</SelectItem>
                           </SelectContent>
                         </Select>
