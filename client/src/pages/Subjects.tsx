@@ -42,7 +42,6 @@ interface AssessmentComponentFormData {
   name: string;
   code: string;
   type: string;
-  maxScore: string;
 }
 
 interface Assessment {
@@ -127,7 +126,7 @@ export default function Subjects() {
       description: "",
       level: "",
       components: [
-        { name: "", code: "", type: "WRITTEN", maxScore: "100" }
+        { name: "", code: "", type: "WRITTEN" }
       ],
     },
   });
@@ -250,7 +249,6 @@ export default function Subjects() {
           name: c.name,
           code: c.code || c.name.substring(0, 3).toUpperCase(),
           type: c.type,
-          maxScore: parseFloat(c.maxScore) || 100,
         })),
       };
 
@@ -347,6 +345,7 @@ export default function Subjects() {
         name: data.name,
         type: data.type,
         weight: parseFloat(data.weight),
+        maxScore: parseFloat(data.maxScore),
         date: timestamp,
       };
       const response = await assessmentsApi.create(schoolId, payload);
@@ -620,9 +619,6 @@ export default function Subjects() {
                                             <div className="text-slate-600">
                                               Type: <span className="font-semibold">{component.type}</span>
                                             </div>
-                                            <div className="text-slate-600">
-                                              Max Score: <span className="font-semibold">{component.max_score}</span>
-                                            </div>
                                           </div>
                                         ))}
                                       </div>
@@ -784,7 +780,7 @@ export default function Subjects() {
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
+                            {/* <div className="grid grid-cols-2 gap-2"> */}
                               <div>
                                 <Label htmlFor={`comp-type-${index}`} className="text-xs">Type *</Label>
                                 <Controller
@@ -812,26 +808,9 @@ export default function Subjects() {
                                 )}
                               </div>
 
-                              <div>
-                                <Label htmlFor={`comp-score-${index}`} className="text-xs">Max Score *</Label>
-                                <Input
-                                  id={`comp-score-${index}`}
-                                  type="number"
-                                  placeholder="100"
-                                  min="0"
-                                  step="0.01"
-                                  size="sm"
-                                  {...register(`components.${index}.maxScore`, {
-                                    required: "Max score is required",
-                                    min: { value: 0, message: "Must be >= 0" },
-                                  })}
-                                  className="text-sm"
-                                />
-                                {errors?.components?.[index]?.maxScore &&
-                                  <p className="text-xs text-red-600">{errors.components[index]?.maxScore?.message}</p>}
-                              </div>
+
                             </div>
-                          </div>
+                          // </div>
                         ))
                       )}
                     </div>
@@ -845,7 +824,6 @@ export default function Subjects() {
                         name: "",
                         code: "",
                         type: "WRITTEN",
-                        maxScore: "100",
                       })}
                       className="w-full"
                     >
@@ -1538,7 +1516,7 @@ export default function Subjects() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-weight">Weight *</Label>
                     <Input
@@ -1555,6 +1533,22 @@ export default function Subjects() {
                     />
                     {assessmentErrors?.weight &&
                       <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="assess-maxScore">Max Score *</Label>
+                    <Input
+                      id="assess-maxScore"
+                      type="number"
+                      step="0.1"
+                      placeholder="100"
+                      {...registerAssessment("maxScore", {
+                        required: "Max score is required",
+                        min: { value: 0, message: "Must be 0 or more" },
+                        validate: value => !isNaN(Number(value)) || "Must be a number"
+                      })}
+                    />
+                    {assessmentErrors?.maxScore &&
+                      <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="assess-date">Assessment Date *</Label>

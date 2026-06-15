@@ -275,7 +275,7 @@ const ViewAssessmentsTab: FC = () => {
                                         )}
                                         <td className="px-3 py-2">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                                                {assessment.component?.max_score || '-'}
+                                                {assessment.max_score || '-'}
                                             </span>
                                         </td>
                                         {/* <td className="px-3 py-2">{assessment.date ? new Date(assessment.date).toLocaleDateString() : '-'}</td> */}
