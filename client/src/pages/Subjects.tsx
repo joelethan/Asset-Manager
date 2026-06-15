@@ -187,7 +187,7 @@ export default function Subjects() {
       termId: "",
       subjectId: "",
       classroomDefinitionId: "",
-      name: "",
+      name: "Exams",
       type: "END_OF_TERM",
       maxScore: "100",
       weight: "0.4",
@@ -839,7 +839,7 @@ export default function Subjects() {
                     <Button
                       type="button"
                       variant="outline"
-                      // disabled={watch("level")?.toLowerCase() !== "a-level"}
+                      disabled={watch("level")?.toLowerCase() !== "a-level"}
                       size="sm"
                       onClick={() => appendComponent({
                         name: "",
@@ -1497,7 +1497,7 @@ export default function Subjects() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                {/* <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-name">Assessment Name *</Label>
                     <Input
@@ -1508,7 +1508,7 @@ export default function Subjects() {
                     {assessmentErrors?.name &&
                       <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
@@ -1526,9 +1526,9 @@ export default function Subjects() {
                             <SelectValue placeholder="Select a type..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="END_OF_TERM">END OF TERM</SelectItem>
                             <SelectItem value="CAT">CONTINUOUS ASSESSMENT</SelectItem>
-                            <SelectItem value="MIDTERM">MIDTERM</SelectItem>
+                            <SelectItem value="MIDTERM">MID TERM</SelectItem>
+                            <SelectItem value="END_OF_TERM">END OF TERM</SelectItem>
                           </SelectContent>
                         </Select>
                       )}

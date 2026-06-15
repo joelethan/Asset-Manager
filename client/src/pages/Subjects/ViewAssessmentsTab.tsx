@@ -13,6 +13,19 @@ import { assessmentsApi } from "@/lib/api";
 import { FC, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+// helper to display short labels for assessment types
+function getAssessmentTypeLabel(type?: string): string {
+    if (!type) return '';
+    switch (type) {
+        case 'END_OF_TERM':
+            return 'EOT';
+        case 'MIDTERM':
+            return 'MOT';
+        default:
+            return type;
+    }
+}
+
 const ViewAssessmentsTab: FC = () => {
     const {
         structure,
@@ -26,6 +39,7 @@ const ViewAssessmentsTab: FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [assessmentLevel, setAssessmentLevel] = useState<string>("O-Level");
     const {
         control,
         handleSubmit,
@@ -70,6 +84,7 @@ const ViewAssessmentsTab: FC = () => {
             const resultData = await response.json();
             if (Array.isArray(resultData) && resultData.length > 0) {
                 setListAssessResult(resultData[0].assessments || []);
+                setAssessmentLevel(resultData[0].classroomDefinition?.level || "O-Level");
             } else {
                 setListAssessResult([]);
             }
@@ -200,11 +215,12 @@ const ViewAssessmentsTab: FC = () => {
                             <thead>
                                 <tr className="bg-gray-100">
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Weight</th>
                                     <th className="px-3 py-2 text-sm font-medium">Component</th>
                                     {/* <th className="px-3 py-2 text-sm font-medium">Type</th> */}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Date</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Date</th> */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,22 +248,37 @@ const ViewAssessmentsTab: FC = () => {
                             <thead>
                                 <tr className="bg-gray-100">
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Component</th>
-                                    {/* <th className="px-3 py-2 text-sm font-medium">Type</th> */}
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Weight</th>
+                                    {assessmentLevel === "A-Level" && (
+                                        <th className="px-3 py-2 text-sm font-medium">Component</th>
+                                    )}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Date</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Date</th> */}
                                 </tr>
                             </thead>
                             <tbody>
                                 {listAssessResult.map((assessment: any) => (
                                     <tr key={assessment.id} className="border-t">
                                         <td className="px-3 py-2 text-slate-600">{`${assessment.component?.subject?.name}` || '-'}</td>
-                                        <td className="px-3 py-2 font-medium">{assessment.name}</td>
-                                        <td className="px-3 py-2">{`(${assessment.component?.code}) ${assessment.component?.name}` || '-'}</td>
-                                        {/* <td className="px-3 py-2">{`${assessment.type}` || '-'}</td> */}
-                                        <td className="px-3 py-2">{`${assessment.component?.max_score}` || '-'}</td>
-                                        <td className="px-3 py-2">{assessment.date ? new Date(assessment.date).toLocaleDateString() : '-'}</td>
+                                        <td className="px-3 py-2 font-medium">{getAssessmentTypeLabel(assessment.type)}</td>
+                                        <td className="px-3 py-2">
+                                            <span
+                                                title={assessment.weight != null ? Number(assessment.weight).toFixed(2) : '-'}
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
+                                            >
+                                                {assessment.weight != null ? Number(assessment.weight).toFixed(2) : '-'}
+                                            </span>
+                                        </td>
+                                        {assessmentLevel === "A-Level" && (
+                                            <td className="px-3 py-2">{`(${assessment.component?.code}) ${assessment.component?.name}` || '-'}</td>
+                                        )}
+                                        <td className="px-3 py-2">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                                {assessment.component?.max_score || '-'}
+                                            </span>
+                                        </td>
+                                        {/* <td className="px-3 py-2">{assessment.date ? new Date(assessment.date).toLocaleDateString() : '-'}</td> */}
                                     </tr>
                                 ))}
                             </tbody>
