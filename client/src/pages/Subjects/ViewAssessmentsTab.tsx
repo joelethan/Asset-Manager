@@ -13,6 +13,19 @@ import { assessmentsApi } from "@/lib/api";
 import { FC, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+// helper to display short labels for assessment types
+function getAssessmentTypeLabel(type?: string): string {
+    if (!type) return '';
+    switch (type) {
+        case 'END_OF_TERM':
+            return 'EOT';
+        case 'MIDTERM':
+            return 'MOT';
+        default:
+            return type;
+    }
+}
+
 const ViewAssessmentsTab: FC = () => {
     const {
         structure,
@@ -26,6 +39,7 @@ const ViewAssessmentsTab: FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [assessmentLevel, setAssessmentLevel] = useState<string>("O-Level");
     const {
         control,
         handleSubmit,
@@ -70,6 +84,7 @@ const ViewAssessmentsTab: FC = () => {
             const resultData = await response.json();
             if (Array.isArray(resultData) && resultData.length > 0) {
                 setListAssessResult(resultData[0].assessments || []);
+                setAssessmentLevel(resultData[0].classroomDefinition?.level || "O-Level");
             } else {
                 setListAssessResult([]);
             }
@@ -199,10 +214,13 @@ const ViewAssessmentsTab: FC = () => {
                         <table className="w-full text-left table-auto border-collapse">
                             <thead>
                                 <tr className="bg-gray-100">
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Weight</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Component</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Type</th> */}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Date</th> */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -210,8 +228,10 @@ const ViewAssessmentsTab: FC = () => {
                                     <tr key={i} className="border-t">
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32" /></td>
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24" /></td>
-                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16" /></td>
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24" /></td>
+                                        {/* <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16" /></td> */}
                                         <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-12" /></td>
+                                        <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20" /></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -227,19 +247,38 @@ const ViewAssessmentsTab: FC = () => {
                         <table className="w-full text-left table-auto border-collapse">
                             <thead>
                                 <tr className="bg-gray-100">
-                                    <th className="px-3 py-2 text-sm font-medium">Assessment Name</th>
                                     <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                    <th className="px-3 py-2 text-sm font-medium">Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Assessment Type</th>
+                                    <th className="px-3 py-2 text-sm font-medium">Weight</th>
+                                    {assessmentLevel === "A-Level" && (
+                                        <th className="px-3 py-2 text-sm font-medium">Component</th>
+                                    )}
                                     <th className="px-3 py-2 text-sm font-medium">Max Score</th>
+                                    {/* <th className="px-3 py-2 text-sm font-medium">Date</th> */}
                                 </tr>
                             </thead>
                             <tbody>
                                 {listAssessResult.map((assessment: any) => (
                                     <tr key={assessment.id} className="border-t">
-                                        <td className="px-3 py-2 font-medium">{assessment.name}</td>
-                                        <td className="px-3 py-2 text-slate-600">{assessment.subject?.name || "-"}</td>
-                                        <td className="px-3 py-2">{assessment.type}</td>
-                                        <td className="px-3 py-2">{assessment.max_score}</td>
+                                        <td className="px-3 py-2 text-slate-600">{`${assessment.component?.subject?.name}` || '-'}</td>
+                                        <td className="px-3 py-2 font-medium">{getAssessmentTypeLabel(assessment.type)}</td>
+                                        <td className="px-3 py-2">
+                                            <span
+                                                title={assessment.weight != null ? Number(assessment.weight).toFixed(2) : '-'}
+                                                className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
+                                            >
+                                                {assessment.weight != null ? Number(assessment.weight).toFixed(2) : '-'}
+                                            </span>
+                                        </td>
+                                        {assessmentLevel === "A-Level" && (
+                                            <td className="px-3 py-2">{`(${assessment.component?.code}) ${assessment.component?.name}` || '-'}</td>
+                                        )}
+                                        <td className="px-3 py-2">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                                {assessment.max_score || '-'}
+                                            </span>
+                                        </td>
+                                        {/* <td className="px-3 py-2">{assessment.date ? new Date(assessment.date).toLocaleDateString() : '-'}</td> */}
                                     </tr>
                                 ))}
                             </tbody>
@@ -247,9 +286,26 @@ const ViewAssessmentsTab: FC = () => {
                     </div>
                 )}
                 {!loading && !error && listAssessResult?.length === 0 && (
-                    <div className="mt-6 text-gray-500 text-center">
-                        <div className="mb-2 font-semibold">No assessments found for selected filters.</div>
-                        <div className="text-sm">Try changing the filters or check if assessments have been created for this classroom.</div>
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <svg
+                            className="w-12 h-12 text-gray-300 mb-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 17v.01M12 7v6m0 8a9 9 0 100-18 9 9 0 000 18z"
+                            />
+                        </svg>
+                        <div className="text-base font-medium text-gray-700 mb-1">
+                            No assessments found for selected filters.
+                        </div>
+                        <div className="text-sm text-gray-500 text-center max-w-xs">
+                            Try changing the filters or check if assessments have been created for this classroom.
+                        </div>
                     </div>
                 )}
             </form>

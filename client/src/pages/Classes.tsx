@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { classroomDefinitionsApi } from "@/lib/api";
 import { AlertCircle, CheckCircle2, Edit2, Loader2, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 interface ClassroomDefinition {
   id: string;
@@ -61,7 +61,7 @@ export default function Classes() {
   const [classroomServerError, setClassroomServerError] = useState<string>("");
   const [classroomServerErrorList, setClassroomServerErrorList] = useState<string[]>([]);
   // Form (react-hook-form)
-  const { register, handleSubmit, reset, formState: { errors, isValid } } = useForm({
+  const { register, handleSubmit, reset, control, formState: { errors, isValid } } = useForm({
     defaultValues: { name: "", level: "", ordinal: 1 },
     mode: "onChange",
   });
@@ -353,15 +353,38 @@ export default function Classes() {
                       })} />
                       {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>}
                     </div>
-                    <div>
-                      <Label htmlFor="class-level">Level *</Label>
-                      <Input id="class-level" placeholder="e.g., Senior" {...register("level", {
+                    {selectedTenant?.institutionType === "SECONDARY_SCHOOL" ? (
+                      <div>
+                        <Label htmlFor="class-level">Level *</Label>
+                        <Controller
+                          name="level"
+                          control={control}
+                          rules={{ required: "Level is required" }}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger id="class-level">
+                                <SelectValue placeholder="Select level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="O-Level">O-Level</SelectItem>
+                                <SelectItem value="A-Level">A-Level</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {errors.level && <p className="text-xs text-red-500 mt-1">{errors.level.message as string}</p>}
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="class-level">Level *</Label>
+                        <Input id="class-level" placeholder="e.g., Senior" {...register("level", {
                         required: "Level is required",
                         minLength: { value: 2, message: "Level must be at least 2 characters" },
                         validate: value => value.trim().length > 0 || "Level cannot be empty"
                       })} />
                       {errors.level && <p className="text-xs text-red-500 mt-1">{errors.level.message as string}</p>}
                     </div>
+                    )}
                     <div>
                       <Label htmlFor="class-ordinal">Ordinal *</Label>
                       <Input id="class-ordinal" type="number" min={1} placeholder="e.g., 1" {...register("ordinal", {

@@ -1,5 +1,3 @@
-import React from "react";
-
 // Type definitions
 export interface ReportCardConfig {
   showCredits: boolean;
@@ -10,53 +8,43 @@ export interface ReportCardConfig {
   showActivities: boolean;
 }
 
+export interface SubjectComponent {
+  name: string;
+  score: number;
+  grade: string;
+  credits?: number;
+  remarks: string;
+}
+
+export interface Subject {
+  name: string;
+  // O-level fields
+  score?: number;
+  grade?: string;
+  credits?: number;
+  remarks?: string;
+  // A-level fields
+  components?: SubjectComponent[];
+}
+
 export interface ReportCardData {
-  school: {
-    name: string;
-    contact: string;
-    motto: string;
-  };
-  term: {
-    name: string;
-    year: string;
-    dates: string;
-  };
-  student: {
-    name: string;
-    regNo: string;
-    class: string;
-    stream: string;
-  };
-  subjects: Array<{
-    name: string;
-    score: number;
-    grade: string;
-    credits?: number;
-    remarks: string;
-  }>;
+  school: { name: string; contact: string; motto: string | null };
+  term: { name: string; year: string; dates: string };
+  student: { name: string; regNo: string; class: string; stream: string };
+  subjects: Subject[];
   summary: {
     totalMarks: number;
     totalCredits?: number;
     average: number;
     gpa?: number;
     division?: string;
-    rank?: number;
+    rank?: number | string;
   };
-  attendance?: {
-    present: number;
-    absent: number;
-  };
+  attendance?: { present: number; absent: number };
   conduct?: string;
   activities?: string;
-  comments: {
-    teacher: string;
-    head: string;
-  };
-  grading: Array<{
-    label: string;
-    range: string;
-    description: string;
-  }>;
+  comments?: { teacher?: string; head?: string };
+  grading?: Array<{ label: string; range: string; description: string }>;
 }
 
 // 1. Header Component
@@ -107,12 +95,13 @@ function StudentInfo({ student }: { student: ReportCardData['student'] }) {
 }
 
 // 3. AcademicTable Component
-function AcademicTable({ subjects, showCredits }: { subjects: ReportCardData['subjects']; showCredits: boolean }) {
+function AcademicTable({ subjects, showCredits }: { subjects: Array<{ name: string; score?: number; grade?: string; credits?: number; remarks?: string; components?: Array<{ name: string; score: number; grade: string; credits?: number; remarks: string; }>; }>; showCredits: boolean }) {
   return (
     <table className="w-full border border-gray-400 print:border-black mb-4 text-sm">
       <thead className="bg-gray-100 print:bg-white">
         <tr>
           <th className="border border-gray-400 print:border-black px-2 py-1">Subject</th>
+          <th className="border border-gray-400 print:border-black px-2 py-1">Paper</th>
           <th className="border border-gray-400 print:border-black px-2 py-1">Score</th>
           <th className="border border-gray-400 print:border-black px-2 py-1">Grade</th>
           {showCredits && <th className="border border-gray-400 print:border-black px-2 py-1">Credits</th>}
@@ -120,15 +109,31 @@ function AcademicTable({ subjects, showCredits }: { subjects: ReportCardData['su
         </tr>
       </thead>
       <tbody>
-        {subjects.map((sub, i) => (
-          <tr key={i}>
-            <td className="border border-gray-400 print:border-black px-2 py-1">{sub.name}</td>
-            <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.score}</td>
-            <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.grade}</td>
-            {showCredits && <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.credits ?? '-'}</td>}
-            <td className="border border-gray-400 print:border-black px-2 py-1">{sub.remarks}</td>
-          </tr>
-        ))}
+        {subjects.map((subj, subjIdx) =>
+          Array.isArray(subj.components) && subj.components.length > 0 ? (
+            subj.components.map((comp, compIdx) => (
+              <tr key={`${subjIdx}-${compIdx}`}>
+                {compIdx === 0 ? (
+                  <td className="border border-gray-400 print:border-black px-2 py-1" rowSpan={subj.components ? subj.components.length : 1}>{subj.name}</td>
+                ) : null}
+                <td className="border border-gray-400 print:border-black px-2 py-1">{comp.name}</td>
+                <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{comp.score}</td>
+                <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{comp.grade}</td>
+                {showCredits && <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{comp.credits ?? '-'}</td>}
+                <td className="border border-gray-400 print:border-black px-2 py-1">{comp.remarks}</td>
+              </tr>
+            ))
+          ) : (
+            <tr key={subjIdx}>
+              <td className="border border-gray-400 print:border-black px-2 py-1">{subj.name}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1">-</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{subj.score}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{subj.grade}</td>
+              {showCredits && <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{subj.credits ?? '-'}</td>}
+              <td className="border border-gray-400 print:border-black px-2 py-1">{subj.remarks}</td>
+            </tr>
+          )
+        )}
       </tbody>
     </table>
   );
@@ -180,11 +185,12 @@ function Activities({ activities }: { activities?: string }) {
 }
 
 // 6. Comments Component
-function Comments({ comments }: { comments: ReportCardData['comments'] }) {
+function Comments({ comments }: { comments?: ReportCardData['comments'] }) {
+  if (!comments) return null;
   return (
     <div className="mb-4 text-sm">
-      <div><span className="font-semibold">Teacher's Remark:</span> {comments.teacher}</div>
-      <div><span className="font-semibold">Head Teacher/Dean Remark:</span> {comments.head}</div>
+      <div><span className="font-semibold">Teacher's Remark:</span> {comments.teacher || ''}</div>
+      <div><span className="font-semibold">Head Teacher/Dean Remark:</span> {comments.head || ''}</div>
     </div>
   );
 }
@@ -206,7 +212,9 @@ function Signatures() {
 }
 
 // 8. Footer Component
-function Footer({ grading }: { grading: ReportCardData['grading'] }) {
+function Footer({ grading }: { grading?: ReportCardData['grading'] }) {
+  if (!grading || grading.length === 0) return null;
+
   return (
     <div className="mt-8 pt-4 border-t text-xs text-gray-700 print:text-black">
       <div className="font-semibold mb-1">Grading Scale:</div>
@@ -223,8 +231,8 @@ function Footer({ grading }: { grading: ReportCardData['grading'] }) {
   );
 }
 
-// Main ReportCard Component
-export default function ReportCard({ data, config }: { data: ReportCardData; config: ReportCardConfig }) {
+// Main ReportCard2 Component
+export default function ReportCard2({ data, config }: { data: ReportCardData; config: ReportCardConfig }) {
   return (
     <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white p-8 shadow print:shadow-none print:bg-white print:text-black border print:border-0 text-gray-900">
       <Header school={data.school} term={data.term} student={data.student} />
@@ -242,7 +250,7 @@ export default function ReportCard({ data, config }: { data: ReportCardData; con
 }
 
 // Example usage data and config
-export const exampleData = {
+export const exampleData2 = {
   school: {
     name: "Atom Software School",
     contact: "Bulindo, Kira | Tel: +256 764 124754 | info.atomsoftware@gmail.com",
@@ -260,10 +268,34 @@ export const exampleData = {
     stream: "East",
   },
   subjects: [
-    { name: "Mathematics", score: 85, grade: "A", credits: 4, remarks: "Excellent" },
-    { name: "English", score: 78, grade: "B+", credits: 3, remarks: "Very Good" },
-    { name: "Biology", score: 65, grade: "C", credits: 3, remarks: "Good" },
-    { name: "History", score: 90, grade: "A+", credits: 2, remarks: "Outstanding" },
+    {
+      name: "Mathematics",
+      components: [
+        { name: "Paper 1", score: 43, grade: "A", credits: 2, remarks: "Excellent" },
+        { name: "Paper 2", score: 42, grade: "A", credits: 2, remarks: "Very Good" },
+      ],
+    },
+    {
+      name: "English",
+      components: [
+        { name: "Paper 1", score: 38, grade: "B+", credits: 1.5, remarks: "Good" },
+        { name: "Paper 2", score: 40, grade: "A", credits: 1.5, remarks: "Very Good" },
+      ],
+    },
+    {
+      name: "Biology",
+      components: [
+        { name: "Theory", score: 32, grade: "C", credits: 1.5, remarks: "Fair" },
+        { name: "Practical", score: 33, grade: "C", credits: 1.5, remarks: "Good" },
+      ],
+    },
+    {
+      name: "History",
+      components: [
+        { name: "Paper 1", score: 45, grade: "A+", credits: 1, remarks: "Outstanding" },
+        { name: "Paper 2", score: 45, grade: "A+", credits: 1, remarks: "Outstanding" },
+      ],
+    },
   ],
   summary: {
     totalMarks: 318,
@@ -294,7 +326,7 @@ export const exampleData = {
   ],
 };
 
-export const exampleConfig = {
+export const exampleConfig2 = {
   showCredits: true,
   useGPA: true,
   showRank: true,

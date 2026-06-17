@@ -41,6 +41,7 @@ import {
   FileText,
   GraduationCap,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Settings,
   User as UserIcon,
@@ -65,9 +66,9 @@ const navigation = [
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
   { name: "Results", href: "/results", icon: BarChart3 },
   // { name: "Report Cards", href: "/report-cards", icon: FileText },
-  { name: "System Users", href: "/users", icon: Users },
-  { name: "Audit Trails", href: "/audit-trails", icon: FileText },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "System Users", href: "/system-users", icon: Users },
+  // { name: "Audit Trails", href: "/audit-trails", icon: FileText },
+  // { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface AppLayoutProps {
@@ -350,7 +351,13 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold">{user.avatar}</AvatarFallback>
                       </Avatar>
-                      <span className="hidden sm:inline">{user.name}</span>
+                      {
+                        isLoggingOut ? (
+                          <span className="flex items-center gap-2">
+                            Logging out...
+                            <Loader2 className="animate-spin h-4 w-4 ml-2" />
+                          </span>) : <span className="hidden sm:inline">{user.name}</span>
+                      }
                       <ChevronsUpDown className="size-3 text-slate-400" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg z-50" side="bottom" sideOffset={8}>

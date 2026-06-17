@@ -135,10 +135,10 @@ export default function StudentsTable({
     }
   };
   return (
-    <Card>
+    <Card className="border-slate-200">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <CardTitle>All Students</CardTitle>
+          {/* <CardTitle>All Students</CardTitle> */}
           <CardDescription>Total: {students.length} students</CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -248,9 +248,9 @@ export default function StudentsTable({
                     <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-blue-600 hover:text-blue-700" aria-label="Edit student">
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-green-600 hover:text-green-700" aria-label="Student fees">
+                    {/* <Button size="sm" variant="ghost" className="hover:bg-slate-100 text-green-600 hover:text-green-700" aria-label="Student fees">
                       <DollarSign className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                   </td>
                 </tr>
               ))}

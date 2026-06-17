@@ -100,7 +100,7 @@ export default function Register() {
       // Redirect to create school if the user has no memberships yet
       navigate("/schools-create");
     } catch (error) {
-      const errorMsg = "An unexpected error occurred. Please try again later.";
+      const errorMsg = "An unexpected error occurred. Please try again later." + (error instanceof Error ? ` (${error.message})` : "");
       setServerErrors([errorMsg]);
       toast({
         title: "Error",
@@ -225,7 +225,7 @@ export default function Register() {
                   }} disabled={isLoading} className="flex-1">
                     Reset
                   </Button>
-                  <Button type="submit" disabled className="flex-1">
+                  <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? "Registering..." : "Register User"}
                   </Button>
                 </div>

@@ -10,6 +10,7 @@ interface Profile {
     schoolId: string;
     schoolName: string;
     role: string;
+    institutionType?: string;
   }>;
   [key: string]: any;
 }

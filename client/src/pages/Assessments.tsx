@@ -14,7 +14,7 @@ import { useTenant } from "@/context/TenantContext";
 import { academicYearsApi, termTemplatesApi, subjectsApi, assessmentsApi } from "@/lib/api";
 
 interface AcademicYear {
-  id: number;
+  id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -48,7 +48,7 @@ interface Assessment {
   type: string;
   max_score: string;
   weight: string;
-  assessment_date?: string;
+  date?: string;
 }
 
 interface AssessmentFormData {
@@ -58,7 +58,7 @@ interface AssessmentFormData {
   type: string;
   maxScore: string;
   weight: string;
-  assessmentDate: string;
+  date: string;
 }
 
 export default function Assessments() {
@@ -67,7 +67,7 @@ export default function Assessments() {
   const schoolId = selectedTenant?.id as string;
 
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+  const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -79,7 +79,7 @@ export default function Assessments() {
     type: "exam",
     maxScore: "100",
     weight: "0.4",
-    assessmentDate: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0],
   });
 
   // Fetch data on mount
@@ -108,7 +108,7 @@ export default function Assessments() {
       const data = await response.json();
       const years = Array.isArray(data) ? data : data.data || [];
       setAcademicYears(years);
-      
+
       // Auto-select first year if available
       if (years.length > 0) {
         setSelectedYearId(years[0].id);
@@ -175,7 +175,7 @@ export default function Assessments() {
         type: assessmentForm.type,
         maxScore: parseFloat(assessmentForm.maxScore),
         weight: parseFloat(assessmentForm.weight),
-        assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
+        date: new Date(assessmentForm.date).toISOString(),
       });
 
       if (!response.ok) throw new Error("Failed to create assessment");
@@ -189,7 +189,7 @@ export default function Assessments() {
         type: "exam",
         maxScore: "100",
         weight: "0.4",
-        assessmentDate: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split("T")[0],
       });
       toast({ title: "Success", description: "Assessment created successfully" });
     } catch (error) {
@@ -236,7 +236,7 @@ export default function Assessments() {
           ) : (
             <Select
               value={selectedYearId?.toString() || ""}
-              onValueChange={(value: string) => setSelectedYearId(parseInt(value))}
+              onValueChange={(value: string) => setSelectedYearId(value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select an academic year" />
@@ -429,8 +429,8 @@ export default function Assessments() {
                       <Input
                         id="date"
                         type="date"
-                        value={assessmentForm.assessmentDate}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
+                        value={assessmentForm.date}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, date: e.target.value })}
                       />
                     </div>
                   </div>

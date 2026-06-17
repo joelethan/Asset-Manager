@@ -5,6 +5,7 @@ export interface Structure {
     years?: any[];
     terms?: any[];
     definitionsOptions?: any[];
+    subjectOptions?: any[];
     subjects?: any[];
 }
 
@@ -24,11 +25,17 @@ interface StructureContextProps {
         details: any;
     }>>;
     assessSelects: {
+        level: string;
+        subjectId: string;
+        componentId: string;
         yearId: string;
         termId: string;
         definitionId: string;
     };
     setAssessSelects: React.Dispatch<React.SetStateAction<{
+        level: string;
+        subjectId: string;
+        componentId: string;
         yearId: string;
         termId: string;
         definitionId: string;
@@ -114,6 +121,9 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
         details: {},
     });
     const [assessSelects, setAssessSelects] = useState({
+        level: "",
+        subjectId: "",
+        componentId: "",
         yearId: "",
         termId: "",
         definitionId: "",
@@ -148,8 +158,8 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
     const [definitionsOptions, setDefinitionsOptions] = useState<any[]>([]);
     const [gradingStudents, setGradingStudents] = useState<any[]>([]);
     const [byStudentResult, setByStudentResult] = useState<any>(null);
-    const [byDefinitionResult, setByDefinitionResult] = useState<any>(null);
-    const [listAssessResult, setListAssessResult] = useState<any>(null);
+    const [byDefinitionResult, setByDefinitionResult] = useState<any>({});
+    const [listAssessResult, setListAssessResult] = useState<any[]>([]);
     const [activeStudentTab, setActiveStudentTab] = useState<string>("student-uploads");
 
     const fetchStructure = async (schoolId: string) => {

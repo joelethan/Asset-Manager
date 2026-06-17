@@ -6,23 +6,31 @@ import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { studentsApi } from "@/lib/api";
 import React from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 const ViewStudent: React.FC = () => {
     const { selectedTenant } = useTenant();
     const schoolId = selectedTenant?.id as string;
     const { studentDetails, setStudentDetails } = useStructure();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStudentDetails({ identity: studentDetails.identity, details: studentDetails.details, loading: true });
+    const fetchStudentDetails = async (identity: string) => {
+        setStudentDetails({ identity, details: studentDetails.details, loading: true });
         try {
-            const response = await studentsApi.studentDetails(schoolId, studentDetails.identity);
+            const response = await studentsApi.studentDetails(schoolId, identity);
             const data = await response.json();
             if (data) {
-                setStudentDetails({ identity: studentDetails.identity, details: data, loading: false });
+                setStudentDetails({ identity, details: data, loading: false });
+            } else {
+                setStudentDetails({ identity, details: studentDetails.details, loading: false });
             }
-        } catch (err: any) { }
+        } catch (err: any) {
+            setStudentDetails({ identity, details: studentDetails.details, loading: false });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await fetchStudentDetails(studentDetails.identity);
     };
 
     // Guardian form state with react-hook-form
@@ -30,17 +38,18 @@ const ViewStudent: React.FC = () => {
         register,
         handleSubmit: handleGuardianSubmit,
         reset,
+        control,
         formState: { errors, isSubmitting, touchedFields, submitCount }
     } = useForm({
         mode: "onTouched",
         reValidateMode: "onChange"
     });
     const [guardianError, setGuardianError] = React.useState<string | null>(null);
-    const [guardianSuccess, setGuardianSuccess] = React.useState<string | null>(null);
+    // const [guardianSuccess, setGuardianSuccess] = React.useState<string | null>(null);
 
     const onGuardianSubmit = async (data: any) => {
         setGuardianError(null);
-        setGuardianSuccess(null);
+        // setGuardianSuccess(null);
         try {
             const studentId = studentDetails.details?.id;
             if (!studentId) {
@@ -55,8 +64,9 @@ const ViewStudent: React.FC = () => {
                 relation: data.relation
             });
             if (response.ok) {
-                setGuardianSuccess("Guardian added successfully!");
+                // setGuardianSuccess("Guardian added successfully!");
                 reset();
+                await fetchStudentDetails(studentDetails.identity);
             } else {
                 setGuardianError("Failed to add guardian.");
             }
@@ -168,6 +178,7 @@ const ViewStudent: React.FC = () => {
                                                     <th className="px-3 py-2 text-sm font-medium">Relation</th>
                                                     <th className="px-3 py-2 text-sm font-medium">Email</th>
                                                     <th className="px-3 py-2 text-sm font-medium">Phone</th>
+                                                    <th className="px-3 py-2 text-sm font-medium">Is Primary?</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -177,6 +188,13 @@ const ViewStudent: React.FC = () => {
                                                         <td className="px-3 py-2 text-sm">{g.relation}</td>
                                                         <td className="px-3 py-2 text-sm">{g.email}</td>
                                                         <td className="px-3 py-2 text-sm">{g.phone}</td>
+                                                        <td className="px-3 py-2 text-sm">
+                                                            {g.is_primary ? (
+                                                                <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold border border-green-300">Primary</span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-300">Not_Primary</span>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -226,21 +244,28 @@ const ViewStudent: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="col-span-1 md:col-span-2">
-                                        <Select
-                                            value={typeof register("relation").value === "string" ? register("relation").value : ""}
-                                            onValueChange={val => register("relation").onChange({ target: { value: val, name: "relation" } })}
-                                            disabled={isSubmitting}
-                                        >
-                                            <SelectTrigger id="relation">
-                                                <SelectValue placeholder="Select Relation" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Mother">Mother</SelectItem>
-                                                <SelectItem value="Father">Father</SelectItem>
-                                                <SelectItem value="Guardian">Guardian</SelectItem>
-                                                <SelectItem value="Other">Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Controller
+                                            name="relation"
+                                            control={control}
+                                            rules={{ required: "Relation is required" }}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || ""}
+                                                    onValueChange={field.onChange}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    <SelectTrigger id="relation">
+                                                        <SelectValue placeholder="Select Relation" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Mother">Mother</SelectItem>
+                                                        <SelectItem value="Father">Father</SelectItem>
+                                                        <SelectItem value="Guardian">Guardian</SelectItem>
+                                                        <SelectItem value="Other">Other</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
                                         {errors.relation && (touchedFields.relation || submitCount > 0) && typeof errors.relation.message === 'string' && (
                                             <span className="text-xs text-red-600">{errors.relation.message}</span>
                                         )}
@@ -250,7 +275,7 @@ const ViewStudent: React.FC = () => {
                                     </div>
                                 </form>
                                 {guardianError && <p className="text-red-600 mt-2">{guardianError}</p>}
-                                {guardianSuccess && <p className="text-green-600 mt-2">{guardianSuccess}</p>}
+                                {/* {guardianSuccess && <p className="text-green-600 mt-2">{guardianSuccess}</p>} */}
                             </div>
                         </div>
                     )}

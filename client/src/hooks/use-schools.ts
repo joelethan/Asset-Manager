@@ -13,7 +13,7 @@ export function useSchools() {
   });
 }
 
-export function useSchool(id: number) {
+export function useSchool(id: string) {
   return useQuery({
     queryKey: ["schools", id],
     queryFn: async () => {

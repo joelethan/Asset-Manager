@@ -11,8 +11,8 @@ import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
 import { assessmentsApi, enrollmentsApi, gradesApi, subjectsApi } from "@/lib/api";
 import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import React, { useEffect, useRef, useState } from "react";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import ViewAssessmentsTab from "./Subjects/ViewAssessmentsTab";
 
 interface Subject {
@@ -34,6 +34,14 @@ interface SubjectFormData {
   name: string;
   code: string;
   description: string;
+  level: string; // Add this line
+  components: AssessmentComponentFormData[];
+}
+
+interface AssessmentComponentFormData {
+  name: string;
+  code: string;
+  type: string;
 }
 
 interface Assessment {
@@ -44,21 +52,23 @@ interface Assessment {
   classroom_definition_id: string;
   name: string;
   type: string;
-  max_score: string;
+  maxScore: string;
   weight: string;
-  assessment_date?: string;
+  date?: string;
 }
 
 interface AssessmentFormData {
   yearId: string;
   termId: string;
   subjectId: string;
+  componentId: string;
   classroomDefinitionId: string;
+  level: string;
   name: string;
   type: string;
   maxScore: string;
   weight: string;
-  assessmentDate: string;
+  date: string;
 }
 
 interface Term {
@@ -100,18 +110,30 @@ export default function Subjects() {
   const [loadingGradingStudents, setLoadingGradingStudents] = useState(false);
   const [subjectError, setSubjectError] = useState<string | null>(null);
   const [subjectErrorList, setSubjectErrorList] = useState<string[]>([]);
+  const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    control: subjectControl,
+    watch,
     formState: { errors },
   } = useForm<SubjectFormData>({
     defaultValues: {
       name: "",
       code: "",
       description: "",
+      level: "",
+      components: [
+        { name: "", code: "", type: "WRITTEN" }
+      ],
     },
+  });
+
+  const { fields: componentFields, append: appendComponent, remove: removeComponent } = useFieldArray({
+    control: subjectControl,
+    name: "components",
   });
 
   const {
@@ -156,18 +178,19 @@ export default function Subjects() {
     handleSubmit: handleAssessmentSubmit,
     reset: resetAssessment,
     formState: { errors: assessmentErrors },
-    control: controlAssessment
+    control: controlAssessment,
+    getValues: getAssessmentValues,
   } = useForm<AssessmentFormData>({
     defaultValues: {
       yearId: "",
       termId: "",
       subjectId: "",
       classroomDefinitionId: "",
-      name: "",
-      type: "exam",
+      name: "Exams",
+      type: "END_OF_TERM",
       maxScore: "100",
       weight: "0.4",
-      assessmentDate: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -198,12 +221,38 @@ export default function Subjects() {
     }
   };
 
+  const handleRowClick = (subjectId: string) => {
+    setExpandedSubjectId(prev => (prev === subjectId ? null : subjectId));
+  };
+
   const handleCreateSubject = async (data: SubjectFormData) => {
     setIsLoading(true);
     setSubjectError(null);
     setSubjectErrorList([]);
     try {
-      const response = await subjectsApi.create(schoolId, data);
+      // Filter out empty components
+      const componentsToCreate = data.components.filter(c => c.name.trim());
+
+      if (componentsToCreate.length === 0) {
+        setSubjectError("At least one assessment component is required");
+        setSubjectErrorList(["Please add at least one assessment component"]);
+        setIsLoading(false);
+        return;
+      }
+
+      const payload = {
+        name: data.name,
+        code: data.code,
+        description: data.description,
+        level: data.level,
+        components: componentsToCreate.map(c => ({
+          name: c.name,
+          code: c.code || c.name.substring(0, 3).toUpperCase(),
+          type: c.type,
+        })),
+      };
+
+      const response = await subjectsApi.create(schoolId, payload);
       if (!response.ok) {
         let errorMsg = "Failed to create subject";
         let errorList: string[] = [];
@@ -285,19 +334,19 @@ export default function Subjects() {
     setAssessmentErrorList([]);
     try {
       // Parse date (date-only input) and create full UTC timestamp at 09:00
-      const dateonly = data.assessmentDate;
+      const dateonly = data.date;
       const timestamp = new Date(`${dateonly}T09:00:00Z`).toISOString();
 
       const payload = {
         yearId: data.yearId,
         termTemplateItemId: data.termId,
         classroomDefinitionId: data.classroomDefinitionId,
-        subjectId: data.subjectId,
+        componentId: data.componentId,
         name: data.name,
         type: data.type,
-        maxScore: parseFloat(data.maxScore),
         weight: parseFloat(data.weight),
-        assessmentDate: timestamp,
+        maxScore: parseFloat(data.maxScore),
+        date: timestamp,
       };
       const response = await assessmentsApi.create(schoolId, payload);
       if (!response.ok) {
@@ -386,6 +435,23 @@ export default function Subjects() {
   const selectedTermId = globalSelectValues.gradeTerm || "";
   const selectedClassroomId = globalSelectValues.gradeClassroom || "";
 
+  // Add these derived filtered options after your useForm for assessments:
+  const selectedAssessmentLevel = useWatch({
+    control: controlAssessment,
+    name: "level",
+  });
+  const selectedLevel = selectedAssessmentLevel?.toLowerCase();
+
+  const filteredSubjectOptions =
+    selectedLevel
+      ? subjectOptions.filter((s: any) => (s.level || "").toLowerCase() === selectedLevel)
+      : subjectOptions;
+
+  const filteredDefinitionsOptions =
+    selectedLevel
+      ? definitionsOptions.filter((c: any) => (c.level || "").toLowerCase() === selectedLevel)
+      : definitionsOptions;
+
   return (
     <AppLayout
       title="Subjects & Assessments"
@@ -394,7 +460,7 @@ export default function Subjects() {
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 border-b">
-          <TabsTrigger value="subjects">Subject List</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects List</TabsTrigger>
           <TabsTrigger value="create">Create Subject</TabsTrigger>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
           <TabsTrigger value="view-assessments">View Assessments</TabsTrigger>
@@ -472,57 +538,102 @@ export default function Subjects() {
           ) : (
             <Card className="border-slate-200">
               <CardHeader>
-                <CardTitle>All Subjects</CardTitle>
+                {/* <CardTitle>All Subjects</CardTitle> */}
                 <CardDescription>Total: {subjectOptions.length} subjects</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* make table scrollable internally */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left table-auto border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-3 py-2 text-sm font-medium">Name</th>
-                        <th className="px-3 py-2 text-sm font-medium">Code</th>
-                        <th className="px-3 py-2 text-sm font-medium">Description</th>
-                        <th className="px-3 py-2 text-sm font-medium">Status</th>
-                        <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjectOptions.map((subject) => (
-                        <tr key={subject.id} className="border-t">
-                          <td className="px-3 py-2 font-medium">{subject.name}</td>
-                          <td className="px-3 py-2">{subject.code}</td>
-                          <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
-                          <td className="px-3 py-2">
-                            <span className={
-                              `px-2 py-1 rounded-full text-xs font-medium ${subject.is_active ?
-                                "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`
-                            }>
-                              {subject.is_active ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right space-x-2 flex justify-end">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => startEditSubject(subject)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteSubject(subject.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
+                  <div className="max-h-[50vh] overflow-y-auto">
+                    <table className="w-full text-left table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 text-sm font-medium">Name</th>
+                          {/* <th className="px-3 py-2 text-sm font-medium">Code</th> */}
+                          <th className="px-3 py-2 text-sm font-medium">Description</th>
+                          <th className="px-3 py-2 text-sm font-medium">Level</th>
+                          <th className="px-3 py-2 text-sm font-medium">Papers / Components</th>
+                          {/* <th className="px-3 py-2 text-sm font-medium">Status</th> */}
+                          <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {subjectOptions.map((subject: any) => (
+                          <React.Fragment key={subject.id}>
+                            <tr
+                              className={`border-t cursor-pointer ${expandedSubjectId === subject.id ? "bg-blue-50/30" : ""}`}
+                              onClick={() => handleRowClick(subject.id)}
+                            >
+                              <td className="px-3 py-2 font-medium">{subject.name}</td>
+                              {/* <td className="px-3 py-2">{subject.code}</td> */}
+                              <td className="px-3 py-2 text-slate-600">{subject.description || "-"}</td>
+                              <td className="px-3 py-2 text-sm">{subject.level || "-"}</td>
+                              <td className="px-3 py-2">
+                                {subject.components && subject.components.length > 0 ? (
+                                  <span className="text-xs text-blue-700">{subject.components.length} component(s)</span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">No components</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right space-x-2 flex justify-end">
+                                {/* <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    startEditSubject(subject);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button> */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleDeleteSubject(subject.id);
+                                  }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                            {expandedSubjectId === subject.id && (
+                              <tr>
+                                <td colSpan={6} className="bg-blue-50/20 px-3 py-2">
+                                  <div>
+                                    {/* <div className="font-semibold mb-2">Assessment Components:</div> */}
+                                    {subject.components && subject.components.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {subject.components.map((component: any) => (
+                                          <div
+                                            key={component.id}
+                                            className="inline-flex flex-col items-start px-3 py-2 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 min-w-[160px]"
+                                            title={`${component.name} (${component.type})`}
+                                          >
+                                            <div>
+                                              <span className="font-semibold">{component.code}</span> - {component.name}
+                                            </div>
+                                            <div className="text-slate-600">
+                                              Type: <span className="font-semibold">{component.type}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">No components for this subject.</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -533,8 +644,8 @@ export default function Subjects() {
         <TabsContent value="create" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Create New Subject</CardTitle>
-              <CardDescription>Add a new subject to the school</CardDescription>
+              {/* <CardTitle>Create New Subject</CardTitle> */}
+              {/* <CardDescription>Add a new subject with assessment components</CardDescription> */}
             </CardHeader>
             <CardContent>
               {(subjectError || subjectErrorList.length > 0) && (
@@ -550,56 +661,194 @@ export default function Subjects() {
                 </Alert>
               )}
               <form onSubmit={handleSubmit(handleCreateSubject)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Subject Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Mathematics"
-                    {...register("name", {
-                      required: "Subject name is required",
-                      minLength: { value: 2, message: "Name must be at least 2 characters" }
-                    })}
-                  />
-                  {errors?.name &&
-                    <p className="text-sm text-red-600">{errors.name.message}</p>}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* LEFT COLUMN: Subject Fields */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700">Subject Details</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="code">Subject Code *</Label>
-                  <Input
-                    id="code"
-                    placeholder="MATH"
-                    {...register("code", {
-                      required: "Subject code is required",
-                      minLength: { value: 2, message: "Code must be at least 2 characters" }
-                    })}
-                  />
-                  {errors?.code &&
-                    <p className="text-sm text-red-600">{errors.code.message}</p>}
-                </div>
+                    {selectedTenant?.institutionType === "SECONDARY_SCHOOL" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="level">Level *</Label>
+                        <Controller
+                          name="level"
+                          control={subjectControl}
+                          rules={{ required: "Level is required" }}
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger id="level">
+                                <SelectValue placeholder="Select level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="O-Level">O-Level</SelectItem>
+                                <SelectItem value="A-Level">A-Level</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {errors.level && (
+                          <p className="text-sm text-red-600">{errors.level.message}</p>
+                        )}
+                      </div>
+                    )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    placeholder="Optional description of the subject"
-                    {...register("description")}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Subject Name *</Label>
+                      <Input
+                        id="name"
+                        placeholder="Mathematics"
+                        {...register("name", {
+                          required: "Subject name is required",
+                          minLength: { value: 2, message: "Name must be at least 2 characters" }
+                        })}
+                      />
+                      {errors?.name &&
+                        <p className="text-sm text-red-600">{errors.name.message}</p>}
+                    </div>
 
-                <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
+                    <div className="space-y-2">
+                      <Label htmlFor="code">Subject Code *</Label>
+                      <Input
+                        id="code"
+                        placeholder="MATH"
+                        {...register("code", {
+                          required: "Subject code is required",
+                          minLength: { value: 2, message: "Code must be at least 2 characters" }
+                        })}
+                      />
+                      {errors?.code &&
+                        <p className="text-sm text-red-600">{errors.code.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Input
+                        id="description"
+                        placeholder="Optional description of the subject"
+                        {...register("description")}
+                      />
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: Assessment Components */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700">Assessment Components *</h3>
+
+                    <div className="space-y-3 max-h-96 overflow-y-auto border border-slate-200 rounded-md p-3">
+                      {componentFields.length === 0 ? (
+                        <p className="text-sm text-gray-500 italic">No components added. Add at least one.</p>
+                      ) : (
+                        componentFields.map((field, index) => (
+                          <div key={field.id} className="space-y-2 p-3 bg-slate-50 rounded-md border border-slate-100">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-medium text-gray-600">Component {index + 1}</span>
+                              {componentFields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeComponent(index)}
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`comp-name-${index}`} className="text-xs">Name *</Label>
+                              <Input
+                                id={`comp-name-${index}`}
+                                placeholder="e.g., Paper 1"
+                                size="sm"
+                                {...register(`components.${index}.name`, {
+                                  required: "Component name is required",
+                                })}
+                                className="text-sm"
+                              />
+                              {errors?.components?.[index]?.name &&
+                                <p className="text-xs text-red-600">{errors.components[index]?.name?.message}</p>}
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`comp-code-${index}`} className="text-xs">Code</Label>
+                              <Input
+                                id={`comp-code-${index}`}
+                                placeholder="e.g., P1 (auto-generated if empty)"
+                                size="sm"
+                                {...register(`components.${index}.code`)}
+                                className="text-sm"
+                              />
+                            </div>
+
+                            {/* <div className="grid grid-cols-2 gap-2"> */}
+                              <div>
+                                <Label htmlFor={`comp-type-${index}`} className="text-xs">Type *</Label>
+                                <Controller
+                                  name={`components.${index}.type`}
+                                  control={subjectControl}
+                                  rules={{ required: "Type is required" }}
+                                  render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue placeholder="Select type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="WRITTEN">Written</SelectItem>
+                                        <SelectItem value="PRACTICAL">Practical</SelectItem>
+                                        <SelectItem value="ORAL">Oral</SelectItem>
+                                        <SelectItem value="COURSEWORK">Coursework</SelectItem>
+                                        <SelectItem value="PROJECT">Project</SelectItem>
+                                        <SelectItem value="PERFORMANCE">Performance</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                                {typeof errors.components?.[index]?.type === "object" && "message" in (errors.components[index]?.type ?? {}) && (
+                                  <p className="text-xs text-red-600">{(errors.components[index]?.type as any)?.message}</p>
+                                )}
+                              </div>
+
+
+                            </div>
+                          // </div>
+                        ))
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={watch("level")?.toLowerCase() !== "a-level"}
+                      size="sm"
+                      onClick={() => appendComponent({
+                        name: "",
+                        code: "",
+                        type: "WRITTEN",
+                      })}
+                      className="w-full"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Subject
-                    </>
-                  )}
-                </Button>
+                      Add Component
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button type="submit" disabled={isLoading} className="flex-1">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Subject
+                      </>
+                    )}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -608,7 +857,7 @@ export default function Subjects() {
         <TabsContent value="view-assessments" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>View Assessments</CardTitle>
+              {/* <CardTitle>View Assessments</CardTitle> */}
             </CardHeader>
             <CardContent className="space-y-4">
               <ViewAssessmentsTab />
@@ -620,7 +869,7 @@ export default function Subjects() {
         <TabsContent value="assessments-list" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Grade Assessment</CardTitle>
+              {/* <CardTitle>Grade Assessment</CardTitle>  */}
             </CardHeader>
             <CardContent className="space-y-4">
               <form
@@ -808,9 +1057,11 @@ export default function Subjects() {
                                 );
                                 setGradingAssessment(filteredAssessments.find((a: any) => a.id === globalSelectValues.gradeAssessment));
                                 if (filteredAssessments.length > 0) {
-                                  return filteredAssessments.map((assessment: any) => (
-                                    <SelectItem key={assessment.id} value={assessment.id}>{` ${assessment?.subject?.name} (${assessment.name})`}</SelectItem>
-                                  ));
+                                  return filteredAssessments.map((assessment: any) => {
+                                    return (
+                                      <SelectItem key={assessment.id} value={assessment.id}>{`${assessment?.component?.subject?.name}: ${assessment?.component?.name} (${assessment.name})`}</SelectItem>
+                                    )
+                                  });
                                 } else {
                                   return <div className="px-4 py-2 text-sm text-gray-500">No assessments available for selected term and year</div>;
                                 }
@@ -926,10 +1177,10 @@ export default function Subjects() {
                               <Input
                                 type="number"
                                 min={0}
-                                max={gradingAssessment?.max_score || 100}
+                                max={gradingAssessment?.maxScore || 100}
                                 {...control.register(`grades.${idx}.score`, {
                                   min: { value: 0, message: "Score must be at least 0" },
-                                  max: { value: Number(gradingAssessment?.max_score) || 100, message: `Max score is ${gradingAssessment?.max_score}` },
+                                  max: { value: Number(gradingAssessment?.maxScore) || 100, message: `Max score is ${gradingAssessment?.maxScore}` },
                                   validate: value => value === "" || !isNaN(Number(value)) || "Must be a number",
                                 })}
                                 placeholder="Score"
@@ -1024,7 +1275,7 @@ export default function Subjects() {
         <TabsContent value="create-assessment" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Create New Assessment</CardTitle>
+              {/* <CardTitle>Create New Assessment</CardTitle> */}
             </CardHeader>
 
             <CardContent>
@@ -1041,19 +1292,16 @@ export default function Subjects() {
                 </Alert>
               )}
               <form onSubmit={handleAssessmentSubmit(handleCreateAssessment)} className="space-y-4">
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-6 gap-4">
+                  <div className="space-y-2 w-full">
                     <Label htmlFor="view-assess-year">Academic Year *</Label>
                     <Controller
                       name="yearId"
                       control={controlAssessment}
                       rules={{ required: "Select academic year" }}
                       render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select academic year" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1077,18 +1325,15 @@ export default function Subjects() {
                       <p className="text-sm text-red-500">{assessmentErrors.yearId.message}</p>}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 w-full">
                     <Label htmlFor="view-assess-year">Term *</Label>
                     <Controller
                       name="termId"
                       control={controlAssessment}
                       rules={{ required: "Select term" }}
                       render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select term" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1107,23 +1352,42 @@ export default function Subjects() {
                       <p className="text-sm text-red-500">{assessmentErrors.termId.message}</p>}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 w-full">
+                    <Label htmlFor="level">Level *</Label>
+                    <Controller
+                      name="level"
+                      control={controlAssessment}
+                      rules={{ required: "Select level" }}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="level" className="w-full">
+                            <SelectValue placeholder="Select level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="O-Level">O-Level</SelectItem>
+                            <SelectItem value="A-Level">A-Level</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {assessmentErrors.level &&
+                      <p className="text-sm text-red-500">{assessmentErrors.level.message}</p>}
+                  </div>
+
+                  <div className="space-y-2 w-full">
                     <Label htmlFor="assess-subject">Subject *</Label>
                     <Controller
                       name="subjectId"
                       control={controlAssessment}
                       rules={{ required: "Subject is required" }}
                       render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select a subject..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {subjectOptions.length > 0 ? (
-                              subjectOptions.map(subject => (
+                            {filteredSubjectOptions.length > 0 ? (
+                              filteredSubjectOptions.map(subject => (
                                 <SelectItem key={subject.id} value={subject.id}>{subject.name}</SelectItem>
                               ))
                             ) : (
@@ -1137,23 +1401,66 @@ export default function Subjects() {
                       <p className="text-sm text-red-600">{assessmentErrors.subjectId.message}</p>}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 w-full">
+                    <Label htmlFor="assess-component">Component *</Label>
+                    <Controller
+                      name="componentId"
+                      control={controlAssessment}
+                      rules={{ required: "Component is required" }}
+                      render={({ field }) => {
+                        const watchedSubjectId = useWatch({
+                          control: controlAssessment,
+                          name: "subjectId",
+                        });
+                        const components = getSubjectComponents(filteredSubjectOptions, watchedSubjectId);
+                        return (
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={components.length === 0}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a component..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {components.length > 0 ? (
+                                components.map((comp: any) => (
+                                  <SelectItem
+                                    key={comp.id || comp.code || comp.name}
+                                    value={comp.id || comp.code || comp.name}
+                                  >
+                                    {comp.name} {comp.code ? `(${comp.code})` : ""}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="px-4 py-2 text-sm text-gray-500">No components available</div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        );
+                      }}
+                    />
+                    {assessmentErrors.componentId &&
+                      <p className="text-sm text-red-600">{assessmentErrors.componentId.message}</p>}
+                  </div>
+
+                  <div className="space-y-2 w-full">
                     <Label htmlFor="assess-classroom">Classroom *</Label>
                     <Controller
                       name="classroomDefinitionId"
                       control={controlAssessment}
-                      rules={{ required: "Classroom definition is required" }}
+                      rules={{ required: "Classroom is required" }}
                       render={({ field }) => (
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select a classroom..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {definitionsOptions.length > 0 ? (
-                              definitionsOptions.map((classroom: any) => (
+                            {filteredDefinitionsOptions.length > 0 ? (
+                              filteredDefinitionsOptions.map((classroom: any) => (
                                 <SelectItem key={classroom.id} value={classroom.id}>{classroom.name}</SelectItem>
                               ))
                             ) : (
@@ -1168,7 +1475,7 @@ export default function Subjects() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                {/* <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-name">Assessment Name *</Label>
                     <Input
@@ -1179,9 +1486,9 @@ export default function Subjects() {
                     {assessmentErrors?.name &&
                       <p className="text-sm text-red-600">{assessmentErrors.name.message}</p>}
                   </div>
-                </div>
+                </div> */}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-type">Type *</Label>
                     <Controller
@@ -1197,9 +1504,9 @@ export default function Subjects() {
                             <SelectValue placeholder="Select a type..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="exam">Exam</SelectItem>
-                            <SelectItem value="quiz">Quiz</SelectItem>
-                            <SelectItem value="assignment">Assignment</SelectItem>
+                            <SelectItem value="CAT">CONTINUOUS ASSESSMENT</SelectItem>
+                            <SelectItem value="MIDTERM">MID TERM</SelectItem>
+                            <SelectItem value="END_OF_TERM">END OF TERM</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -1207,24 +1514,9 @@ export default function Subjects() {
                     {assessmentErrors.type &&
                       <p className="text-sm text-red-600">{assessmentErrors.type.message}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assess-maxScore">Max Score *</Label>
-                    <Input
-                      id="assess-maxScore"
-                      type="number"
-                      placeholder="100"
-                      {...registerAssessment("maxScore", {
-                        required: "Max score is required",
-                        min: { value: 0, message: "Must be 0 or more" },
-                        validate: value => !isNaN(Number(value)) || "Must be a number"
-                      })}
-                    />
-                    {assessmentErrors?.maxScore &&
-                      <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
-                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="assess-weight">Weight *</Label>
                     <Input
@@ -1243,14 +1535,30 @@ export default function Subjects() {
                       <p className="text-sm text-red-600">{assessmentErrors.weight.message}</p>}
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="assess-maxScore">Max Score *</Label>
+                    <Input
+                      id="assess-maxScore"
+                      type="number"
+                      step="0.1"
+                      placeholder="100"
+                      {...registerAssessment("maxScore", {
+                        required: "Max score is required",
+                        min: { value: 0, message: "Must be 0 or more" },
+                        validate: value => !isNaN(Number(value)) || "Must be a number"
+                      })}
+                    />
+                    {assessmentErrors?.maxScore &&
+                      <p className="text-sm text-red-600">{assessmentErrors.maxScore.message}</p>}
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="assess-date">Assessment Date *</Label>
                     <Input
                       id="assess-date"
                       type="date"
-                      {...registerAssessment("assessmentDate", { required: "Assessment date is required" })}
+                      {...registerAssessment("date", { required: "Assessment date is required" })}
                     />
-                    {assessmentErrors?.assessmentDate &&
-                      <p className="text-sm text-red-600">{assessmentErrors.assessmentDate.message}</p>}
+                    {assessmentErrors?.date &&
+                      <p className="text-sm text-red-600">{assessmentErrors.date.message}</p>}
                   </div>
                 </div>
 
@@ -1350,4 +1658,9 @@ export default function Subjects() {
       )}
     </AppLayout>
   );
+}
+
+export function getSubjectComponents(subjectOptions: any[], subjectId: string) {
+  const subject = subjectOptions.find((s: any) => s.id === subjectId);
+  return subject?.components || [];
 }
