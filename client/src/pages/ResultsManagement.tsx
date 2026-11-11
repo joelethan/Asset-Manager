@@ -1,5 +1,8 @@
 import NoDataComponent from "@/components/common/NoDataComponent";
+import SubmitButton from "@/components/common/SubmitButton";
 import { AppLayout } from "@/components/layout/AppLayout";
+import ReportCard, { exampleConfig, exampleData } from "@/components/ReportCard";
+import ReportCard2, { exampleConfig2, exampleData2 } from "@/components/ReportCard2";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,8 +20,6 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import ClassroomResults from "./ResultsManagement/ClassroomResults";
 import StudentResults from "./ResultsManagement/StudentResults";
-import SubmitButton from "@/components/common/SubmitButton";
-import ReportCard, { exampleData, exampleConfig } from "@/components/ReportCard";
 
 interface Assessment {
     id: string;
@@ -150,11 +151,12 @@ export default function ResultsManagement() {
             breadcrumbs={[{ label: "Results Management" }]}
         >
             <Tabs defaultValue="by-assessment" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 border-b">
+                <TabsList className="grid w-full grid-cols-5 border-b">
                     <TabsTrigger value="by-assessment">By Assessment</TabsTrigger>
                     <TabsTrigger value="by-student">By Student</TabsTrigger>
                     <TabsTrigger value="by-classroom">By Classroom</TabsTrigger>
-                    <TabsTrigger value="view-report">Report Template</TabsTrigger>
+                    <TabsTrigger value="view-report-1">Report Template 1</TabsTrigger>
+                    <TabsTrigger value="view-report-2">Report Template 2</TabsTrigger>
                 </TabsList>
                 <TabsContent value="by-assessment">
                     <Card className="border-slate-200">
@@ -278,7 +280,7 @@ export default function ResultsManagement() {
                                                                 );
                                                                 if (filteredAssessments.length > 0) {
                                                                     return filteredAssessments.map((assessment: any) => (
-                                                                        <SelectItem key={assessment.id} value={assessment.id}>{` ${assessment?.subject?.name} (${assessment.name})`}</SelectItem>
+                                                                        <SelectItem key={assessment.id} value={assessment.id}>{`${assessment?.component?.subject?.name}: ${assessment?.component?.name} (${assessment.name})`}</SelectItem>
                                                                     ));
                                                                 } else {
                                                                     return <div className="px-4 py-2 text-sm text-gray-500">No assessments available for selected term and year</div>;
@@ -382,13 +384,26 @@ export default function ResultsManagement() {
                     <ClassroomResults />
                 </TabsContent>
 
-                {/* View Report Tab */}
-                <TabsContent value="view-report" className="space-y-4">
+                {/* View Report 1 Tab */}
+                <TabsContent value="view-report-1" className="space-y-4">
                     <Card className="border-slate-200 pt-4">
                         <CardContent>
                             <div className="flex justify-center">
                                 <div className="shadow print:shadow-none border print:border-0 bg-white">
                                     <ReportCard data={exampleData} config={exampleConfig} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* View Report 2 Tab */}
+                <TabsContent value="view-report-2" className="space-y-4">
+                    <Card className="border-slate-200 pt-4">
+                        <CardContent>
+                            <div className="flex justify-center">
+                                <div className="shadow print:shadow-none border print:border-0 bg-white">
+                                    <ReportCard2 data={exampleData2} config={exampleConfig2} />
                                 </div>
                             </div>
                         </CardContent>

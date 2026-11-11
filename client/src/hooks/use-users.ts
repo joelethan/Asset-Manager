@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 
-export function useUser(id: number) {
+export function useUser(id: string) {
   return useQuery({
     queryKey: ["user", id],
     queryFn: async () => {

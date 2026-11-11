@@ -130,6 +130,7 @@ function TermTemplatesSection({
   });
   const [serverError, setServerError] = useState<string>("");
   const [serverErrorList, setServerErrorList] = useState<string[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const { fields, append, remove } = watch("structure") ?
     {
@@ -186,6 +187,7 @@ function TermTemplatesSection({
           reset();
           setServerError("");
           setServerErrorList([]);
+          setShowCreateForm(false);
         },
         onError: (error: any) => {
           let msg = "Failed to create template";
@@ -220,9 +222,17 @@ function TermTemplatesSection({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={`grid gap-6 ${showCreateForm ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
           {/* Left: Existing Templates */}
-          <div>
+          <div className={showCreateForm ? "" : "col-span-1 lg:col-span-2"}>
+            {false && <Button
+              size="sm"
+              variant="outline"
+              className="mb-4"
+              onClick={() => setShowCreateForm((v) => !v)}
+            >
+              {showCreateForm ? "Hide Create Form" : "Create New Template"}
+            </Button>}
             {isLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-16 w-full" />
@@ -261,81 +271,83 @@ function TermTemplatesSection({
           </div>
 
           {/* Right: Create Form */}
-          <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
-            <h3 className="font-semibold text-slate-900 mb-4">Create New Template</h3>
-            {(serverError || serverErrorList.length > 0) && (
-              <Alert variant="destructive" className="mb-4">
-                {serverErrorList.length === 0 && <AlertCircle className="h-4 w-4" />}
-                <AlertDescription>
-                  {serverError && serverErrorList.length === 0 && <div>{serverError}</div>}
-                  {serverErrorList.length > 0 && (
-                    <ul className="mt-2 ml-4 list-disc space-y-1">
-                      {Array.from(new Set(serverErrorList)).map((err, idx) => (
-                        <li key={idx}>{err}</li>
-                      ))}
-                    </ul>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <Label htmlFor="template-name">Template Name</Label>
-                <Input
-                  id="template-name"
-                  placeholder="e.g., Standard 3-Term Template"
-                  {...register("name", {
-                    required: "Template name is required",
-                    minLength: { value: 1, message: "Name cannot be empty" }
-                  })}
-                />
-                {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name.message)}</p>}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>Term Structure</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => append({ ordinal: watch("structure").length + 1, name: "" })}
-                  >
-                    <Plus className="h-4 w-4 mr-1" /> Add Term
-                  </Button>
+          {showCreateForm && (
+            <div className="border border-slate-200 rounded-lg p-6 bg-slate-50">
+              <h3 className="font-semibold text-slate-900 mb-4">Create New Template</h3>
+              {(serverError || serverErrorList.length > 0) && (
+                <Alert variant="destructive" className="mb-4">
+                  {serverErrorList.length === 0 && <AlertCircle className="h-4 w-4" />}
+                  <AlertDescription>
+                    {serverError && serverErrorList.length === 0 && <div>{serverError}</div>}
+                    {serverErrorList.length > 0 && (
+                      <ul className="mt-2 ml-4 list-disc space-y-1">
+                        {Array.from(new Set(serverErrorList)).map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div>
+                  <Label htmlFor="template-name">Template Name</Label>
+                  <Input
+                    id="template-name"
+                    placeholder="e.g., Standard 3-Term Template"
+                    {...register("name", {
+                      required: "Template name is required",
+                      minLength: { value: 1, message: "Name cannot be empty" }
+                    })}
+                  />
+                  {errors.name && <p className="text-xs text-red-500 mt-1">{String(errors.name?.message)}</p>}
                 </div>
 
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {watch("structure")?.map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-500 w-8">
-                        {idx + 1}.
-                      </span>
-                      <Input
-                        placeholder={`Term name`}
-                        {...register(`structure.${idx}.name`)}
-                        className="flex-1"
-                      />
-                      {watch("structure").length > 1 && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => remove(idx)}
-                        >
-                          ✕
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label>Term Structure</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => append({ ordinal: watch("structure").length + 1, name: "" })}
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Add Term
+                    </Button>
+                  </div>
 
-              <Button type="submit" disabled={isPending || watch("structure").every((s: any) => !s.name.trim())} className="w-full">
-                {isPending ? "Creating..." : "Create Template"}
-              </Button>
-            </form>
-          </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {watch("structure")?.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-500 w-8">
+                          {idx + 1}.
+                        </span>
+                        <Input
+                          placeholder={`Term name`}
+                          {...register(`structure.${idx}.name`)}
+                          className="flex-1"
+                        />
+                        {watch("structure").length > 1 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => remove(idx)}
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={isPending || watch("structure").every((s: any) => !s.name.trim())} className="w-full">
+                  {isPending ? "Creating..." : "Create Template"}
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -357,6 +369,7 @@ function AcademicYearsSection({
   const { mutate: updateStatus, isPending: isUpdatingStatus } =
     useUpdateAcademicYearStatus();
   const { toast } = useToast();
+  const [yearErrors, setYearErrors] = useState<Record<string, string>>({});
   const { register, handleSubmit, reset, formState: { errors, isValid }, control } = useForm({
     defaultValues: {
       name: "",
@@ -439,7 +452,14 @@ function AcademicYearsSection({
     );
   };
 
-  const handleActivateYear = (yearId: number) => {
+  const handleActivateYear = (yearId: string) => {
+    // Clear any previous error for this year
+    setYearErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[yearId];
+      return copy;
+    });
+
     updateStatus(
       { id: yearId, status: "active" },
       {
@@ -448,13 +468,35 @@ function AcademicYearsSection({
             title: "Success",
             description: "Academic year activated",
           });
+          setYearErrors((prev) => {
+            const copy = { ...prev };
+            delete copy[yearId];
+            return copy;
+          });
         },
         onError: (error: any) => {
+          let msg = "Failed to activate academic year";
+          if (error?.error?.message) {
+            msg = error.error.message;
+          } else if (error?.message) {
+            msg = error.message;
+          }
+          // keep toast for global visibility
           toast({
             title: "Error",
-            description: error.message,
+            description: msg,
             variant: "destructive",
           });
+          // record per-year error to show inline
+          setYearErrors((prev) => ({ ...prev, [yearId]: msg }));
+          // Auto-clear this error after a short delay
+          setTimeout(() => {
+            setYearErrors((prev) => {
+              const copy = { ...prev };
+              delete copy[yearId];
+              return copy;
+            });
+          }, 6000);
         },
       }
     );
@@ -484,12 +526,13 @@ function AcademicYearsSection({
               <div className="space-y-3">
                 {[...years].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map((year: any) => (
                   <AcademicYearCard
-                    key={year.id}
-                    year={year}
-                    onActivate={() => handleActivateYear(year.id)}
-                    isUpdatingStatus={isUpdatingStatus}
-                    schoolId={schoolId}
-                  />
+                      key={year.id}
+                      year={year}
+                      onActivate={() => handleActivateYear(year.id)}
+                      isUpdatingStatus={isUpdatingStatus}
+                      schoolId={schoolId}
+                      yearError={yearErrors?.[year.id]}
+                    />
                 ))}
               </div>
             ) : (
@@ -602,11 +645,13 @@ function AcademicYearCard({
   onActivate,
   isUpdatingStatus,
   schoolId,
+  yearError,
 }: {
   year: any;
   onActivate: () => void;
   isUpdatingStatus: boolean;
   schoolId: string;
+  yearError?: string;
 }) {
   // const { data: terms, isLoading: termsLoading } = useTerms(year.id);
 
@@ -659,6 +704,13 @@ function AcademicYearCard({
           ))}
         </div>
       ) : null} */}
+      {yearError && (
+        <div className="mt-3">
+          <Alert variant="destructive">
+            <AlertDescription>{yearError}</AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   );
 }

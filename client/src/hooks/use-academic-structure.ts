@@ -86,7 +86,7 @@ export function useUpdateAcademicYearStatus() {
       id,
       status,
     }: {
-      id: number;
+      id: string;
       status: string;
     }) => {
       const res = await academicYearsApi.updateStatus(id, status);
@@ -103,7 +103,7 @@ export function useUpdateAcademicYearStatus() {
 }
 
 // Terms
-export function useTerms(yearId?: number) {
+export function useTerms(yearId?: string) {
   return useQuery({
     queryKey: ["terms", yearId],
     queryFn: async () => {

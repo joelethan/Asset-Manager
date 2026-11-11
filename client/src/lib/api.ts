@@ -90,7 +90,7 @@ export const authApi = {
 export const schoolsApi = {
   list: () => apiClient.get("/schools"),
   create: (data: unknown) => apiClient.post("/schools", data),
-  get: (id: number) => apiClient.get(`/schools/${id}`),
+  get: (id: string) => apiClient.get(`/schools/${id}`),
 };
 
 // Term Templates endpoints
@@ -113,13 +113,13 @@ export const academicYearsApi = {
     apiClient.get(`/schools/${schoolId}/years`),
   create: (schoolId: string, data: unknown) =>
     apiClient.post(`/schools/${schoolId}/years`, data),
-  updateStatus: (yearId: number, status: unknown) =>
+  updateStatus: (yearId: string, status: unknown) =>
     apiClient.patch(`/years/${yearId}/status`, { status }),
 };
 
 // Terms endpoints
 export const termsApi = {
-  list: (yearId: number) => apiClient.get(`/academic-years/${yearId}/terms`),
+  list: (yearId: string) => apiClient.get(`/academic-years/${yearId}/terms`),
 };
 
 // Classroom Definitions endpoints
@@ -162,7 +162,7 @@ export const studentsApi = {
   studentDetails: (schoolId: string, studentNoOrRegNo: string) =>
     apiClient.get(`/students/identity/${studentNoOrRegNo}?schoolId=${schoolId}`),
   addGuardian: (studentId: string, data: unknown) =>
-    apiClient.post(`/students/${studentId}/guardians`, data),
+    apiClient.post(`/guardians/${studentId}/guardians`, data),
 };
 
 export const subjectsApi = {
@@ -211,6 +211,29 @@ export const gradesApi = {
     apiClient.get(`/schools/${schoolId}/results/by-classroom?yearId=${yearId}&termId=${termId}&definitionId=${definitionId}`),
 };
 
+export const guardiansApi = {
+  create: (data: unknown) => apiClient.post(`/guardians`, data),
+  getGuardians: (schoolId: string) => apiClient.get(`/guardians?schoolId=${schoolId}`),
+  delete: (guardianId: string) => apiClient.delete(`/guardians/${guardianId}`),
+  update: (guardianId: string, data: unknown) => apiClient.patch(`/guardians/${guardianId}`, data),
+  setPrimary: (studentId: string, guardianId: string) =>
+    apiClient.patch(`/guardians/${studentId}/guardians/${guardianId}/set-primary`),
+  sendMessageToStudentGuardians: (studentId: string, data: unknown) =>
+    apiClient.post(`/students/${studentId}/guardians/messages`, data),
+};
+
+export const dashboardApi = {
+  getSchoolDashboard: (schoolId: string) =>
+    apiClient.get(`/dashboard/school/${schoolId}`),
+};
+
+export const adminApi = {
+  createSchoolAdmin: (data: unknown) => apiClient.post("/admins/school", data),
+  listSchoolAdmins: (schoolId?: string) =>
+    apiClient.get(`/admins/school${schoolId ? `?schoolId=${schoolId}` : ""}`),
+  listSuperAdmins: () => apiClient.get("/admins/super"),
+};
+
 export const reportCardsApi = {
   // Generate report cards (single, multiple, or classroom)
   generate: (schoolId: string, data: {
@@ -251,5 +274,7 @@ export const reportCardsApi = {
     yearId: string,
     termId: string,
     identity: string,
-  ) => apiClient.download(`/schools/${schoolId}/results/report-cards/by-identity/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+  ) => apiClient.download(`/schools/${schoolId}/report-cards/by-identity/auto/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
 };
+// ) => apiClient.download(`/schools/${schoolId}/report-card-2/dummy/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+// ) => apiClient.download(`/schools/${schoolId}/report-cards/by-identity/auto/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),

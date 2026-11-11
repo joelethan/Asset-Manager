@@ -48,7 +48,7 @@ interface StudentFormData {
 }
 
 interface AcademicYear {
-  id: number;
+  id: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -82,7 +82,7 @@ interface Assessment {
   type: string;
   max_score: string;
   weight: string;
-  assessment_date?: string;
+  date?: string;
 }
 
 interface AssessmentFormData {
@@ -92,7 +92,7 @@ interface AssessmentFormData {
   type: string;
   maxScore: string;
   weight: string;
-  assessmentDate: string;
+  date: string;
 }
 
 export default function Students() {
@@ -152,7 +152,7 @@ export default function Students() {
 
   // Assessment states
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+  const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [assessmentSubjects, setAssessmentSubjects] = useState<Subject[]>([]);
@@ -164,7 +164,7 @@ export default function Students() {
     type: "exam",
     maxScore: "100",
     weight: "0.4",
-    assessmentDate: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0],
   });
 
   // Fetch academic years and subjects on mount for assessments tab
@@ -232,6 +232,7 @@ export default function Students() {
   // Upload state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
 
   const handleCreateStudent = async (data: StudentFormData) => {
     try {
@@ -396,7 +397,11 @@ export default function Students() {
     }
   };
 
+  // Add loading state for template download
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+
   const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true);
     try {
       const res = await studentsApi.templateDownload();
       if (!res.ok) throw new Error("Failed to download template");
@@ -412,6 +417,8 @@ export default function Students() {
       toast({ title: "Downloaded", description: "Template downloaded" });
     } catch (error: any) {
       toast({ title: "Error", description: error?.message || "Failed to download template", variant: "destructive" });
+    } finally {
+      setDownloadingTemplate(false);
     }
   };
 
@@ -426,19 +433,41 @@ export default function Students() {
       return;
     }
     setUploading(true);
+    setUploadErrors([]);
     try {
       const fd = new FormData();
       fd.append("file", uploadFile);
       const res = await studentsApi.importStudents(schoolId!, fd);
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Upload failed");
+        let errorMsg = "Upload failed";
+        let errors: string[] = [];
+        try {
+          const data = await res.json();
+          if (Array.isArray(data.error.errors)) {
+            if (typeof data.error.errors[0] === "string") {
+              errors = data.error.errors;
+            } else if (typeof data.error.errors[0] === "object" && data.error.errors[0].message) {
+              errors = data.error.errors.map((e: any) => e.message);
+            }
+          }
+        } catch {
+          errorMsg = await res.text();
+        }
+        setUploadErrors(errors.length > 0 ? errors : [errorMsg]);
+        toast({ title: "Error", description: errorMsg, variant: "destructive" });
+        return;
       }
       toast({ title: "Success", description: "Students uploaded successfully" });
       setUploadFile(null);
       refetchStudents();
     } catch (error: any) {
-      toast({ title: "Error", description: error?.message || "Failed to upload file", variant: "destructive" });
+      // Use error?.errors if available, otherwise fallback to generic message
+      if (error?.errors && Array.isArray(error.errors)) {
+        setUploadErrors(error.errors);
+      } else {
+        setUploadErrors([error?.message || "Failed to upload file"]);
+      }
+      toast({ title: "Error", description: error?.errors ? error.errors.join(", ") : (error?.message || "Failed to upload file"), variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -516,7 +545,7 @@ export default function Students() {
         type: assessmentForm.type,
         maxScore: parseFloat(assessmentForm.maxScore),
         weight: parseFloat(assessmentForm.weight),
-        assessmentDate: new Date(assessmentForm.assessmentDate).toISOString(),
+        date: new Date(assessmentForm.date).toISOString(),
       });
 
       if (!response.ok) throw new Error("Failed to create assessment");
@@ -530,7 +559,7 @@ export default function Students() {
         type: "exam",
         maxScore: "100",
         weight: "0.4",
-        assessmentDate: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split("T")[0],
       });
       toast({ title: "Success", description: "Assessment created successfully" });
     } catch (error) {
@@ -659,31 +688,66 @@ export default function Students() {
               <CardDescription>Download the template and upload a filled file.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                <Button variant="outline" onClick={handleDownloadTemplate}>
-                  <DownloadCloud className="mr-2 h-4 w-4" />
-                  Download Template
-                </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadTemplate}
+                className="w-full mb-4"
+                disabled={downloadingTemplate}
+              >
+                {downloadingTemplate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <DownloadCloud className="mr-2 h-4 w-4" />
+                    Download Template
+                  </>
+                )}
+              </Button>
 
-                <div className="flex flex-col">
-                  <Input id="students-upload" type="file" accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={handleUploadChange} />
-                  {uploadFile && <p className="text-sm mt-2">Selected: {uploadFile.name}</p>}
-                </div>
+              <label
+                htmlFor="students-upload"
+                className="w-full flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-6 cursor-pointer hover:border-blue-400 transition-colors"
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    setUploadFile(e.dataTransfer.files[0]);
+                  }
+                }}
+              >
+                <Input
+                  id="students-upload"
+                  type="file"
+                  accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  onChange={handleUploadChange}
+                  className="hidden"
+                />
+                <span className="text-slate-600">
+                  Drag & drop your file here, or <span className="text-blue-600 underline">browse</span>
+                </span>
+                {uploadFile && <p className="text-sm mt-2">Selected: {uploadFile.name}</p>}
+              </label>
 
-                <Button onClick={handleUploadSubmit} disabled={uploading || !uploadFile}>
-                  {uploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="mr-2 h-4 w-4" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                onClick={handleUploadSubmit}
+                disabled={uploading || !uploadFile}
+                className="w-full"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    Upload
+                  </>
+                )}
+              </Button>
 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -691,6 +755,22 @@ export default function Students() {
                   Accepted formats: XLSX. The server will process the uploaded file.
                 </AlertDescription>
               </Alert>
+
+              {uploadErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <div>
+                    <AlertDescription>
+                      <strong>Validation errors:</strong>
+                      <ul className="mt-2 list-disc list-inside text-sm text-red-700">
+                        {uploadErrors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -956,7 +1036,7 @@ export default function Students() {
         <TabsContent value="student-enrollments" className="space-y-4">
           <Card className="border-slate-200">
             <CardHeader>
-              <CardTitle>Student Enrollments</CardTitle>
+              {/* <CardTitle>Student Enrollments</CardTitle> */}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Year and Definition Selection */}
@@ -1115,7 +1195,7 @@ export default function Students() {
               ) : (
                 <Select
                   value={selectedYearId?.toString() || ""}
-                  onValueChange={(value: string) => setSelectedYearId(parseInt(value))}
+                  onValueChange={(value: string) => setSelectedYearId(value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select an academic year" />
@@ -1300,8 +1380,8 @@ export default function Students() {
                       <Input
                         id="date"
                         type="date"
-                        value={assessmentForm.assessmentDate}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, assessmentDate: e.target.value })}
+                        value={assessmentForm.date}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssessmentForm({ ...assessmentForm, date: e.target.value })}
                       />
                     </div>
                   </div>

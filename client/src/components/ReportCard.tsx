@@ -29,8 +29,8 @@ export interface ReportCardData {
   };
   subjects: Array<{
     name: string;
-    score: number;
-    grade: string;
+    assessments?: Array<{ type: string; score: number; max_score?: number }>;
+    grade?: string;
     credits?: number;
     remarks: string;
   }>;
@@ -108,11 +108,28 @@ function StudentInfo({ student }: { student: ReportCardData['student'] }) {
 
 // 3. AcademicTable Component
 function AcademicTable({ subjects, showCredits }: { subjects: ReportCardData['subjects']; showCredits: boolean }) {
+  const getAssessmentScore = (sub: ReportCardData['subjects'][number], type: string) => {
+    return sub.assessments?.find(a => a.type === type)?.score;
+  };
+
+  const getMotEotAverage = (sub: ReportCardData['subjects'][number]) => {
+    const mot = getAssessmentScore(sub, 'MIDTERM');
+    const eot = getAssessmentScore(sub, 'END_OF_TERM');
+    if (typeof mot === 'number' && typeof eot === 'number') {
+      return Math.round(((mot + eot) / 2) * 10) / 10;
+    }
+    if (typeof mot === 'number') return mot;
+    if (typeof eot === 'number') return eot;
+    return undefined;
+  };
+
   return (
     <table className="w-full border border-gray-400 print:border-black mb-4 text-sm">
       <thead className="bg-gray-100 print:bg-white">
         <tr>
           <th className="border border-gray-400 print:border-black px-2 py-1">Subject</th>
+          <th className="border border-gray-400 print:border-black px-2 py-1">CAT</th>
+          <th className="border border-gray-400 print:border-black px-2 py-1">MOT/EOT</th>
           <th className="border border-gray-400 print:border-black px-2 py-1">Score</th>
           <th className="border border-gray-400 print:border-black px-2 py-1">Grade</th>
           {showCredits && <th className="border border-gray-400 print:border-black px-2 py-1">Credits</th>}
@@ -120,15 +137,22 @@ function AcademicTable({ subjects, showCredits }: { subjects: ReportCardData['su
         </tr>
       </thead>
       <tbody>
-        {subjects.map((sub, i) => (
-          <tr key={i}>
-            <td className="border border-gray-400 print:border-black px-2 py-1">{sub.name}</td>
-            <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.score}</td>
-            <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.grade}</td>
-            {showCredits && <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.credits ?? '-'}</td>}
-            <td className="border border-gray-400 print:border-black px-2 py-1">{sub.remarks}</td>
-          </tr>
-        ))}
+        {subjects.map((sub, i) => {
+          const cat = getAssessmentScore(sub, 'CAT');
+          const motEot = getMotEotAverage(sub);
+          const finalScore = Math.round(((cat ?? 0) + (motEot ?? 0)) * 10) / 10;
+          return (
+            <tr key={i}>
+              <td className="border border-gray-400 print:border-black px-2 py-1">{sub.name}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{cat ?? '-'}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{motEot ?? '-'}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{finalScore}</td>
+              <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.grade}</td>
+              {showCredits && <td className="border border-gray-400 print:border-black px-2 py-1 text-center">{sub.credits ?? '-'}</td>}
+              <td className="border border-gray-400 print:border-black px-2 py-1">{sub.remarks}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -244,8 +268,8 @@ export default function ReportCard({ data, config }: { data: ReportCardData; con
 // Example usage data and config
 export const exampleData = {
   school: {
-    name: "Atom International School",
-    contact: "P.O. Box 123, Kampala | Tel: 0123-456789 | info@atom.edu",
+    name: "Atom Software School",
+    contact: "Bulindo, Kira | Tel: +256 764 124754 | info.atomsoftware@gmail.com",
     motto: "Knowledge is Power",
   },
   term: {
@@ -260,10 +284,10 @@ export const exampleData = {
     stream: "East",
   },
   subjects: [
-    { name: "Mathematics", score: 85, grade: "A", credits: 4, remarks: "Excellent" },
-    { name: "English", score: 78, grade: "B+", credits: 3, remarks: "Very Good" },
-    { name: "Biology", score: 65, grade: "C", credits: 3, remarks: "Good" },
-    { name: "History", score: 90, grade: "A+", credits: 2, remarks: "Outstanding" },
+    { name: "Mathematics", assessments: [ { type: 'CAT', score: 20 }, { type: 'MIDTERM', score: 70 }, { type: 'END_OF_TERM', score: 70 } ], grade: "A", credits: 4, remarks: "Excellent" },
+    { name: "English", assessments: [ { type: 'CAT', score: 18 }, { type: 'MIDTERM', score: 35 }, { type: 'END_OF_TERM', score: 42 } ], grade: "B+", credits: 3, remarks: "Very Good" },
+    { name: "Biology", assessments: [ { type: 'CAT', score: 15 }, { type: 'MIDTERM', score: 30 }, { type: 'END_OF_TERM', score: 35 } ], grade: "C", credits: 3, remarks: "Good" },
+    { name: "History", assessments: [ { type: 'CAT', score: 22 }, { type: 'MIDTERM', score: 45 }, { type: 'END_OF_TERM', score: 48 } ], grade: "A+", credits: 2, remarks: "Outstanding" },
   ],
   summary: {
     totalMarks: 318,

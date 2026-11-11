@@ -1,19 +1,20 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile } from "@/context/ProfileContext";
 import { useTenant } from "@/context/TenantContext";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { schoolsApi, authApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { authApi, schoolsApi } from "@/lib/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useLocation } from "wouter";
+import { z } from "zod";
 
 const createSchoolFormSchema = z.object({
   code: z.string().min(1),
@@ -25,6 +26,7 @@ const createSchoolFormSchema = z.object({
   // logoUrl: z.string().url().optional(),
   currency: z.string().min(1),
   timeZone: z.string().min(1),
+  institutionType: z.enum(["PRIMARY_SCHOOL", "SECONDARY_SCHOOL", "UNIVERSITY"]).optional(),
 });
 
 export default function CreateSchool() {
@@ -42,6 +44,7 @@ export default function CreateSchool() {
       // logoUrl: "",
       currency: "UGX",
       timeZone: "Africa/Kampala",
+      institutionType: "PRIMARY_SCHOOL",
     },
   });
   const [, navigate] = useLocation();
@@ -168,9 +171,10 @@ export default function CreateSchool() {
             )}
 
             <Alert className="mb-4">
-              <AlertTitle>Note</AlertTitle>
+              <AlertTitle>Note:</AlertTitle>
               <AlertDescription>
-                Other app sections are hidden until you create and are assigned to a school. You can still access <strong>Settings</strong> while you set up your school.
+                Other app sections are hidden until you create and are assigned to a school.
+                {/* You can still access <strong>Settings</strong> while you set up your school. */}
               </AlertDescription>
             </Alert>
 
@@ -203,6 +207,28 @@ export default function CreateSchool() {
                 </div>} */}
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="institutionType">Institution Type</Label>
+                  <Select value={form.watch("institutionType") || "PRIMARY_SCHOOL"} onValueChange={(value) => form.setValue("institutionType", value as "PRIMARY_SCHOOL" | "SECONDARY_SCHOOL" | "UNIVERSITY")}>
+                    <SelectTrigger id="institutionType" className="focus-visible:ring-primary">
+                      <SelectValue placeholder="Select institution type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PRIMARY_SCHOOL">Primary School</SelectItem>
+                      <SelectItem value="SECONDARY_SCHOOL">Secondary School</SelectItem>
+                      <SelectItem value="UNIVERSITY">University</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.institutionType && <p className="text-sm text-red-500">{form.formState.errors.institutionType.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeZone">Time Zone</Label>
+                  <Input id="timeZone" placeholder="Africa/Kampala" {...form.register("timeZone")} className="focus-visible:ring-primary" />
+                  {form.formState.errors.timeZone && <p className="text-sm text-red-500">{form.formState.errors.timeZone.message}</p>}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input id="phone" placeholder="0700000001" {...form.register("phone")} className="focus-visible:ring-primary" />
@@ -213,19 +239,6 @@ export default function CreateSchool() {
                 <Label htmlFor="address">Address</Label>
                 <Input id="address" placeholder="123 Main Street" {...form.register("address")} className="focus-visible:ring-primary" />
                 {form.formState.errors.address && <p className="text-sm text-red-500">{form.formState.errors.address.message}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Input id="currency" placeholder="UGX" {...form.register("currency")} className="focus-visible:ring-primary" />
-                  {form.formState.errors.currency && <p className="text-sm text-red-500">{form.formState.errors.currency.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeZone">Time Zone</Label>
-                  <Input id="timeZone" placeholder="Africa/Kampala" {...form.register("timeZone")} className="focus-visible:ring-primary" />
-                  {form.formState.errors.timeZone && <p className="text-sm text-red-500">{form.formState.errors.timeZone.message}</p>}
-                </div>
               </div>
 
               <Button type="submit" disabled={form.formState.isSubmitting || profile?.emailVerified === false} className="w-full gap-2">
