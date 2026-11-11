@@ -238,6 +238,8 @@ export const adminApi = {
   listSchoolAdmins: (schoolId?: string) =>
     apiClient.get(`/admins/school${schoolId ? `?schoolId=${schoolId}` : ""}`),
   listSuperAdmins: () => apiClient.get("/admins/super"),
+  triggerUserPasswordReset: (userId: string) =>
+    apiClient.post(`/users/${userId}/reset-password`, {}),
 };
 
 export const reportCardsApi = {

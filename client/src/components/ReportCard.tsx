@@ -268,7 +268,7 @@ export default function ReportCard({ data, config }: { data: ReportCardData; con
 // Example usage data and config
 export const exampleData = {
   school: {
-    name: "Atom Software School",
+    name: "Atom School Management",
     contact: "Bulindo, Kira | Tel: +256 764 124754 | info.atomsoftware@gmail.com",
     motto: "Knowledge is Power",
   },

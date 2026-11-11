@@ -1,5 +1,16 @@
 import { useProfile } from "@/context/ProfileContext";
-import { Edit, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Mail, RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "../components/layout/AppLayout";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
@@ -26,6 +37,52 @@ export default function SystemUsers() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
+    const [resettingUserId, setResettingUserId] = useState<string | null>(null);
+    const [pendingResetUser, setPendingResetUser] = useState<SystemUser | null>(null);
+    const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    useEffect(() => {
+        if (!statusMessage) return;
+
+        const timeout = window.setTimeout(() => {
+            setStatusMessage(null);
+        }, 4000);
+
+        return () => window.clearTimeout(timeout);
+    }, [statusMessage]);
+
+    const handleTriggerReset = (user: SystemUser) => {
+        setPendingResetUser(user);
+    };
+
+    const confirmTriggerReset = async () => {
+        if (!pendingResetUser) return;
+
+        const userId = pendingResetUser.id;
+        setResettingUserId(userId);
+        setPendingResetUser(null);
+
+        try {
+            const response = await adminApi.triggerUserPasswordReset(userId);
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload?.message || payload?.error?.message || "Unable to send reset email.");
+            }
+
+            setStatusMessage({
+                type: "success",
+                text: payload?.message || "Reset email sent successfully.",
+            });
+        } catch (err) {
+            setStatusMessage({
+                type: "error",
+                text: err instanceof Error ? err.message : "Unable to send reset email.",
+            });
+        } finally {
+            setResettingUserId(null);
+        }
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -69,6 +126,25 @@ export default function SystemUsers() {
             description="Manage School Admins and Super Admins."
             breadcrumbs={[{ label: "System Users" }]}
         >
+            {statusMessage && (
+                <div
+                    className={`mb-4 flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+                        statusMessage.type === "success"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                            : "border-red-200 bg-red-50 text-red-800"
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                >
+                    {statusMessage.type === "success" ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                        <AlertCircle className="h-4 w-4" />
+                    )}
+                    <span>{statusMessage.text}</span>
+                </div>
+            )}
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className={`grid w-full border-b ${userRole === "SUPER_ADMIN" ? "grid-cols-2" : "grid-cols-1"}`}>
                     <TabsTrigger value="schoolAdmins">School Admins</TabsTrigger>
@@ -94,9 +170,9 @@ export default function SystemUsers() {
                                             <th className="px-3 py-2 text-sm font-medium">Name</th>
                                             <th className="px-3 py-2 text-sm font-medium">Email</th>
                                             <th className="px-3 py-2 text-sm font-medium">Status</th>
-                                            <th className="px-3 py-2 text-sm font-medium">Email Verified 2</th>
+                                            <th className="px-3 py-2 text-sm font-medium">Email Verified</th>
                                             <th className="px-3 py-2 text-sm font-medium">Created</th>
-                                            {/* <th className="px-3 py-2 text-sm font-medium text-right">Actions</th> */}
+                                            <th className="px-3 py-2 text-sm font-medium text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -135,14 +211,19 @@ export default function SystemUsers() {
                                                     <td className="px-3 py-2">{u.isActive ? "Active" : "Inactive"}</td>
                                                     <td className="px-3 py-2">{u.emailVerified ? "Yes" : "No"}</td>
                                                     <td className="px-3 py-2">{new Date(u.createdAt).toLocaleDateString()}</td>
-                                                    {/* <td className="px-3 py-2 text-right">
-                                                        <button className="inline-flex items-center p-1 text-blue-600 hover:text-blue-800" title="Edit" disabled>
-                                                            <Edit className="h-4 w-4" />
-                                                        </button>
-                                                        <button className="inline-flex items-center p-1 text-red-600 hover:text-red-800 ml-2" title="Delete" disabled>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </td> */}
+                                                    <td className="px-3 py-2 text-right">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleTriggerReset(u)}
+                                                            disabled={resettingUserId === u.id}
+                                                            className="inline-flex items-center gap-2"
+                                                        >
+                                                            <Mail className="h-3.5 w-3.5" />
+                                                            {resettingUserId === u.id ? "Sending..." : "Reset link"}
+                                                        </Button>
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
@@ -213,12 +294,17 @@ export default function SystemUsers() {
                                                         <td className="px-3 py-2">{u.emailVerified ? "Yes" : "No"}</td>
                                                         <td className="px-3 py-2">{new Date(u.createdAt).toLocaleDateString()}</td>
                                                         <td className="px-3 py-2 text-right">
-                                                            <button className="inline-flex items-center p-1 text-blue-600 hover:text-blue-800" title="Edit" disabled>
-                                                                <Edit className="h-4 w-4" />
-                                                            </button>
-                                                            <button className="inline-flex items-center p-1 text-red-600 hover:text-red-800 ml-2" title="Delete" disabled>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleTriggerReset(u)}
+                                                                disabled={resettingUserId === u.id}
+                                                                className="inline-flex items-center gap-2"
+                                                            >
+                                                                <RotateCcw className="h-3.5 w-3.5" />
+                                                                {resettingUserId === u.id ? "Sending..." : "Reset link"}
+                                                            </Button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -231,6 +317,30 @@ export default function SystemUsers() {
                     </TabsContent>
                 )}
             </Tabs>
+
+            <AlertDialog
+                open={Boolean(pendingResetUser)}
+                onOpenChange={(open) => {
+                    if (!open) setPendingResetUser(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Send password reset link?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {pendingResetUser
+                                ? `This will email ${pendingResetUser.firstName} ${pendingResetUser.lastName} (${pendingResetUser.email}) a secure reset link. The user will choose their own new password.`
+                                : "This will send a password reset link to the selected user."}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPendingResetUser(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmTriggerReset}>
+                            Send reset link
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }
