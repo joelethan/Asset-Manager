@@ -84,6 +84,12 @@ export const authApi = {
   logout: () => apiClient.post("/auth/logout"),
   // Request the server to resend the email verification link for the current user
   resendVerification: () => apiClient.post("/auth/resend-verification"),
+  forgotPassword: (email: string) =>
+    apiClient.post("/auth/forgot-password", { email }),
+  resetPassword: (token: string, newPassword: string) =>
+    apiClient.post("/auth/reset-password", { token, newPassword }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.post("/auth/change-password", { currentPassword, newPassword }),
 };
 
 // Schools endpoints

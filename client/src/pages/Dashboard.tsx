@@ -2,8 +2,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTenant } from "@/context/TenantContext";
 import { dashboardApi } from "@/lib/api"; // Adjust the import path as needed
+import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Building2, GraduationCap, Users } from "lucide-react";
-import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -27,40 +27,38 @@ const chartData = [
 export default function Dashboard() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!schoolId) return; // Only run if schoolId is set
-    const fetchDashboard = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await dashboardApi.getSchoolDashboard(schoolId);
-        const data = typeof response.json === "function" ? await response.json() : response;
-        setDashboard(data);
-      } catch (error) {
-        setError("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
+  const {
+    data: dashboard,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["dashboard", schoolId],
+    enabled: !!schoolId,
+    staleTime: 0,
+    placeholderData: (previousData) => previousData,
+    queryFn: async () => {
+      const response = await dashboardApi.getSchoolDashboard(schoolId);
+      if (!response.ok) {
+        throw new Error("Failed to load dashboard data");
       }
-    };
-    fetchDashboard();
-  }, [schoolId]);
+      return response.json();
+    },
+  });
 
-  // if (loading && !dashboard) {
-  //   return (
-  //     <AppLayout title="Dashboard" description="Loading..." breadcrumbs={[{ label: "Dashboard" }]}>
-  //       <div className="p-8 text-center text-slate-500">Loading dashboard...</div>
-  //     </AppLayout>
-  //   );
-  // }
+  if (isLoading && !dashboard) {
+    return (
+      <AppLayout title="Dashboard" description="Loading..." breadcrumbs={[{ label: "Dashboard" }]}>
+        <div className="p-8 text-center text-slate-500">Loading dashboard...</div>
+      </AppLayout>
+    );
+  }
 
-  if (error) {
+  if (isError && !dashboard) {
     return (
       <AppLayout title="Dashboard" description="Error" breadcrumbs={[{ label: "Dashboard" }]}>
-        <div className="p-8 text-center text-red-500">{error}</div>
+        <div className="p-8 text-center text-red-500">{error instanceof Error ? error.message : "Failed to load dashboard data"}</div>
       </AppLayout>
     );
   }

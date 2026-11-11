@@ -5,8 +5,10 @@ import AcademicStructure from "@/pages/AcademicStructure";
 import Classes from "@/pages/Classes";
 import CreateSchool from "@/pages/CreateSchool";
 import Dashboard from "@/pages/Dashboard";
+import ForgotPassword from "@/pages/ForgotPassword";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
 import Schools from "@/pages/Schools";
 import Students from "@/pages/Students";
 import Subjects from "@/pages/Subjects";
@@ -57,6 +59,12 @@ function AppRouter() {
         <Route path="/register">
           <PublicRoute component={Register} />
         </Route>
+        <Route path="/forgot-password">
+          <PublicRoute component={ForgotPassword} />
+        </Route>
+
+        {/* Any logged-in user can change their password; logged-out users fall through to /login */}
+        {isAuthenticated && <Route path="/reset-password" component={ResetPassword} />}
 
         {/* If authenticated but does not belong to any school, show only Create School + Settings */}
         {isAuthenticated && !hasMemberships && (

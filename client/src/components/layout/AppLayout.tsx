@@ -42,6 +42,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Loader2,
+  KeyRound,
   LogOut,
   Settings,
   User as UserIcon,
@@ -50,6 +51,8 @@ import {
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+
+const appName = import.meta.env.VITE_APP_NAME || "AtomSchoolManagement";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -134,7 +137,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
           >
             <SidebarHeader>
               <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
-                <span className="truncate">AtomSoftware</span>
+                <span className="truncate">{appName}</span>
               </div>
             </SidebarHeader>
             <SidebarContent className="overflow-y-auto pb-4">
@@ -184,7 +187,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
           <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white hidden md:flex">
             <SidebarHeader>
               <div className="flex h-12 items-center px-4 font-display text-xl font-bold text-primary tracking-tight">
-                <span className="truncate">AtomSoftware</span>
+                <span className="truncate">{appName}</span>
               </div>
             </SidebarHeader>
             <SidebarContent>
@@ -268,6 +271,12 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                       <DropdownMenuItem>
                         <UserIcon className="mr-2 h-4 w-4" />
                         Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/reset-password">
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          Reset Password
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
                         <LogOut className="mr-2 h-4 w-4" />
@@ -373,9 +382,15 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
+                      {/* <DropdownMenuItem>
                         <UserIcon className="mr-2 h-4 w-4" />
                         Profile
+                      </DropdownMenuItem> */}
+                      <DropdownMenuItem asChild>
+                        <Link href="/reset-password">
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          Reset Password
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
                         <LogOut className="mr-2 h-4 w-4" />

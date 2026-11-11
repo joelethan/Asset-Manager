@@ -17,6 +17,24 @@ export const loginUserSchema = z.object({
 
 export type LoginUserRequest = z.infer<typeof loginUserSchema>;
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+
 export const insertSchoolSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
@@ -44,3 +62,20 @@ export const academicYearInputSchema = z.object({
   termTemplateId: z.string(),
 });
 export type AcademicYearInput = z.infer<typeof academicYearInputSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    message: "New password must be different from your current password",
+    path: ["newPassword"],
+  });
+
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;

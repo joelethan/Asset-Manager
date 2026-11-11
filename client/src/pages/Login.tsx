@@ -9,14 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
 import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 
 export default function Login() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const resetSuccess = new URLSearchParams(useSearch()).get("reset") === "success";
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,6 +103,15 @@ export default function Login() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {resetSuccess && !serverError && (
+                  <Alert className="border-green-200 bg-green-50 text-green-800">
+                    <CheckCircle2 className="h-4 w-4 !text-green-600" />
+                    <AlertDescription>
+                      Password has been reset successfully. Sign in with your new password.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {serverError && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -128,7 +138,12 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Password</FormLabel>
+                        <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                          Forgot password?
+                        </Link>
+                      </div>
                       <FormControl>
                         <div className="relative">
                           <Input
