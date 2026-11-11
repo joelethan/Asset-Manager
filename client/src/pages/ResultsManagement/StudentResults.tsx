@@ -7,6 +7,7 @@ import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { useToast } from "@/hooks/use-toast";
 import { gradesApi, reportCardsApi } from "@/lib/api";
+import { getAssessmentTypeLabel } from "@/lib/utils";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -289,7 +290,7 @@ const StudentResults: React.FC = () => {
                                 <thead>
                                     <tr className="bg-gray-100">
                                         <th className="px-3 py-2 text-sm font-medium">Subject</th>
-                                        <th className="px-3 py-2 text-sm font-medium">Assessment</th>
+                                        <th className="px-3 py-2 text-sm font-medium">Assessment Type</th>
                                         <th className="px-3 py-2 text-sm font-medium">Score</th>
                                         <th className="px-3 py-2 text-sm font-medium">%age</th>
                                         <th className="px-3 py-2 text-sm font-medium">Grade</th>
@@ -298,10 +299,11 @@ const StudentResults: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {byStudentResult.grades.map((g: any, i: number) => {
+                                        // console.log('Rendering grade row:', g);
                                         return (
                                             <tr key={i} className="border-t">
                                                 <td className="px-3 py-2 text-sm">{g.assessment?.component?.subject?.name} ({g.assessment?.component?.name || '-'})</td>
-                                                <td className="px-3 py-2 text-sm">{g.assessment?.name || '-'}</td>
+                                                <td className="px-3 py-2 text-sm">{getAssessmentTypeLabel(g.assessment?.type) || '-'}</td>
                                                 <td className="px-3 py-2 text-sm">{g.score}</td>
                                                 <td className="px-3 py-2 text-sm">{g.percentage}</td>
                                                 <td className="px-3 py-2 text-sm">{g.letter_grade}</td>

@@ -14,6 +14,7 @@ import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import ViewAssessmentsTab from "./Subjects/ViewAssessmentsTab";
+import { getAssessmentTypeLabel } from "@/lib/utils";
 
 interface Subject {
   id: string;
@@ -1058,8 +1059,9 @@ export default function Subjects() {
                                 setGradingAssessment(filteredAssessments.find((a: any) => a.id === globalSelectValues.gradeAssessment));
                                 if (filteredAssessments.length > 0) {
                                   return filteredAssessments.map((assessment: any) => {
+                                    console.log("Assessment in dropdown:", assessment);
                                     return (
-                                      <SelectItem key={assessment.id} value={assessment.id}>{`${assessment?.component?.subject?.name}: ${assessment?.component?.name} (${assessment.name})`}</SelectItem>
+                                      <SelectItem key={assessment.id} value={assessment.id}>{`${assessment?.component?.subject?.name}: ${assessment?.component?.name} (${getAssessmentTypeLabel(assessment.type)})`}</SelectItem>
                                     )
                                   });
                                 } else {

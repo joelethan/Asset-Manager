@@ -10,21 +10,9 @@ import {
 import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { assessmentsApi } from "@/lib/api";
+import { getAssessmentTypeLabel } from "@/lib/utils";
 import { FC, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-
-// helper to display short labels for assessment types
-function getAssessmentTypeLabel(type?: string): string {
-    if (!type) return '';
-    switch (type) {
-        case 'END_OF_TERM':
-            return 'EOT';
-        case 'MIDTERM':
-            return 'MOT';
-        default:
-            return type;
-    }
-}
 
 const ViewAssessmentsTab: FC = () => {
     const {
