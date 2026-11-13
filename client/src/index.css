@@ -85,3 +85,15 @@
     transform: translateY(0);
   }
 }
+
+/* Printing (invoices, receipts): hide app chrome, keep only page content. */
+@media print {
+  .group.peer[data-state],
+  [data-sidebar="sidebar"] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}

@@ -6,6 +6,7 @@ import { useStructure } from "@/context/StructureContext";
 import { useTenant } from "@/context/TenantContext";
 import { studentsApi } from "@/lib/api";
 import React from "react";
+import { StudentStatement } from "../Billing/StudentStatement";
 import { Controller, useForm } from "react-hook-form";
 
 const ViewStudent: React.FC = () => {
@@ -277,6 +278,11 @@ const ViewStudent: React.FC = () => {
                                 {guardianError && <p className="text-red-600 mt-2">{guardianError}</p>}
                                 {/* {guardianSuccess && <p className="text-green-600 mt-2">{guardianSuccess}</p>} */}
                             </div>
+                        </div>
+                    )}
+                    {studentDetails.details?.id && !studentDetails.loading && (
+                        <div className="mt-6 w-full rounded-lg border border-slate-200 bg-white p-6 shadow">
+                            <StudentStatement studentId={studentDetails.details.id} />
                         </div>
                     )}
                 </div>

@@ -281,23 +281,27 @@ Add a **"Fees & Billing"** sidebar group: Overview · Invoices · Payments · Fe
 Each milestone ends in a demoable, merged state.
 
 ### M1: Schema and fee catalogue (3–4 days)
+> **Status (2026-11-13): done. Migration applied to Neon.** Migration `20261113120000_billing_foundation` (additive; includes the partial unique index). `src/billing/` module (categories, structures, copy, seed-defaults, `/billing/options`) and the client page `/billing/setup`. Deviation: `Payment.status`/`payment_method` stay as String columns validated in code (`billing.constants.ts`) to avoid a destructive column conversion.
 - Prisma models, enums, migration (including the `Payment` changes and the partial unique index), `NumberSequence`
 - Category and structure services, controllers and DTOs, plus `seed-defaults` and `copy`
 - Fee Setup page
 - **Done when:** an admin can set up categories and structures for a year, term and class in the UI, and the migration applies cleanly to a copy of production data.
 
 ### M2: Invoice generation (4–5 days)
+> **Status (2026-11-13): code complete, pending manual QA.** Pure generation logic + tests (`invoice-generation.logic.ts`), assignments, preview/generate/issue-batch/discard, draft edit, issue, cancel, ad-hoc API, gap-free numbering (verified in a rolled-back transaction), partial unique index verified. Client: `/billing/invoices` (filters, sums, pagination, generate wizard), `/billing/invoices/:id` (edit draft, issue, cancel, print), assign-students dialog in Fee Setup. Not built yet: ad-hoc invoice UI (API exists).
 - Assignments API and UI (on the student profile and in bulk)
 - Pure generation logic with unit tests, preview, batch generate, issue, discard drafts
 - Invoices list and detail pages, ad-hoc invoices, cancel
 - **Done when:** generating twice for the same class and term creates zero duplicates, the preview matches what gets committed, and an issued invoice cannot be edited.
 
 ### M3: Payments and receipts (3–4 days)
+> **Status (2026-11-13): code complete, pending manual QA.** `payments.service.ts`: record (invoice row lock, balance re-check, receipt number, Idempotency-Key replay), reverse (flag + recalc), log with filters/sums, receipt data. Pure rules + tests in `payment.logic.ts`. Client: Record payment / Reverse on invoice detail, `/billing/payments` log, printable `/billing/receipts/:id`, print CSS hides app chrome. Receipt is printed from the browser (no server PDF yet).
 - Record payment (transactional, with locking), reversal, receipt numbering, receipt print view
 - Payments log
 - **Done when:** partial, full and reversed payments drive invoice status correctly, overpayment is rejected, and concurrent double submission creates only one payment.
 
 ### M4: Reporting and integration (2–3 days)
+> **Status (2026-11-13): code complete, pending QA with real data.** `billing-reports.service.ts` (summary, by-class, statement, invoices/payments CSV with injection guard) + `statement.logic.ts` with tests (running balance; closing balance reconciles to open invoices − completed payments). Dashboard `finance` block (current term, else year) and `GET /students/:id/invoices|payments` now return real data. Client: `/billing` overview with exports, dashboard fee cards, fee statement on the student profile. All report queries executed read-only against Neon without errors.
 - Summary, by-class, statement and CSV exports
 - Wire `dashboard.service.ts` finance figures and `GET /students/:id/payments` to the billing services
 - Billing overview page and dashboard cards

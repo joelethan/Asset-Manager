@@ -34,6 +34,7 @@ import { authApi } from "@/lib/api";
 import { resolveAppName } from "@/lib/app-brand";
 import { queryClient } from "@/lib/queryClient";
 import {
+  Banknote,
   BarChart3,
   BookOpen,
   Building2,
@@ -48,7 +49,10 @@ import {
   Settings,
   User as UserIcon,
   UserPlus,
-  Users
+  Users,
+  PieChart,
+  Receipt,
+  Wallet
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -69,6 +73,10 @@ const navigation = [
   { name: "Subjects", href: "/subjects", icon: BookOpen },
   // { name: "Assessments", href: "/assessments", icon: CheckSquare },
   { name: "Results", href: "/results", icon: BarChart3 },
+  { name: "Fees Overview", href: "/billing", icon: PieChart },
+  { name: "Invoices", href: "/billing/invoices", icon: Receipt },
+  { name: "Payments", href: "/billing/payments", icon: Banknote },
+  { name: "Fee Setup", href: "/billing/setup", icon: Wallet },
   // { name: "Report Cards", href: "/report-cards", icon: FileText },
   { name: "System Users", href: "/system-users", icon: Users },
   // { name: "Audit Trails", href: "/audit-trails", icon: FileText },
@@ -294,7 +302,7 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
 
         <div className="flex flex-1 flex-col">
           {/* Top Header */}
-          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/80 px-4 backdrop-blur transition-all">
+          <header className="print:hidden sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/80 px-4 backdrop-blur transition-all">
             {/* Mobile sidebar trigger */}
             <button
               className="md:hidden mr-2 p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -419,8 +427,8 @@ export function AppLayout({ children, title, description, breadcrumbs, centered 
 
           {/* Main Content Area */}
           <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-            <div className="mx-auto max-w-6xl space-y-8 animate-in">
-              <div className={`space-y-1 ${centered ? "text-center" : ""}`}>
+            <div className="mx-auto w-full max-w-screen-2xl space-y-8 animate-in">
+              <div className={`space-y-1 print:hidden ${centered ? "text-center" : ""}`}>
                 <h1 className="text-3xl font-display font-bold text-slate-900">{title}</h1>
                 {description && <p className="text-slate-500 text-lg">{description}</p>}
               </div>

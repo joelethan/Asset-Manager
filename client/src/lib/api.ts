@@ -286,3 +286,79 @@ export const reportCardsApi = {
 };
 // ) => apiClient.download(`/schools/${schoolId}/report-card-2/dummy/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
 // ) => apiClient.download(`/schools/${schoolId}/report-cards/by-identity/auto/pdf?yearId=${yearId}&termId=${termId}&identity=${identity}`),
+
+// Billing endpoints
+export const billingApi = {
+  options: (schoolId: string) => apiClient.get(`/schools/${schoolId}/billing/options`),
+
+  listCategories: (schoolId: string) => apiClient.get(`/schools/${schoolId}/fee-categories`),
+  createCategory: (schoolId: string, data: unknown) => apiClient.post(`/schools/${schoolId}/fee-categories`, data),
+  updateCategory: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/fee-categories/${id}`, data),
+  setCategoryActive: (schoolId: string, id: string, active: boolean) =>
+    apiClient.post(`/schools/${schoolId}/fee-categories/${id}/${active ? "activate" : "deactivate"}`),
+  seedDefaultCategories: (schoolId: string) => apiClient.post(`/schools/${schoolId}/fee-categories/seed-defaults`),
+
+  listStructures: (schoolId: string, params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.get(`/schools/${schoolId}/fee-structures${qs ? `?${qs}` : ""}`);
+  },
+  createStructure: (schoolId: string, data: unknown) => apiClient.post(`/schools/${schoolId}/fee-structures`, data),
+  updateStructure: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/fee-structures/${id}`, data),
+  setStructureActive: (schoolId: string, id: string, active: boolean) =>
+    apiClient.post(`/schools/${schoolId}/fee-structures/${id}/${active ? "activate" : "deactivate"}`),
+  copyStructures: (schoolId: string, data: unknown) => apiClient.post(`/schools/${schoolId}/fee-structures/copy`, data),
+
+  eligibleStudents: (schoolId: string, structureId: string) =>
+    apiClient.get(`/schools/${schoolId}/fee-structures/${structureId}/eligible-students`),
+  assignStudents: (schoolId: string, data: { fee_structure_id: string; student_ids: string[] }) =>
+    apiClient.post(`/schools/${schoolId}/fee-assignments`, data),
+  updateAssignment: (schoolId: string, id: string, data: unknown) =>
+    apiClient.patch(`/schools/${schoolId}/fee-assignments/${id}`, data),
+  removeAssignment: (schoolId: string, id: string) => apiClient.post(`/schools/${schoolId}/fee-assignments/${id}/remove`),
+
+  previewInvoices: (schoolId: string, data: unknown) => apiClient.post(`/schools/${schoolId}/invoices/generate/preview`, data),
+  generateInvoices: (schoolId: string, data: unknown) => apiClient.post(`/schools/${schoolId}/invoices/generate`, data),
+  issueBatch: (schoolId: string, batchId: string) => apiClient.post(`/schools/${schoolId}/invoices/batches/${batchId}/issue`),
+  discardBatch: (schoolId: string, batchId: string) => apiClient.delete(`/schools/${schoolId}/invoices/batches/${batchId}`),
+  listInvoices: (schoolId: string, params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.get(`/schools/${schoolId}/invoices${qs ? `?${qs}` : ""}`);
+  },
+  getInvoice: (schoolId: string, id: string) => apiClient.get(`/schools/${schoolId}/invoices/${id}`),
+  updateInvoice: (schoolId: string, id: string, data: unknown) => apiClient.patch(`/schools/${schoolId}/invoices/${id}`, data),
+  issueInvoice: (schoolId: string, id: string) => apiClient.post(`/schools/${schoolId}/invoices/${id}/issue`),
+  cancelInvoice: (schoolId: string, id: string, reason: string) =>
+    apiClient.post(`/schools/${schoolId}/invoices/${id}/cancel`, { reason }),
+  deleteInvoice: (schoolId: string, id: string) => apiClient.delete(`/schools/${schoolId}/invoices/${id}`),
+
+  recordPayment: (schoolId: string, invoiceId: string, data: unknown, idempotencyKey: string) =>
+    apiClient.request(`/schools/${schoolId}/invoices/${invoiceId}/payments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Idempotency-Key": idempotencyKey },
+    }),
+  reversePayment: (schoolId: string, paymentId: string, reason: string) =>
+    apiClient.post(`/schools/${schoolId}/payments/${paymentId}/reverse`, { reason }),
+  listPayments: (schoolId: string, params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.get(`/schools/${schoolId}/payments${qs ? `?${qs}` : ""}`);
+  },
+  getReceipt: (schoolId: string, paymentId: string) => apiClient.get(`/schools/${schoolId}/payments/${paymentId}/receipt`),
+
+  summary: (schoolId: string, params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.get(`/schools/${schoolId}/billing/summary${qs ? `?${qs}` : ""}`);
+  },
+  byClass: (schoolId: string, params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.get(`/schools/${schoolId}/billing/by-class${qs ? `?${qs}` : ""}`);
+  },
+  statement: (schoolId: string, studentId: string, academicYearId?: string) =>
+    apiClient.get(`/schools/${schoolId}/students/${studentId}/statement${academicYearId ? `?academicYearId=${academicYearId}` : ""}`),
+  exportCsv: (schoolId: string, kind: "invoices" | "payments", params: Record<string, string | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => !!v) as [string, string][]).toString();
+    return apiClient.download(`/schools/${schoolId}/billing/export/${kind}.csv${qs ? `?${qs}` : ""}`);
+  },
+};

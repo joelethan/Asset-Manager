@@ -1,5 +1,5 @@
 import { gradesApi } from "@/lib/api";
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
 export interface Structure {
     years?: any[];
@@ -11,6 +11,7 @@ export interface Structure {
 
 interface StructureContextProps {
     structure: Structure | null;
+    structureSchoolId: string | null;
     isLoading: boolean;
     error: string | null;
     fetchStructure: (schoolId: string) => Promise<void>;
@@ -113,6 +114,7 @@ const StructureContext = React.createContext<StructureContextProps | undefined>(
 export const StructureProvider = ({ children }: { children: React.ReactNode }) => {
     // State is only in memory, persists across navigation but not reloads
     const [structure, setStructure] = useState<Structure | null>(null);
+    const [structureSchoolId, setStructureSchoolId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [studentDetails, setStudentDetails] = useState({
@@ -161,35 +163,41 @@ export const StructureProvider = ({ children }: { children: React.ReactNode }) =
     const [byDefinitionResult, setByDefinitionResult] = useState<any>({});
     const [listAssessResult, setListAssessResult] = useState<any[]>([]);
     const [activeStudentTab, setActiveStudentTab] = useState<string>("student-uploads");
+    const structureRequestId = useRef(0);
 
-    const fetchStructure = async (schoolId: string) => {
+    const fetchStructure = useCallback(async (schoolId: string) => {
         if (!schoolId) return;
+        const requestId = ++structureRequestId.current;
         setIsLoading(true);
         setError(null);
         try {
             const res = await gradesApi.getStructure(schoolId);
             if (!res.ok) throw new Error("Failed to fetch school structure");
             const data = await res.json();
+            if (requestId !== structureRequestId.current) return;
             setStructure({
                 years: data.years || [],
                 terms: data.terms || [],
                 definitionsOptions: data.classroomDefinitions || [],
                 subjects: data.subjects || []
             });
+            setStructureSchoolId(schoolId);
             setYearOptions(data.years || []);
             setDefinitionsOptions(data.classroomDefinitions || []);
             setSubjectOptions(data.subjects || []);
             setTermOptions(data.terms || []);
         } catch (err: any) {
+            if (requestId !== structureRequestId.current) return;
             setError(err?.message || "Failed to load school structure");
         } finally {
-            setIsLoading(false);
+            if (requestId === structureRequestId.current) setIsLoading(false);
         }
-    };
+    }, []);
 
     return (
         <StructureContext.Provider value={{
             structure,
+            structureSchoolId,
             isLoading,
             error,
             fetchStructure,

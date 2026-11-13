@@ -4,7 +4,9 @@ import { useTenant } from "@/context/TenantContext";
 import { dashboardApi } from "@/lib/api";
 import { getDashboardQueryOptions } from "@/lib/dashboard-query";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Building2, GraduationCap, type LucideIcon, Users } from "lucide-react";
+import { AlertCircle, Banknote, Building2, CircleAlert, GraduationCap, type LucideIcon, Users, Wallet } from "lucide-react";
+import { formatMoney } from "@/lib/money";
+import { Link } from "wouter";
 import {
   Area,
   AreaChart,
@@ -47,6 +49,16 @@ type DashboardData = {
     assessments: number;
     grades: number;
     report_cards_generated: number;
+  };
+  finance: null | {
+    scope: "term" | "year";
+    currency: string;
+    invoice_count: number;
+    billed: string;
+    collected: string;
+    outstanding: string;
+    collection_rate: number | null;
+    overdue: { count: number; amount: string };
   };
   alerts: Array<{
     type: string;
@@ -135,6 +147,28 @@ export default function Dashboard() {
           trend="neutral"
         />
       </div>
+
+      {dashboard?.finance && dashboard.finance.invoice_count > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-medium text-slate-500">
+              Fees · {dashboard.finance.scope === "term" ? dashboard.academics.current_term : dashboard.academics.current_year}
+            </h2>
+            <Link href="/billing" className="text-sm text-primary hover:underline">Fees overview</Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard title="Billed" value={formatMoney(dashboard.finance.billed, dashboard.finance.currency)}
+              change={`${dashboard.finance.invoice_count} invoices`} icon={Wallet} trend="neutral" />
+            <StatsCard title="Collected" value={formatMoney(dashboard.finance.collected, dashboard.finance.currency)}
+              change={dashboard.finance.collection_rate !== null ? `${dashboard.finance.collection_rate}% collection rate` : ""} icon={Banknote} trend="up" />
+            <StatsCard title="Outstanding" value={formatMoney(dashboard.finance.outstanding, dashboard.finance.currency)}
+              change="Still to be collected" icon={Wallet} trend="neutral" />
+            <StatsCard title="Overdue" value={formatMoney(dashboard.finance.overdue.amount, dashboard.finance.currency)}
+              change={`${dashboard.finance.overdue.count} overdue invoices`} icon={CircleAlert}
+              trend={dashboard.finance.overdue.count > 0 ? "down" : "neutral"} />
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-7">
         <Card className="col-span-4 shadow-sm border-slate-200">

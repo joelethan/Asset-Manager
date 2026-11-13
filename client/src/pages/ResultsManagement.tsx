@@ -75,6 +75,7 @@ export default function ResultsManagement() {
     const schoolId = selectedTenant?.id as string;
     const {
         structure,
+        structureSchoolId,
         isLoading: isStructureLoading,
         error: structureError,
         fetchStructure,
@@ -113,10 +114,10 @@ export default function ResultsManagement() {
     useEffect(() => { setValue("assessment", selectValues.assessment); }, [selectValues.assessment, setValue]);
 
     useEffect(() => {
-        if (schoolId && !structure) {
+        if (schoolId && structureSchoolId !== schoolId) {
             fetchStructure(schoolId);
         }
-    }, [schoolId, structure, fetchStructure]);
+    }, [schoolId, structureSchoolId, fetchStructure]);
 
     // fetchStructure now handled by context
     const onSubmit = async (data: any) => {

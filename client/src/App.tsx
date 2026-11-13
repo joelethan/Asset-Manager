@@ -20,6 +20,12 @@ import { getPostAuthRedirect } from "./lib/auth-flow";
 import { getFallbackRoute } from "./lib/route-fallback";
 import { queryClient } from "./lib/queryClient";
 import ComingSoon from "./pages/ComingSoon";
+import FeeSetup from "./pages/Billing/FeeSetup";
+import InvoiceDetail from "./pages/Billing/InvoiceDetail";
+import Invoices from "./pages/Billing/Invoices";
+import BillingOverview from "./pages/Billing/BillingOverview";
+import Payments from "./pages/Billing/Payments";
+import Receipt from "./pages/Billing/Receipt";
 import Guardians from "./pages/Guardians";
 import ResultsManagement from "./pages/ResultsManagement";
 import SystemUsers from "./pages/SystemUsers";
@@ -95,6 +101,12 @@ function AppRouter() {
             <Route path="/subjects" component={Subjects} />
             <Route path="/guardians" component={Guardians} />
             <Route path="/system-users" component={SystemUsers} />
+            <Route path="/billing" component={BillingOverview} />
+            <Route path="/billing/setup" component={FeeSetup} />
+            <Route path="/billing/invoices" component={Invoices} />
+            <Route path="/billing/invoices/:id" component={InvoiceDetail} />
+            <Route path="/billing/payments" component={Payments} />
+            <Route path="/billing/receipts/:id" component={Receipt} />
             <Route path="/coming-soon" component={ComingSoon} />
             {/* <Route path="/report-cards" component={ReportCards} /> */}
             {/* <Route path="/settings" component={Settings} /> */}
