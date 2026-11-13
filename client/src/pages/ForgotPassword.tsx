@@ -14,9 +14,38 @@ import { Link, useSearch } from "wouter";
 import SetNewPassword from "./SetNewPassword";
 
 export default function ForgotPassword() {
-  const token = new URLSearchParams(useSearch()).get("token");
-  if (token) return <SetNewPassword token={token} />;
-  return <RequestResetLink />;
+  const query = new URLSearchParams(useSearch());
+  const rawToken = query.get("token");
+  const token = rawToken?.trim();
+
+  if (token === null) return <RequestResetLink />;
+  if (!token) return <InvalidResetTokenState />;
+  return <SetNewPassword token={token} />;
+}
+
+function InvalidResetTokenState() {
+  return (
+    <AppLayout
+      title="Invalid reset link"
+      description="The reset link is missing or malformed."
+      breadcrumbs={[{ label: "Login", href: "/login" }, { label: "Forgot Password" }]}
+      centered
+    >
+      <div className="mx-auto max-w-md w-full">
+        <Card className="shadow-sm border-slate-200">
+          <CardHeader>
+            <CardTitle>Reset link unavailable</CardTitle>
+            <CardDescription>This link is invalid or incomplete. Request a fresh password reset below.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/forgot-password">Request a new link</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
 }
 
 function RequestResetLink() {

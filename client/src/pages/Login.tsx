@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useProfile } from "@/context/ProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/lib/api";
+import { getPostAuthRedirect } from "@/lib/auth-flow";
 import { loginUserSchema, type LoginUserRequest } from "@/lib/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
@@ -21,7 +22,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const { setProfile, setIsAuthenticated } = useProfile();
+  const { setProfile, setIsAuthenticated, logout } = useProfile();
   const form = useForm<LoginUserRequest>({
     resolver: zodResolver(loginUserSchema),
     defaultValues: {
@@ -58,22 +59,30 @@ export default function Login() {
         } catch { }
       }
 
-      // Fetch profile and store in context
+      // Fetch profile and store in context before redirecting to the protected app.
+      let profile = null;
       try {
         const profileRes = await authApi.profile();
-        if (profileRes.ok) {
-          const profile = await profileRes.json();
-          try {
-            setProfile(profile);
-            setIsAuthenticated(true);
-          } catch { }
+        if (!profileRes.ok) {
+          throw new Error("Profile fetch failed");
         }
-      } catch { }
+        profile = await profileRes.json();
+        setProfile(profile);
+        setIsAuthenticated(true);
+      } catch {
+        logout();
+        setServerError("Login succeeded, but your account data could not be loaded. Please try again.");
+        toast({
+          title: "Sign-in incomplete",
+          description: "We could not load your account. Please try signing in again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
+      const target = getPostAuthRedirect(profile);
       toast({ title: "Success", description: "You have been logged in successfully." });
-
-      // Redirect to dashboard
-      navigate("/dashboard");
+      navigate(target, { replace: true });
     } catch (error) {
       const errorMsg = "An unexpected error occurred. Please try again later." + (error instanceof Error ? ` (${error.message})` : "");
       setServerError(errorMsg);

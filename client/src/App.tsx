@@ -16,6 +16,8 @@ import Teachers from "@/pages/Teachers";
 import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { Redirect, Route, Switch, Router as WouterRouter } from "wouter";
+import { getPostAuthRedirect } from "./lib/auth-flow";
+import { getFallbackRoute } from "./lib/route-fallback";
 import { queryClient } from "./lib/queryClient";
 import ComingSoon from "./pages/ComingSoon";
 import Guardians from "./pages/Guardians";
@@ -25,22 +27,28 @@ import SystemUsers from "./pages/SystemUsers";
 function RootRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
   if (!initialized) return null;
-  return <Redirect to={isAuthenticated ? (profile?.memberships?.length ? "/dashboard" : "/schools-create") : "/login"} />;
+  return <Redirect to={isAuthenticated ? getPostAuthRedirect(profile) : "/login"} />;
 }
 
 function PublicRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, initialized, profile } = useProfile();
   if (!initialized) return null;
-  if (isAuthenticated) return <Redirect to={profile?.memberships?.length ? "/dashboard" : "/schools-create"} />;
+  if (isAuthenticated) return <Redirect to={getPostAuthRedirect(profile)} />;
   return <Component />;
 }
 
 function CatchAllRedirect() {
   const { isAuthenticated, initialized, profile } = useProfile();
   if (!initialized) return null;
-  if (!isAuthenticated) return <Redirect to="/login" />;
-  if (!profile?.memberships?.length) return <Redirect to="/schools-create" />;
-  return <Redirect to="/coming-soon" />;
+
+  return (
+    <Redirect
+      to={getFallbackRoute({
+        isAuthenticated,
+        hasMemberships: !!profile?.memberships?.length,
+      })}
+    />
+  );
 }
 
 function AppRouter() {

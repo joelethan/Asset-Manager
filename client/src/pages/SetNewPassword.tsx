@@ -44,6 +44,31 @@ export default function SetNewPassword({ token }: { token: string }) {
     }
   }
 
+  if (!token || !token.trim()) {
+    return (
+      <AppLayout
+        title="Invalid reset link"
+        description="This reset link is invalid or expired."
+        breadcrumbs={[{ label: "Login", href: "/login" }, { label: "Forgot Password" }]}
+        centered
+      >
+        <div className="mx-auto max-w-md w-full">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <CardTitle>Reset link expired</CardTitle>
+              <CardDescription>This password reset link is invalid, expired, or missing a token.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/forgot-password">Request a new link</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const passwordInput = (field: object, placeholder: string) => (
     <div className="relative">
       <Input type={showPassword ? "text" : "password"} placeholder={placeholder} {...field} />

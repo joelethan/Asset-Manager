@@ -31,6 +31,7 @@ import {
 import { useProfile } from "@/context/ProfileContext";
 import { useTenant } from "@/context/TenantContext";
 import { authApi } from "@/lib/api";
+import { resolveAppName } from "@/lib/app-brand";
 import { queryClient } from "@/lib/queryClient";
 import {
   BarChart3,
@@ -52,7 +53,7 @@ import {
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 
-const appName = import.meta.env.VITE_APP_NAME || "AtomSchoolManagement";
+const appName = resolveAppName();
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

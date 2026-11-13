@@ -1,9 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTenant } from "@/context/TenantContext";
-import { dashboardApi } from "@/lib/api"; // Adjust the import path as needed
+import { dashboardApi } from "@/lib/api";
+import { getDashboardQueryOptions } from "@/lib/dashboard-query";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Building2, GraduationCap, Users } from "lucide-react";
+import { AlertCircle, Building2, GraduationCap, type LucideIcon, Users } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -24,6 +25,35 @@ const chartData = [
   { name: "Jul", students: 349, attendance: 430 },
 ];
 
+type DashboardData = {
+  students: {
+    total: number;
+    new_this_month: number;
+  };
+  teachers: {
+    total: number;
+    new_this_week: number;
+  };
+  guardians: {
+    total: number;
+    messages_sent_this_month: number;
+    failed_messages_this_month: number;
+  };
+  academics: {
+    current_year: string | null;
+    current_term: string | null;
+    subjects: number;
+    classes: number;
+    assessments: number;
+    grades: number;
+    report_cards_generated: number;
+  };
+  alerts: Array<{
+    type: string;
+    message: string;
+  }>;
+};
+
 export default function Dashboard() {
   const { selectedTenant } = useTenant();
   const schoolId = selectedTenant?.id as string;
@@ -33,19 +63,16 @@ export default function Dashboard() {
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: ["dashboard", schoolId],
-    enabled: !!schoolId,
-    staleTime: 0,
-    placeholderData: (previousData) => previousData,
-    queryFn: async () => {
+    isFetching,
+  } = useQuery<DashboardData | undefined>(
+    getDashboardQueryOptions(schoolId, async () => {
       const response = await dashboardApi.getSchoolDashboard(schoolId);
       if (!response.ok) {
         throw new Error("Failed to load dashboard data");
       }
-      return response.json();
-    },
-  });
+      return response.json() as Promise<DashboardData>;
+    }),
+  );
 
   if (isLoading && !dashboard) {
     return (
@@ -63,26 +90,35 @@ export default function Dashboard() {
     );
   }
 
+  const studentsNewThisMonth = dashboard?.students?.new_this_month ?? 0;
+  const teachersNewThisWeek = dashboard?.teachers?.new_this_week ?? 0;
+
   return (
     <AppLayout
       title="Dashboard"
       description="Welcome back, here's what's happening today."
       breadcrumbs={[{ label: "Dashboard" }]}
     >
+      {isFetching && dashboard && (
+        <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
+          Refreshing dashboard data…
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Students"
           value={dashboard?.students?.total ?? "-"}
           change={`+${dashboard?.students?.new_this_month ?? 0} this month`}
           icon={GraduationCap}
-          trend={dashboard?.students?.new_this_month > 0 ? "up" : "neutral"}
+          trend={studentsNewThisMonth > 0 ? "up" : "neutral"}
         />
         <StatsCard
           title="Active Teachers"
           value={dashboard?.teachers?.total ?? "-"}
           change={`+${dashboard?.teachers?.new_this_week ?? 0} new this week`}
           icon={Users}
-          trend={dashboard?.teachers?.new_this_week > 0 ? "up" : "neutral"}
+          trend={teachersNewThisWeek > 0 ? "up" : "neutral"}
         />
         <StatsCard
           title="Guardians"
@@ -178,7 +214,19 @@ export default function Dashboard() {
   );
 }
 
-function StatsCard({ title, value, change, icon: Icon, trend }: any) {
+function StatsCard({
+  title,
+  value,
+  change,
+  icon: Icon,
+  trend,
+}: {
+  title: string;
+  value: string | number;
+  change: string;
+  icon: LucideIcon;
+  trend: "up" | "down" | "neutral";
+}) {
   return (
     <Card className="shadow-sm border-slate-200 hover:shadow-md transition-shadow duration-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
